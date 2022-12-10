@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("ColorMyLogixNodes")]
-[assembly: AssemblyCopyright("Copyright © Nytra 2021")]
+[assembly: AssemblyCopyright("Copyright © Nytra 2022")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
