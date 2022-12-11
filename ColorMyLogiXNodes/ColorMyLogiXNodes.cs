@@ -14,7 +14,9 @@ namespace ColorMyLogixNodes
         public override string Version => "1.0.0";
         public override string Link => "https://github.com/Nytra/NeosColorMyLogiXNodes";
 
-        private static bool _first_trigger = false;
+        //private static bool _first_trigger = false;
+
+        private const string IMAGE_SLOT_TAG = "ColorMyLogiXNodes.ColorSet";
 
         public static ModConfiguration Config;
 
@@ -43,40 +45,44 @@ namespace ColorMyLogixNodes
         {
             static void Postfix(LogixNode __instance)
             {
-                if (!_first_trigger) _first_trigger = true;
+                //if (!_first_trigger) _first_trigger = true;
 
                 if (Config.GetValue(MOD_ENABLED) == true && __instance.Slot != null)
                 {
-                    //Msg("---");
-                    //Msg($"local user: {__instance.World.LocalUser.ToString()}");
-                    //Msg($"logix node refid user: {__instance.ReferenceID.User.ToString()}");
-                    //Msg($"logix node local user allocation id: {__instance.LocalUser.AllocationID.ToString()}");
-                    //Msg($"logix node refid user == logix node local user allocation id: {__instance.ReferenceID.User == __instance.LocalUser.AllocationID}");
-
                     var ImageSlot = __instance.Slot.FindChild((Slot c) => c.Name == "Image");
-
-                    //Msg($"image slot refid user: {ImageSlot.ReferenceID.User}");
                     if (ImageSlot != null)
                     {
                         if (ImageSlot.ReferenceID.User == __instance.LocalUser.AllocationID)
                         {
-                            var Image = ImageSlot.GetComponent<FrooxEngine.UIX.Image>();
-                            if (Image != null)
+                            if (ImageSlot.Tag != IMAGE_SLOT_TAG)
                             {
                                 try
                                 {
-                                    if (Config.GetValue(USE_RANDOM_COLORS) == true)
-                                    {
-                                        Image.Tint.Value = new BaseX.color(rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, 0.8f);
-                                    }
-                                    else
-                                    {
-                                        Image.Tint.Value = Config.GetValue(CONFIGURED_COLOR);
-                                    }
+                                    ImageSlot.Tag = IMAGE_SLOT_TAG;
                                 }
                                 catch (Exception e)
                                 {
-                                    Error($"Error occurred while trying to set Image tint value.\nError message: {e.Message}");
+                                    Error($"Error occurred while trying to set Image Slot Tag.\nError message: {e.Message}");
+                                }
+
+                                var Image = ImageSlot.GetComponent<FrooxEngine.UIX.Image>();
+                                if (Image != null)
+                                {
+                                    try
+                                    {
+                                        if (Config.GetValue(USE_RANDOM_COLORS) == true)
+                                        {
+                                            Image.Tint.Value = new BaseX.color(rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, 0.8f);
+                                        }
+                                        else
+                                        {
+                                            Image.Tint.Value = Config.GetValue(CONFIGURED_COLOR);
+                                        }
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        Error($"Error occurred while trying to set Image Tint Value.\nError message: {e.Message}");
+                                    }
                                 }
                             }
                         }
