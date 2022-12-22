@@ -5,6 +5,7 @@ using HarmonyLib;
 using NeosModLoader;
 using BaseX;
 using System;
+using FrooxEngine.LogiX.Math;
 
 namespace ColorMyLogixNodes
 {
@@ -12,10 +13,10 @@ namespace ColorMyLogixNodes
     {
         public override string Name => "ColorMyLogiXNodes";
         public override string Author => "Nytra";
-        public override string Version => "1.0.0";
+        public override string Version => "1.0.0-alpha5";
         public override string Link => "https://github.com/Nytra/NeosColorMyLogiXNodes";
 
-        private const string IMAGE_SLOT_TAG = "ColorMyLogiXNodes.ColorSet";
+        private const string COLOR_SET_TAG = "ColorMyLogiXNodes.ColorSet";
 
         public static ModConfiguration Config;
 
@@ -48,11 +49,11 @@ namespace ColorMyLogixNodes
             }
             catch (Exception e)
             {
-                Error($"Error occurred while trying to set Image Slot Tag.\nError message: {e.Message}");
+                Error($"Error occurred while trying to set Slot Tag.\nError message: {e.Message}");
             }
         }
 
-        private static void TrySetColor(Image image, BaseX.color color)
+        private static void TrySetImageTint(Image image, BaseX.color color)
         {
             try
             {
@@ -64,51 +65,71 @@ namespace ColorMyLogixNodes
             }
         }
 
-        [HarmonyPatch(typeof(LogixNode))]
-        [HarmonyPatch(nameof(LogixNode.GenerateVisual))]
-        class Patch2
+        private static void TrySetValueFieldValue(ValueField<BaseX.color> valueField, BaseX.color color)
         {
-            static void Postfix(LogixNode __instance)
+            try
             {
-                if (Config.GetValue(MOD_ENABLED) == true && __instance.Slot != null)
-                {
-                    var imageSlot = __instance.Slot.FindChild((Slot c) => c.Name == "Image");
-                    if (imageSlot != null)
-                    {
-                        if (imageSlot.ReferenceID.User == __instance.LocalUser.AllocationID) // check logix node visual is allocated to the local user
-                        {
-                            if (__instance.Enabled == false)
-                            {
-                                if (imageSlot.Tag == IMAGE_SLOT_TAG) // idk if this will ever be true, because I think Neos changes the tag to "Disabled" when the node breaks.
-                                {
-                                    TrySetTag(imageSlot, "");
-                                }
+                valueField.Value.Value = color;
+            }
+            catch (Exception e)
+            {
+                Error($"Error occurred while trying to set ValueField Value Value.\nError message: {e.Message}");
+            }
+        }
 
+        [HarmonyPatch(typeof(LogixNode))]
+        [HarmonyPatch("GenerateUI")]
+        class Patch_LogixNode_GenerateUI
+        {
+            static void Postfix(Slot root)
+            {
+                if (Config.GetValue(MOD_ENABLED) == true && root != null && root.ReferenceID.User == root.LocalUser.AllocationID) // check logix node visual is allocated to the local user
+                {
+                    if (root.Tag != COLOR_SET_TAG)
+                    {
+                        var imageSlot = root.FindChild((Slot c) => c.Name == "Image");
+                        if (imageSlot != null)
+                        {
+                            if (root.Tag == "Disabled")
+                            {
                                 var image = imageSlot.GetComponent<Image>();
                                 if (image != null)
                                 {
-                                    TrySetColor(image, Config.GetValue(NODE_ERROR_COLOR));
+                                    TrySetImageTint(image, Config.GetValue(NODE_ERROR_COLOR));
                                 }
                             }
                             else
                             {
-                                if (imageSlot.Tag != IMAGE_SLOT_TAG)
+                                //var valueField = root.Parent.GetComponent<ValueField<BaseX.color>>();
+                                var image = imageSlot.GetComponent<Image>();
+                                //if (valueField == null)
+                                //{
+                                if (image != null)
                                 {
-                                    TrySetTag(imageSlot, IMAGE_SLOT_TAG);
+                                    //valueField = root.Parent.AttachComponent<ValueField<BaseX.color>>();
+                                    //valueField.Persistent = false;
 
-                                    var image = imageSlot.GetComponent<Image>();
-                                    if (image != null)
+                                    if (Config.GetValue(USE_RANDOM_COLORS) == true)
                                     {
-                                        if (Config.GetValue(USE_RANDOM_COLORS) == true)
-                                        {
-                                            TrySetColor(image, new BaseX.color(rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, 0.8f));
-                                        }
-                                        else
-                                        {
-                                            TrySetColor(image, Config.GetValue(NODE_COLOR));
-                                        }
+                                        //TrySetValueFieldValue(valueField, new BaseX.color(rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, 0.8f));
+                                        TrySetImageTint(image, new BaseX.color(rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, 0.8f));
                                     }
+                                    else
+                                    {
+                                        //TrySetValueFieldValue(valueField, Config.GetValue(NODE_COLOR));
+                                        TrySetImageTint(image, Config.GetValue(NODE_COLOR));
+                                    }
+
+                                    TrySetTag(imageSlot, COLOR_SET_TAG);
                                 }
+                                //}
+                                //else
+                                //{
+                                    //if (image != null && image.Tint.Value != valueField.Value.Value)
+                                    //{
+                                        //TrySetImageTint(image, valueField.Value.Value);
+                                    //}
+                                //}
                             }
                         }
                     }
