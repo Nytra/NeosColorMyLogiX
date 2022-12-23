@@ -41,8 +41,6 @@ namespace ColorMyLogixNodes
 
         private static System.Random rng;
 
-        private const bool COLOR_BY_NODE_NAME = true;
-
         public override void OnEngineInit()
         {
             Harmony harmony = new Harmony($"owo.{Author}.{Name}");
