@@ -8,4 +8,4 @@ A [NeosModLoader](https://github.com/zkxs/NeosModLoader) mod for [Neos VR](https
 1. Start the game. If you want to verify that the mod is working you can check your Neos logs.
 
 ## What does this actually do?
-It writes to the Tint color field on the UIX Image component for LogiX nodes that have been newly created or newly unpacked by you. The color of nodes can be either random or use a preconfigured color via [NeosModSettings](https://github.com/badhaloninja/NeosModSettings).
+It writes to the Tint color on the Image component for LogiX nodes that have been newly created or newly unpacked by you. The way that the nodes get colored can be configured via [NeosModSettings](https://github.com/badhaloninja/NeosModSettings).
