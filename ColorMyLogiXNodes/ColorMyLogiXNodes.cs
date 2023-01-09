@@ -3,10 +3,7 @@ using FrooxEngine.LogiX;
 using FrooxEngine.UIX;
 using HarmonyLib;
 using NeosModLoader;
-using BaseX;
 using System;
-using FrooxEngine.LogiX.Math;
-using System.Collections.Generic;
 
 namespace ColorMyLogixNodes
 {
@@ -14,7 +11,7 @@ namespace ColorMyLogixNodes
     {
         public override string Name => "ColorMyLogiXNodes";
         public override string Author => "Nytra";
-        public override string Version => "1.0.0-alpha6";
+        public override string Version => "1.0.0-alpha7";
         public override string Link => "https://github.com/Nytra/NeosColorMyLogiXNodes";
 
         private const string COLOR_SET_TAG = "ColorMyLogiXNodes.ColorSet";
@@ -40,6 +37,7 @@ namespace ColorMyLogixNodes
         private static ModConfigurationKey<BaseX.color> NODE_ERROR_COLOR = new ModConfigurationKey<BaseX.color>("Node error color:", "", () => new BaseX.color(3.0f, 0.5f, 0.5f, 0.8f));
 
         private static System.Random rng;
+        private static System.Random rngTimeSeeded = new System.Random();
 
         public override void OnEngineInit()
         {
@@ -86,6 +84,7 @@ namespace ColorMyLogixNodes
                 {
                     // don't apply custom color to cast nodes, because it makes it confusing to read the data types
                     if (__instance.Name.Contains("CastClass")) return;
+                    if (__instance.Name.Contains("Cast_")) return;
 
                     if (root.Tag != COLOR_SET_TAG)
                     {
@@ -118,7 +117,7 @@ namespace ColorMyLogixNodes
                                             rng = new System.Random(root.Parent.ReferenceID.GetHashCode());
                                             break;
                                         case NodeColorModeEnum.TrueRandom:
-                                            rng = new System.Random();
+                                            rng = rngTimeSeeded;
                                             break;
                                         default:
                                             break;
