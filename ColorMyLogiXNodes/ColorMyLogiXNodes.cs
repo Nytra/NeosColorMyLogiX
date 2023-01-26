@@ -135,13 +135,13 @@ namespace ColorMyLogixNodes
         private static BaseX.color GetColorFromUlong(ulong val, ulong modulo)
         {
             float hue = (val % modulo) / (float)modulo;
-            return new ColorHSV(hue, 1f, 1f, 1f).ToRGB().MulRGB(Config.GetValue(HUE_COLOR_MULT));
+            return new ColorHSV(hue, 1f, 1f, 0.8f).ToRGB().MulRGB(Config.GetValue(HUE_COLOR_MULT));
         }
 
         private static BaseX.color GetColorFromInt(int val, int modulo)
         {
             float hue = (val % modulo) / (float)modulo;
-            return new ColorHSV(hue, 1f, 1f, 1f).ToRGB().MulRGB(Config.GetValue(HUE_COLOR_MULT)); ;
+            return new ColorHSV(hue, 1f, 1f, 0.8f).ToRGB().MulRGB(Config.GetValue(HUE_COLOR_MULT)); ;
         }
 
         private static BaseX.color GetColorFromString(string str)
