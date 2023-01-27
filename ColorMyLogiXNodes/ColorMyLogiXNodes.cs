@@ -8,6 +8,7 @@ using System.Reflection;
 using BaseX;
 using System.Linq;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace ColorMyLogixNodes
 {
@@ -15,34 +16,55 @@ namespace ColorMyLogixNodes
     {
         public override string Name => "ColorMyLogiXNodes";
         public override string Author => "Nytra";
-        public override string Version => "1.0.0-alpha7.3.1";
+        public override string Version => "1.0.0-alpha7.3.7";
         public override string Link => "https://github.com/Nytra/NeosColorMyLogiXNodes";
 
         public static ModConfiguration Config;
 
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<bool> MOD_ENABLED = new ModConfigurationKey<bool>("Mod enabled", "Controls whether or not the mod is enabled.", () => true);
+        private static ModConfigurationKey<bool> MOD_ENABLED = new ModConfigurationKey<bool>("MOD_ENABLED", "Controls whether or not the mod is enabled", () => true);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<NodeColorModeEnum> NODE_COLOR_MODE = new ModConfigurationKey<NodeColorModeEnum>("Node color mode", "Controls what factor determines the color of nodes.", () => NodeColorModeEnum.Config);
+        private static ModConfigurationKey<NodeColorModeEnum> NODE_COLOR_MODE = new ModConfigurationKey<NodeColorModeEnum>("NODE_COLOR_MODE", "Controls which factor determines the color of nodes", () => NodeColorModeEnum.Config);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<BaseX.color> NODE_COLOR = new ModConfigurationKey<BaseX.color>("Node color", "The color of nodes when using Config mode.", () => new BaseX.color(1.0f, 1.0f, 1.0f, 0.8f));
+        private static ModConfigurationKey<BaseX.color> NODE_COLOR = new ModConfigurationKey<BaseX.color>("NODE_COLOR", "The color of nodes when Config mode is selected", () => new BaseX.color(1.0f, 1.0f, 1.0f, 0.8f));
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<BaseX.color> NODE_ERROR_COLOR = new ModConfigurationKey<BaseX.color>("Node error color", "The color of broken error nodes.", () => new BaseX.color(3.0f, 0.5f, 0.5f, 0.8f));
+        private static ModConfigurationKey<BaseX.color> NODE_ERROR_COLOR = new ModConfigurationKey<BaseX.color>("NODE_ERROR_COLOR", "The color of 'broken' error nodes", () => new BaseX.color(3.0f, 0.5f, 0.5f, 0.8f));
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<bool> USE_RANDOM = new ModConfigurationKey<bool>("Use random", "Use RNG seeded by the hashcode of the node factor (Only affects RefID mode unless USE_COLOR_FROM_STRING is also enabled)", () => false);
+        private static ModConfigurationKey<ColorModelEnum> COLOR_MODEL = new ModConfigurationKey<ColorModelEnum>("COLOR_MODEL", "Color model", () => ColorModelEnum.RGB);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<int> RANDOM_SEED_OFFSET = new ModConfigurationKey<int>("Random seed offset", "Optional integer offset applied to the random seed to get different colors.", () => 0);
+        private static ModConfigurationKey<float3> RGB_CHANNEL_MULTIPLIER = new ModConfigurationKey<float3>("RGB_CHANNEL_MULTIPLIER", "RGB Channel Multiplier", () => new float3(1f, 1f, 1f));
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<float2> HSV_SATURATION_AND_VALUE = new ModConfigurationKey<float2>("HSV_SATURATION_AND_VALUE", "HSV Saturation and Value", () => new float2(1f, 1f));
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<float2> HSL_SATURATION_AND_LIGHTNESS = new ModConfigurationKey<float2>("HSL_SATURATION_AND_LIGHTNESS", "HSL Saturation and Lightness", () => new float2(1f, 1f));
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<bool> USE_RNG = new ModConfigurationKey<bool>("USE_RNG", "Controls if the mod should use randomness to generate the colors", () => false);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<bool> MULTIPLY_RANDOM_OUTPUT_BY_RGB = new ModConfigurationKey<bool>("MULTIPLY_RANDOM_OUTPUT_BY_RGB", "Controls if the mod should use the RGB multiplier on the random color output", () => false);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<RandomSeedEnum> RANDOM_SEED_METHOD = new ModConfigurationKey<RandomSeedEnum>("RANDOM_SEED_METHOD", "Controls how the RNG is seeded", () => RandomSeedEnum.NodeFactorHashcode);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<int> RANDOM_SEED_OFFSET = new ModConfigurationKey<int>("RANDOM_SEED_OFFSET", "Optional integer offset added to the node factor hashcode seed to get different colors", () => 0);
 
         // INTERNAL ACCESS CONFIG KEYS
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<int> REFID_MODULO = new ModConfigurationKey<int>("REFID_MODULO", "Modulo for RefID to Color conversion", () => 100000, internalAccessOnly: true);
+        private static ModConfigurationKey<int> REFID_MOD_DIVISOR = new ModConfigurationKey<int>("REFID_MOD_DIVISOR", "Modulo divisor for RefID to Color conversion", () => 100000, internalAccessOnly: true);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<int> STRING_MODULO = new ModConfigurationKey<int>("STRING_MODULO", "Modulo for String to Color conversion", () => 1500, internalAccessOnly: true);
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<float> HUE_COLOR_MULT = new ModConfigurationKey<float>("HUE_COLOR_MULT", "Color multiplier for non-random RefID and Color from string", () => 1f, internalAccessOnly: true);
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<bool> USE_COLOR_FROM_STRING = new ModConfigurationKey<bool>("USE_COLOR_FROM_STRING", "Enable color from string (experimental, requires 'Use RNG' to be disabled)", () => false, internalAccessOnly: true);
+        private static ModConfigurationKey<int> STRING_MOD_DIVISOR = new ModConfigurationKey<int>("STRING_MOD_DIVISOR", "Modulo divisor for String to Color conversion", () => 700, internalAccessOnly: true);
         // =====
+
+        private enum RandomSeedEnum
+        {
+            NodeFactorHashcode,
+            SystemTime
+        }
+
+        private enum ColorModelEnum
+        {
+            RGB,
+            HSV,
+            HSL
+        }
 
         private enum NodeColorModeEnum
         {
@@ -51,8 +73,7 @@ namespace ColorMyLogixNodes
             NodeCategory,
             TopmostNodeCategory,
             FullTypeName,
-            RefID,
-            Random
+            RefID
         }
 
         private static System.Random rng;
@@ -132,16 +153,59 @@ namespace ColorMyLogixNodes
             }
         }
 
-        private static BaseX.color GetColorFromUlong(ulong val, ulong modulo)
+        private static BaseX.color GetHueColorFromNumber(ulong val, ulong modulo)
         {
             float hue = (val % modulo) / (float)modulo;
-            return new ColorHSV(hue, 1f, 1f, 0.8f).ToRGB().MulRGB(Config.GetValue(HUE_COLOR_MULT));
+            BaseX.color c = Config.GetValue(NODE_COLOR);
+            switch (Config.GetValue(COLOR_MODEL))
+            {
+                case ColorModelEnum.RGB:
+                    float3 multiplier = Config.GetValue(RGB_CHANNEL_MULTIPLIER);
+                    c = new ColorHSV(hue, 1f, 1f, 0.8f).ToRGB();
+                    c = c.MulR(multiplier.x);
+                    c = c.MulG(multiplier.y);
+                    c = c.MulB(multiplier.z);
+                    break;
+                case ColorModelEnum.HSV:
+                    float2 hsv_values = Config.GetValue(HSV_SATURATION_AND_VALUE);
+                    c = new ColorHSV(hue, hsv_values.x, hsv_values.y, 0.8f).ToRGB();
+                    break;
+                case ColorModelEnum.HSL:
+                    float2 hsl_values = Config.GetValue(HSL_SATURATION_AND_LIGHTNESS);
+                    c = new ColorHSL(hue, hsl_values.x, hsl_values.y, 0.8f).ToRGB();
+                    break;
+                default:
+                    break;
+            }
+            return c;
         }
 
-        private static BaseX.color GetColorFromInt(int val, int modulo)
+        // maybe remove this and just use the ulong version (can convert ints to ulong as long as they are not negative)
+        private static BaseX.color GetHueColorFromNumber(int val, int modulo)
         {
             float hue = (val % modulo) / (float)modulo;
-            return new ColorHSV(hue, 1f, 1f, 0.8f).ToRGB().MulRGB(Config.GetValue(HUE_COLOR_MULT)); ;
+            BaseX.color c = Config.GetValue(NODE_COLOR);
+            switch (Config.GetValue(COLOR_MODEL))
+            {
+                case ColorModelEnum.RGB:
+                    float3 multiplier = Config.GetValue(RGB_CHANNEL_MULTIPLIER);
+                    c = new ColorHSV(hue, 1f, 1f, 0.8f).ToRGB();
+                    c = c.MulR(multiplier.x);
+                    c = c.MulG(multiplier.y);
+                    c = c.MulB(multiplier.z);
+                    break;
+                case ColorModelEnum.HSV:
+                    float2 hsv_values = Config.GetValue(HSV_SATURATION_AND_VALUE);
+                    c = new ColorHSV(hue, hsv_values.x, hsv_values.y, 0.8f).ToRGB();
+                    break;
+                case ColorModelEnum.HSL:
+                    float2 hsl_values = Config.GetValue(HSL_SATURATION_AND_LIGHTNESS);
+                    c = new ColorHSL(hue, hsl_values.x, hsl_values.y, 0.8f).ToRGB();
+                    break;
+                default:
+                    break;
+            }
+            return c;
         }
 
         private static BaseX.color GetColorFromString(string str)
@@ -152,16 +216,19 @@ namespace ColorMyLogixNodes
             foreach (char c in str)
             {
                 charIndex = allAscii.FindIndex((int i) => (char)i == c);
+                if (charIndex == -1) charIndex = 0;
                 val += charIndex;
             }
             //Msg($"str: {str}");
             //Msg($"val: {val.ToString()}");
+            //string joined = string.Join(",", allAscii.Select(x => x.ToString()).ToArray());
+            //Msg($"allAscii: {joined}");
 
             //allNums.Add(val);
             //Msg($"max: {allNums.Max()}");
             //Msg($"min: {allNums.Min()}");
             //Msg($"average: {allNums.Average()}");
-            return GetColorFromInt(val, Config.GetValue(STRING_MODULO));
+            return GetHueColorFromNumber(val, Config.GetValue(STRING_MOD_DIVISOR));
         }
 
         [HarmonyPatch(typeof(LogixNode))]
@@ -191,77 +258,103 @@ namespace ColorMyLogixNodes
                                 }
                                 else
                                 {
-                                    string categoryString;
+                                    string nodeCategoryString;
                                     BaseX.color colorToSet = Config.GetValue(NODE_COLOR);
                                     rng = null;
-                                    switch (Config.GetValue(NODE_COLOR_MODE))
+
+                                    if (Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SystemTime && Config.GetValue(USE_RNG) == true)
                                     {
-                                        case NodeColorModeEnum.Config:
-                                            colorToSet = Config.GetValue(NODE_COLOR);
-                                            break;
-                                        case NodeColorModeEnum.NodeName:
-                                            if (Config.GetValue(USE_RANDOM) || Config.GetValue(USE_COLOR_FROM_STRING) == false)
-                                            {
-                                                rng = new System.Random(LogixHelper.GetNodeName(__instance.GetType()).GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
-                                            }
-                                            else
-                                            {
-                                                colorToSet = GetColorFromString(LogixHelper.GetNodeName(__instance.GetType()));
-                                            }
-                                            break;
-                                        case NodeColorModeEnum.NodeCategory:
-                                            categoryString = GetNodeCategoryString(__instance.GetType());
-                                            if (Config.GetValue(USE_RANDOM) || Config.GetValue(USE_COLOR_FROM_STRING) == false)
-                                            {
-                                                rng = new System.Random(categoryString.GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
-                                            }
-                                            else
-                                            {
-                                                colorToSet = GetColorFromString(categoryString);
-                                            }
-                                            break;
-                                        case NodeColorModeEnum.TopmostNodeCategory:
-                                            categoryString = GetNodeCategoryString(__instance.GetType(), onlyTopmost: true);
-                                            if (Config.GetValue(USE_RANDOM) || Config.GetValue(USE_COLOR_FROM_STRING) == false)
-                                            {
-                                                rng = new System.Random(categoryString.GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
-                                            }
-                                            else
-                                            {
-                                                colorToSet = GetColorFromString(categoryString);
-                                            }
-                                            break;
-                                        case NodeColorModeEnum.FullTypeName:
-                                            if (Config.GetValue(USE_RANDOM) || Config.GetValue(USE_COLOR_FROM_STRING) == false)
-                                            {
-                                                rng = new System.Random(__instance.GetType().FullName.GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
-                                            }
-                                            else
-                                            {
-                                                colorToSet = GetColorFromString(__instance.GetType().FullName);
-                                            }
-                                            break;
-                                        case NodeColorModeEnum.RefID:
-                                            if (Config.GetValue(USE_RANDOM))
-                                            {
-                                                // maybe use ReferenceID.Position here instead?
-                                                rng = new System.Random(root.Parent.ReferenceID.GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
-                                            }
-                                            else
-                                            {
-                                                colorToSet = GetColorFromUlong(root.Parent.ReferenceID.Position, (ulong)Config.GetValue(REFID_MODULO));
-                                            }
-                                            //Msg($"RefID Position: {root.Parent.ReferenceID.Position.ToString()}");
-                                            break;
-                                        case NodeColorModeEnum.Random:
-                                            rng = rngTimeSeeded;
-                                            break;
-                                        default:
-                                            break;
+                                        rng = rngTimeSeeded;
+                                    }
+                                    else
+                                    {
+                                        switch (Config.GetValue(NODE_COLOR_MODE))
+                                        {
+                                            case NodeColorModeEnum.Config:
+                                                colorToSet = Config.GetValue(NODE_COLOR);
+                                                break;
+                                            case NodeColorModeEnum.NodeName:
+                                                if (Config.GetValue(USE_RNG) == true)
+                                                {
+                                                    rng = new System.Random(LogixHelper.GetNodeName(__instance.GetType()).GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
+                                                }
+                                                else
+                                                {
+                                                    colorToSet = GetColorFromString(LogixHelper.GetNodeName(__instance.GetType()));
+                                                }
+                                                break;
+                                            case NodeColorModeEnum.NodeCategory:
+                                                nodeCategoryString = GetNodeCategoryString(__instance.GetType());
+                                                if (Config.GetValue(USE_RNG))
+                                                {
+                                                    rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
+                                                }
+                                                else
+                                                {
+                                                    colorToSet = GetColorFromString(nodeCategoryString);
+                                                }
+                                                break;
+                                            case NodeColorModeEnum.TopmostNodeCategory:
+                                                nodeCategoryString = GetNodeCategoryString(__instance.GetType(), onlyTopmost: true);
+                                                if (Config.GetValue(USE_RNG))
+                                                {
+                                                    rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
+                                                }
+                                                else
+                                                {
+                                                    colorToSet = GetColorFromString(nodeCategoryString);
+                                                }
+                                                break;
+                                            case NodeColorModeEnum.FullTypeName:
+                                                if (Config.GetValue(USE_RNG))
+                                                {
+                                                    rng = new System.Random(__instance.GetType().FullName.GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
+                                                }
+                                                else
+                                                {
+                                                    colorToSet = GetColorFromString(__instance.GetType().FullName);
+                                                }
+                                                break;
+                                            case NodeColorModeEnum.RefID:
+                                                if (Config.GetValue(USE_RNG))
+                                                {
+                                                    // maybe use ReferenceID.Position here instead?
+                                                    rng = new System.Random(root.Parent.ReferenceID.GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
+                                                }
+                                                else
+                                                {
+                                                    colorToSet = GetHueColorFromNumber(root.Parent.ReferenceID.Position, (ulong)Config.GetValue(REFID_MOD_DIVISOR));
+                                                }
+                                                //Msg($"RefID Position: {root.Parent.ReferenceID.Position.ToString()}");
+                                                break;
+                                            default:
+                                                break;
+                                        }
                                     }
                                     if (rng != null)
                                     {
-                                        colorToSet = new BaseX.color(rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, 0.8f);
+                                        // RNG seeded by any constant node factor will always give the same color
+                                        switch (Config.GetValue(COLOR_MODEL))
+                                        {
+                                            case ColorModelEnum.RGB:
+                                                colorToSet = new BaseX.color(rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, 0.8f);
+                                                break;
+                                            case ColorModelEnum.HSV:
+                                                colorToSet = new ColorHSV(rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, 0.8f).ToRGB();
+                                                break;
+                                            case ColorModelEnum.HSL:
+                                                colorToSet = new ColorHSL(rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, 0.8f).ToRGB();
+                                                break;
+                                            default:
+                                                break;
+                                        }
+                                        if (Config.GetValue(MULTIPLY_RANDOM_OUTPUT_BY_RGB))
+                                        {
+                                            float3 multiplier = Config.GetValue(RGB_CHANNEL_MULTIPLIER);
+                                            colorToSet = colorToSet.MulR(multiplier.x);
+                                            colorToSet = colorToSet.MulG(multiplier.y);
+                                            colorToSet = colorToSet.MulB(multiplier.z);
+                                        }
                                     }
                                     TrySetImageTint(image, colorToSet);
                                     TrySetTag(root, COLOR_SET_TAG);
