@@ -172,7 +172,7 @@ namespace ColorMyLogixNodes
 
         private static BaseX.color GetColorFromString(string str)
         {
-            Msg($"str: {str}");
+            //Msg($"str: {str}");
             int val = 0;
             foreach (char c in str)
             {
