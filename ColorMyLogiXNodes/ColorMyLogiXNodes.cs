@@ -6,9 +6,6 @@ using NeosModLoader;
 using System;
 using System.Reflection;
 using BaseX;
-//using System.Linq;
-//using System.Collections.Generic;
-//using System.Runtime.InteropServices;
 
 namespace ColorMyLogixNodes
 {
@@ -16,7 +13,7 @@ namespace ColorMyLogixNodes
     {
         public override string Name => "ColorMyLogiXNodes";
         public override string Author => "Nytra";
-        public override string Version => "1.0.0-alpha7.3.11";
+        public override string Version => "1.0.0-alpha7.4.3";
         public override string Link => "https://github.com/Nytra/NeosColorMyLogiXNodes";
 
         public static ModConfiguration Config;
@@ -24,21 +21,33 @@ namespace ColorMyLogixNodes
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> MOD_ENABLED = new ModConfigurationKey<bool>("MOD_ENABLED", "Mod Enabled:", () => true);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<NodeColorModeEnum> NODE_COLOR_MODE = new ModConfigurationKey<NodeColorModeEnum>("NODE_COLOR_MODE", "Which factor determines the color of nodes:", () => NodeColorModeEnum.Config);
+        private static ModConfigurationKey<bool> USE_STATIC_COLOR = new ModConfigurationKey<bool>("USE_STATIC_COLOR", "Use static node color:", () => false);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<BaseX.color> NODE_COLOR = new ModConfigurationKey<BaseX.color>("NODE_COLOR", "Config Node Color:", () => new BaseX.color(1.0f, 1.0f, 1.0f, 0.8f));
+        private static ModConfigurationKey<BaseX.color> NODE_COLOR = new ModConfigurationKey<BaseX.color>("NODE_COLOR", "Static Node Color:", () => new BaseX.color(1.0f, 1.0f, 1.0f, 0.8f));
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<BaseX.color> NODE_ERROR_COLOR = new ModConfigurationKey<BaseX.color>("NODE_ERROR_COLOR", "Node Error Color:", () => new BaseX.color(3.0f, 0.5f, 0.5f, 0.8f));
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<RandomSeedEnum> RANDOM_SEED_METHOD = new ModConfigurationKey<RandomSeedEnum>("RANDOM_SEED_METHOD", "Randomness Options:", () => RandomSeedEnum.NoRandomness);
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<int> RANDOM_SEED_OFFSET = new ModConfigurationKey<int>("RANDOM_SEED_OFFSET", "Optional integer value added to the Node Factor Seed to get different colors:", () => 0);
+        private static ModConfigurationKey<NodeColorModeEnum> NODE_COLOR_MODE = new ModConfigurationKey<NodeColorModeEnum>("NODE_COLOR_MODE", "Node Factor:", () => NodeColorModeEnum.NodeCategory);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<ColorModelEnum> COLOR_MODEL = new ModConfigurationKey<ColorModelEnum>("COLOR_MODEL", "Color Model:", () => ColorModelEnum.HSV);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<float2> HSV_SATURATION_AND_VALUE = new ModConfigurationKey<float2>("HSV_SATURATION_AND_VALUE", "HSV Saturation and Value:", () => new float2(1f, 1f));
+        private static ModConfigurationKey<float2> HSV_SATURATION_AND_VALUE = new ModConfigurationKey<float2>("HSV_SATURATION_AND_VALUE", "HSV - Saturation and Value:", () => new float2(1f, 1f));
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<float2> HSL_SATURATION_AND_LIGHTNESS = new ModConfigurationKey<float2>("HSL_SATURATION_AND_LIGHTNESS", "HSL Saturation and Lightness:", () => new float2(1f, 1f));
+        private static ModConfigurationKey<float2> HSL_SATURATION_AND_LIGHTNESS = new ModConfigurationKey<float2>("HSL_SATURATION_AND_LIGHTNESS", "HSL - Saturation and Lightness:", () => new float2(1f, 1f));
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<bool> USE_RANDOMNESS = new ModConfigurationKey<bool>("USE_RANDOMNESS", "Use Randomness:", () => false);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<RandomSeedEnum> RANDOM_SEED_METHOD = new ModConfigurationKey<RandomSeedEnum>("RANDOM_SEED_METHOD", "Randomness Options:", () => RandomSeedEnum.SeededByNodeFactor);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<int> RANDOM_SEED_OFFSET = new ModConfigurationKey<int>("RANDOM_SEED_OFFSET", "Node Factor Seed Offset [+-]:", () => 0);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<bool> USE_RANDOM_SVL = new ModConfigurationKey<bool>("USE_RANDOM_SVL", "Use Random Saturation / Value / Lightness:", () => false);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<RandomSaturationValueLightnessEnum> RANDOM_SVL = new ModConfigurationKey<RandomSaturationValueLightnessEnum>("RANDOM_SVL", "Random Saturation / Value / Lightness Options:", () => RandomSaturationValueLightnessEnum.Saturation);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<float3> RANDOM_STRENGTH = new ModConfigurationKey<float3>("RANDOM_STRENGTH", "Randomness Channel Strength [H/S/VL] [*0-1]:", () => new float3(1f, 1f, 1f));
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<float3> RANDOM_OFFSET = new ModConfigurationKey<float3>("RANDOM_OFFSET", "Randomness Channel Offset [H/S/VL] [+0-1]:", () => new float3(0f, 0f, 0f));
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> MULTIPLY_OUTPUT_BY_RGB = new ModConfigurationKey<bool>("MULTIPLY_OUTPUT_BY_RGB", "Should the RGB Channel Multiplier be used on the output color:", () => false);
         [AutoRegisterConfigKey]
@@ -51,9 +60,19 @@ namespace ColorMyLogixNodes
         private static ModConfigurationKey<int> STRING_MOD_DIVISOR = new ModConfigurationKey<int>("STRING_MOD_DIVISOR", "Modulo divisor for String to Color conversion:", () => 1000, internalAccessOnly: true);
         // =====
 
+        private enum RandomSaturationValueLightnessEnum
+        {
+            Saturation,
+            Value,
+            Lightness,
+            SaturationValue,
+            SaturationLightness,
+            ValueLightness,
+            SaturationValueLightness
+        }
+
         private enum RandomSeedEnum
         {
-            NoRandomness,
             SeededByNodeFactor,
             SeededBySystemTime
         }
@@ -66,7 +85,6 @@ namespace ColorMyLogixNodes
 
         private enum NodeColorModeEnum
         {
-            Config,
             NodeName,
             NodeCategory,
             TopmostNodeCategory,
@@ -114,6 +132,7 @@ namespace ColorMyLogixNodes
             }
         }
 
+        // maybe change this to return only the part after the last '/'
         private static string GetNodeCategoryString(Type logixType, bool onlyTopmost=false)
         {
             Category customAttribute = logixType.GetCustomAttribute<Category>();
@@ -223,11 +242,11 @@ namespace ColorMyLogixNodes
                                     string nodeCategoryString;
                                     BaseX.color colorToSet = Config.GetValue(NODE_COLOR);
                                     rng = null;
-                                    if (Config.GetValue(NODE_COLOR_MODE) == NodeColorModeEnum.Config)
+                                    if (Config.GetValue(USE_STATIC_COLOR) == true)
                                     {
                                         colorToSet = Config.GetValue(NODE_COLOR);
                                     }
-                                    else if (Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededBySystemTime)
+                                    else if (Config.GetValue(USE_RANDOMNESS) == true && Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededBySystemTime)
                                     {
                                         rng = rngTimeSeeded;
                                     }
@@ -236,7 +255,7 @@ namespace ColorMyLogixNodes
                                         switch (Config.GetValue(NODE_COLOR_MODE))
                                         {
                                             case NodeColorModeEnum.NodeName:
-                                                if (Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor)
+                                                if (Config.GetValue(USE_RANDOMNESS) == true && Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor)
                                                 {
                                                     rng = new System.Random(LogixHelper.GetNodeName(__instance.GetType()).GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
                                                 }
@@ -247,7 +266,7 @@ namespace ColorMyLogixNodes
                                                 break;
                                             case NodeColorModeEnum.NodeCategory:
                                                 nodeCategoryString = GetNodeCategoryString(__instance.GetType());
-                                                if (Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor)
+                                                if (Config.GetValue(USE_RANDOMNESS) == true && Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor)
                                                 {
                                                     rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
                                                 }
@@ -258,7 +277,7 @@ namespace ColorMyLogixNodes
                                                 break;
                                             case NodeColorModeEnum.TopmostNodeCategory:
                                                 nodeCategoryString = GetNodeCategoryString(__instance.GetType(), onlyTopmost: true);
-                                                if (Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor)
+                                                if (Config.GetValue(USE_RANDOMNESS) == true && Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor)
                                                 {
                                                     rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
                                                 }
@@ -268,7 +287,7 @@ namespace ColorMyLogixNodes
                                                 }
                                                 break;
                                             case NodeColorModeEnum.FullTypeName:
-                                                if (Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor)
+                                                if (Config.GetValue(USE_RANDOMNESS) == true && Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor)
                                                 {
                                                     rng = new System.Random(__instance.GetType().FullName.GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
                                                 }
@@ -278,7 +297,7 @@ namespace ColorMyLogixNodes
                                                 }
                                                 break;
                                             case NodeColorModeEnum.RefID:
-                                                if (Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor)
+                                                if (Config.GetValue(USE_RANDOMNESS) == true && Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor)
                                                 {
                                                     // maybe use ReferenceID.Position here instead?
                                                     rng = new System.Random(root.Parent.ReferenceID.GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
@@ -298,13 +317,80 @@ namespace ColorMyLogixNodes
                                     if (rng != null)
                                     {
                                         // RNG seeded by any constant node factor will always give the same color
+                                        bool useRandomSVL = Config.GetValue(USE_RANDOM_SVL);
+                                        RandomSaturationValueLightnessEnum randomSVL = Config.GetValue(RANDOM_SVL);
+                                        float2 hsv_values = Config.GetValue(HSV_SATURATION_AND_VALUE);
+                                        float2 hsl_values = Config.GetValue(HSL_SATURATION_AND_LIGHTNESS);
+                                        float3 random_strength = Config.GetValue(RANDOM_STRENGTH);
+                                        float3 random_offset = Config.GetValue(RANDOM_OFFSET);
+                                        float hue = (rng.Next(101) / 100.0f) * random_strength.x + random_offset.x;
+                                        float saturation;
+                                        float value;
+                                        float lightness;
                                         switch (Config.GetValue(COLOR_MODEL))
                                         {
                                             case ColorModelEnum.HSV:
-                                                colorToSet = new ColorHSV(rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, 0.8f).ToRGB();
+                                                
+                                                switch (useRandomSVL)
+                                                {
+                                                    case false:
+                                                        colorToSet = new ColorHSV(hue, hsv_values.x, hsv_values.y, 0.8f).ToRGB();
+                                                        break;
+                                                    case true:
+                                                        switch (randomSVL)
+                                                        {
+                                                            case RandomSaturationValueLightnessEnum.Saturation:
+                                                                saturation = (rng.Next(101) / 100.0f) * random_strength.y + random_offset.y;
+                                                                colorToSet = new ColorHSV(hue, saturation, hsv_values.y, 0.8f).ToRGB();
+                                                                break;
+                                                            case RandomSaturationValueLightnessEnum.Value:
+                                                                value = (rng.Next(101) / 100.0f) * random_strength.z + random_offset.z;
+                                                                colorToSet = new ColorHSV(hue, hsv_values.x, value, 0.8f).ToRGB();
+                                                                break;
+                                                            case RandomSaturationValueLightnessEnum.SaturationValue:
+                                                                saturation = (rng.Next(101) / 100.0f) * random_strength.y + random_offset.y;
+                                                                value = (rng.Next(101) / 100.0f) * random_strength.z + random_offset.z;
+                                                                colorToSet = new ColorHSV(hue, saturation, value, 0.8f).ToRGB();
+                                                                break;
+                                                            case RandomSaturationValueLightnessEnum.SaturationValueLightness:
+                                                                saturation = (rng.Next(101) / 100.0f) * random_strength.y + random_offset.y;
+                                                                value = (rng.Next(101) / 100.0f) * random_strength.z + random_offset.z;
+                                                                colorToSet = new ColorHSV(hue, saturation, value, 0.8f).ToRGB();
+                                                                break;
+                                                        }
+                                                        break;
+                                                }
                                                 break;
                                             case ColorModelEnum.HSL:
-                                                colorToSet = new ColorHSL(rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, rng.Next(101) / 100.0f, 0.8f).ToRGB();
+                                                switch (useRandomSVL)
+                                                {
+                                                    case false:
+                                                        colorToSet = new ColorHSL(hue, hsl_values.x, hsl_values.y, 0.8f).ToRGB();
+                                                        break;
+                                                    case true:
+                                                        switch (randomSVL)
+                                                        {
+                                                            case RandomSaturationValueLightnessEnum.Saturation:
+                                                                saturation = (rng.Next(101) / 100.0f) * random_strength.y + random_offset.y;
+                                                                colorToSet = new ColorHSL(hue, saturation, hsl_values.y, 0.8f).ToRGB();
+                                                                break;
+                                                            case RandomSaturationValueLightnessEnum.Lightness:
+                                                                lightness = (rng.Next(101) / 100.0f) * random_strength.z + random_offset.z;
+                                                                colorToSet = new ColorHSL(hue, hsl_values.x, lightness, 0.8f).ToRGB();
+                                                                break;
+                                                            case RandomSaturationValueLightnessEnum.SaturationLightness:
+                                                                saturation = (rng.Next(101) / 100.0f) * random_strength.y + random_offset.y;
+                                                                lightness = (rng.Next(101) / 100.0f) * random_strength.z + random_offset.z;
+                                                                colorToSet = new ColorHSL(hue, saturation, lightness, 0.8f).ToRGB();
+                                                                break;
+                                                            case RandomSaturationValueLightnessEnum.SaturationValueLightness:
+                                                                saturation = (rng.Next(101) / 100.0f) * random_strength.y + random_offset.y;
+                                                                lightness = (rng.Next(101) / 100.0f) * random_strength.z + random_offset.z;
+                                                                colorToSet = new ColorHSL(hue, saturation, lightness, 0.8f).ToRGB();
+                                                                break;
+                                                        }
+                                                        break;
+                                                }
                                                 break;
                                             default:
                                                 break;
