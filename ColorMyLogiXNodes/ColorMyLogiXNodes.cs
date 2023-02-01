@@ -25,6 +25,8 @@ namespace ColorMyLogixNodes
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> MOD_ENABLED = new ModConfigurationKey<bool>("MOD_ENABLED", "Mod Enabled:", () => true);
         [AutoRegisterConfigKey]
+        private static ModConfigurationKey<dummy> DUMMY_SEP_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_1", "‎ ", () => new dummy());
+        [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> USE_STATIC_COLOR = new ModConfigurationKey<bool>("USE_STATIC_COLOR", "Use Static Node Color:", () => false);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<BaseX.color> NODE_COLOR = new ModConfigurationKey<BaseX.color>("NODE_COLOR", "Static Node Color:", () => new BaseX.color(1.0f, 1.0f, 1.0f, 0.8f));
@@ -33,21 +35,25 @@ namespace ColorMyLogixNodes
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<NodeColorModeEnum> NODE_COLOR_MODE = new ModConfigurationKey<NodeColorModeEnum>("NODE_COLOR_MODE", "Selected Node Factor:", () => NodeColorModeEnum.NodeCategory);
         [AutoRegisterConfigKey]
+        private static ModConfigurationKey<dummy> DUMMY_SEP_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_2", "‎ ", () => new dummy());
+        [AutoRegisterConfigKey]
         private static ModConfigurationKey<ColorModelEnum> COLOR_MODEL = new ModConfigurationKey<ColorModelEnum>("COLOR_MODEL", "Color Model:", () => ColorModelEnum.HSV);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<float2> HSV_SATURATION_AND_VALUE = new ModConfigurationKey<float2>("HSV_SATURATION_AND_VALUE", "HSV - Saturation and Value:", () => new float2(1f, 1f));
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<float2> HSL_SATURATION_AND_LIGHTNESS = new ModConfigurationKey<float2>("HSL_SATURATION_AND_LIGHTNESS", "HSL - Saturation and Lightness:", () => new float2(1f, 1f));
         [AutoRegisterConfigKey]
+        private static ModConfigurationKey<dummy> DUMMY_SEP_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_3", "‎ ", () => new dummy());
+        [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> USE_RANDOMNESS = new ModConfigurationKey<bool>("USE_RANDOMNESS", "Use Randomness:", () => false);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<RandomSeedEnum> RANDOM_SEED_METHOD = new ModConfigurationKey<RandomSeedEnum>("RANDOM_SEED_METHOD", "Randomness Options:", () => RandomSeedEnum.SeededByNodeFactor);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<int> RANDOM_SEED_OFFSET = new ModConfigurationKey<int>("RANDOM_SEED_OFFSET", "Node Factor Seed Offset [+-]:", () => 0);
+        private static ModConfigurationKey<bool> USE_RANDOM_SVL = new ModConfigurationKey<bool>("USE_RANDOM_SVL", "Use Random Saturation/Value/Lightness:", () => false);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<bool> USE_RANDOM_SVL = new ModConfigurationKey<bool>("USE_RANDOM_SVL", "Use Random SV/SL:", () => false);
+        private static ModConfigurationKey<RandomSaturationValueLightnessEnum> RANDOM_SVL = new ModConfigurationKey<RandomSaturationValueLightnessEnum>("RANDOM_SVL", "Random Saturation/Value/Lightness Options:", () => RandomSaturationValueLightnessEnum.Saturation);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<RandomSaturationValueLightnessEnum> RANDOM_SVL = new ModConfigurationKey<RandomSaturationValueLightnessEnum>("RANDOM_SVL", "Random SV/SL Options:", () => RandomSaturationValueLightnessEnum.Saturation);
+        private static ModConfigurationKey<dummy> DUMMY_SEP_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_4", "‎ ", () => new dummy());
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<float3> RANDOM_STRENGTH_HSV = new ModConfigurationKey<float3>("RANDOM_STRENGTH_HSV", "HSV Randomness Channel Strength [*0-1]:", () => new float3(1f, 1f, 1f));
         [AutoRegisterConfigKey]
@@ -57,19 +63,21 @@ namespace ColorMyLogixNodes
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<float3> RANDOM_OFFSET_HSL = new ModConfigurationKey<float3>("RANDOM_OFFSET_HSL", "HSL Randomness Channel Offset [+0-1]:", () => new float3(0f, 0f, 0f));
         [AutoRegisterConfigKey]
+        private static ModConfigurationKey<dummy> DUMMY_SEP_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_5", "‎ ", () => new dummy());
+        [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> MULTIPLY_OUTPUT_BY_RGB = new ModConfigurationKey<bool>("MULTIPLY_OUTPUT_BY_RGB", "Should the RGB Channel Multiplier be used on the output color:", () => false);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<float3> RGB_CHANNEL_MULTIPLIER = new ModConfigurationKey<float3>("RGB_CHANNEL_MULTIPLIER", "RGB Channel Multiplier:", () => new float3(1f, 1f, 1f));
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<int> RANDOM_SEED_OFFSET = new ModConfigurationKey<int>("RANDOM_SEED_OFFSET", "Node Factor Seed Offset [+-]:", () => 0);
 
         // INTERNAL ACCESS CONFIG KEYS
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<int> REFID_MOD_DIVISOR = new ModConfigurationKey<int>("REFID_MOD_DIVISOR", "Modulo divisor for RefID to Color conversion:", () => 100000, internalAccessOnly: true);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<int> STRING_MOD_DIVISOR = new ModConfigurationKey<int>("STRING_MOD_DIVISOR", "Modulo divisor for String to Color conversion:", () => 837, internalAccessOnly: true);
+        private static ModConfigurationKey<int> STRING_MOD_DIVISOR = new ModConfigurationKey<int>("STRING_MOD_DIVISOR", "Modulo divisor for String to Color conversion:", () => 700, internalAccessOnly: true);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> ALTERNATE_CATEGORY_STRING = new ModConfigurationKey<bool>("ALTERNATE_CATEGORY_STRING", "Use alternate node category string (only uses the part after the final '/'):", () => false, internalAccessOnly: true);
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<dummy> TEST_DUMMY_OPTION = new ModConfigurationKey<dummy>("TEST_DUMMY_OPTION", "Dummy:", () => new dummy(), internalAccessOnly: true);
         // =====
 
         private enum RandomSaturationValueLightnessEnum
