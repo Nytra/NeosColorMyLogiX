@@ -17,7 +17,7 @@ namespace ColorMyLogixNodes
     {
         public override string Name => "ColorMyLogiXNodes";
         public override string Author => "Nytra";
-        public override string Version => "1.0.0-alpha7.5.3";
+        public override string Version => "1.0.0-alpha7.5.4";
         public override string Link => "https://github.com/Nytra/NeosColorMyLogiXNodes";
 
         public static ModConfiguration Config;
@@ -25,13 +25,13 @@ namespace ColorMyLogixNodes
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> MOD_ENABLED = new ModConfigurationKey<bool>("MOD_ENABLED", "Mod Enabled:", () => true);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<bool> USE_STATIC_COLOR = new ModConfigurationKey<bool>("USE_STATIC_COLOR", "Use static node color:", () => false);
+        private static ModConfigurationKey<bool> USE_STATIC_COLOR = new ModConfigurationKey<bool>("USE_STATIC_COLOR", "Use Static Node Color:", () => false);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<BaseX.color> NODE_COLOR = new ModConfigurationKey<BaseX.color>("NODE_COLOR", "Static Node Color:", () => new BaseX.color(1.0f, 1.0f, 1.0f, 0.8f));
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<BaseX.color> NODE_ERROR_COLOR = new ModConfigurationKey<BaseX.color>("NODE_ERROR_COLOR", "Node Error Color:", () => new BaseX.color(3.0f, 0.5f, 0.5f, 0.8f));
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<NodeColorModeEnum> NODE_COLOR_MODE = new ModConfigurationKey<NodeColorModeEnum>("NODE_COLOR_MODE", "Node Factor:", () => NodeColorModeEnum.NodeCategory);
+        private static ModConfigurationKey<NodeColorModeEnum> NODE_COLOR_MODE = new ModConfigurationKey<NodeColorModeEnum>("NODE_COLOR_MODE", "Selected Node Factor:", () => NodeColorModeEnum.NodeCategory);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<ColorModelEnum> COLOR_MODEL = new ModConfigurationKey<ColorModelEnum>("COLOR_MODEL", "Color Model:", () => ColorModelEnum.HSV);
         [AutoRegisterConfigKey]
@@ -45,17 +45,17 @@ namespace ColorMyLogixNodes
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<int> RANDOM_SEED_OFFSET = new ModConfigurationKey<int>("RANDOM_SEED_OFFSET", "Node Factor Seed Offset [+-]:", () => 0);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<bool> USE_RANDOM_SVL = new ModConfigurationKey<bool>("USE_RANDOM_SVL", "Use Random Saturation / Value / Lightness:", () => false);
+        private static ModConfigurationKey<bool> USE_RANDOM_SVL = new ModConfigurationKey<bool>("USE_RANDOM_SVL", "Use Random SV/SL:", () => false);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<RandomSaturationValueLightnessEnum> RANDOM_SVL = new ModConfigurationKey<RandomSaturationValueLightnessEnum>("RANDOM_SVL", "Random Saturation / Value / Lightness Options:", () => RandomSaturationValueLightnessEnum.Saturation);
+        private static ModConfigurationKey<RandomSaturationValueLightnessEnum> RANDOM_SVL = new ModConfigurationKey<RandomSaturationValueLightnessEnum>("RANDOM_SVL", "Random SV/SL Options:", () => RandomSaturationValueLightnessEnum.Saturation);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<float3> RANDOM_STRENGTH_HSV = new ModConfigurationKey<float3>("RANDOM_STRENGTH_HSV", "Randomness Channel Strength [HSV] [*0-1]:", () => new float3(1f, 1f, 1f));
+        private static ModConfigurationKey<float3> RANDOM_STRENGTH_HSV = new ModConfigurationKey<float3>("RANDOM_STRENGTH_HSV", "HSV Randomness Channel Strength [*0-1]:", () => new float3(1f, 1f, 1f));
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<float3> RANDOM_OFFSET_HSV = new ModConfigurationKey<float3>("RANDOM_OFFSET_HSV", "Randomness Channel Offset [HSV] [+0-1]:", () => new float3(0f, 0f, 0f));
+        private static ModConfigurationKey<float3> RANDOM_OFFSET_HSV = new ModConfigurationKey<float3>("RANDOM_OFFSET_HSV", "HSV Randomness Channel Offset [+0-1]:", () => new float3(0f, 0f, 0f));
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<float3> RANDOM_STRENGTH_HSL = new ModConfigurationKey<float3>("RANDOM_STRENGTH_HSL", "Randomness Channel Strength [HSL] [*0-1]:", () => new float3(1f, 1f, 1f));
+        private static ModConfigurationKey<float3> RANDOM_STRENGTH_HSL = new ModConfigurationKey<float3>("RANDOM_STRENGTH_HSL", "HSL Randomness Channel Strength [*0-1]:", () => new float3(1f, 1f, 1f));
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<float3> RANDOM_OFFSET_HSL = new ModConfigurationKey<float3>("RANDOM_OFFSET_HSL", "Randomness Channel Offset [HSL] [+0-1]:", () => new float3(0f, 0f, 0f));
+        private static ModConfigurationKey<float3> RANDOM_OFFSET_HSL = new ModConfigurationKey<float3>("RANDOM_OFFSET_HSL", "HSL Randomness Channel Offset [+0-1]:", () => new float3(0f, 0f, 0f));
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> MULTIPLY_OUTPUT_BY_RGB = new ModConfigurationKey<bool>("MULTIPLY_OUTPUT_BY_RGB", "Should the RGB Channel Multiplier be used on the output color:", () => false);
         [AutoRegisterConfigKey]
@@ -68,6 +68,8 @@ namespace ColorMyLogixNodes
         private static ModConfigurationKey<int> STRING_MOD_DIVISOR = new ModConfigurationKey<int>("STRING_MOD_DIVISOR", "Modulo divisor for String to Color conversion:", () => 837, internalAccessOnly: true);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> ALTERNATE_CATEGORY_STRING = new ModConfigurationKey<bool>("ALTERNATE_CATEGORY_STRING", "Use alternate node category string (only uses the part after the final '/'):", () => false, internalAccessOnly: true);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<dummy> TEST_DUMMY_OPTION = new ModConfigurationKey<dummy>("TEST_DUMMY_OPTION", "Dummy:", () => new dummy(), internalAccessOnly: true);
         // =====
 
         private enum RandomSaturationValueLightnessEnum
