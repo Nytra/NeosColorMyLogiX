@@ -17,7 +17,7 @@ namespace ColorMyLogixNodes
     {
         public override string Name => "ColorMyLogiXNodes";
         public override string Author => "Nytra";
-        public override string Version => "1.0.0-alpha7.5.1";
+        public override string Version => "1.0.0-alpha7.5.2";
         public override string Link => "https://github.com/Nytra/NeosColorMyLogiXNodes";
 
         public static ModConfiguration Config;
@@ -237,7 +237,7 @@ namespace ColorMyLogixNodes
 
             if (val < 0) val = 0;
             int stringModDivisor = Config.GetValue(STRING_MOD_DIVISOR);
-            ulong divisor = (stringModDivisor > 0) ? (ulong)stringModDivisor : 0;
+            ulong divisor = (stringModDivisor > 0) ? (ulong)stringModDivisor : 0ul;
             return GetHueColorFromUlong((ulong)val, divisor);
         }
 
@@ -385,10 +385,16 @@ namespace ColorMyLogixNodes
                                                                 value = (rng.Next(101) / 100.0f) * random_strength_hsv.z + random_offset_hsv.z;
                                                                 colorToSet = new ColorHSV(hue, saturation, value, 0.8f).ToRGB();
                                                                 break;
+                                                            case RandomSaturationValueLightnessEnum.SaturationLightness:
+                                                                saturation = (rng.Next(101) / 100.0f) * random_strength_hsv.y + random_offset_hsv.y;
+                                                                colorToSet = new ColorHSV(hue, saturation, hsv_values.y, 0.8f).ToRGB();
+                                                                break;
                                                             case RandomSaturationValueLightnessEnum.SaturationValueLightness:
                                                                 saturation = (rng.Next(101) / 100.0f) * random_strength_hsv.y + random_offset_hsv.y;
                                                                 value = (rng.Next(101) / 100.0f) * random_strength_hsv.z + random_offset_hsv.z;
                                                                 colorToSet = new ColorHSV(hue, saturation, value, 0.8f).ToRGB();
+                                                                break;
+                                                            default:
                                                                 break;
                                                         }
                                                         break;
@@ -419,10 +425,16 @@ namespace ColorMyLogixNodes
                                                                 lightness = (rng.Next(101) / 100.0f) * random_strength_hsl.z + random_offset_hsl.z;
                                                                 colorToSet = new ColorHSL(hue, saturation, lightness, 0.8f).ToRGB();
                                                                 break;
+                                                            case RandomSaturationValueLightnessEnum.SaturationValue:
+                                                                saturation = (rng.Next(101) / 100.0f) * random_strength_hsl.y + random_offset_hsl.y;
+                                                                colorToSet = new ColorHSV(hue, saturation, hsl_values.y, 0.8f).ToRGB();
+                                                                break;
                                                             case RandomSaturationValueLightnessEnum.SaturationValueLightness:
                                                                 saturation = (rng.Next(101) / 100.0f) * random_strength_hsl.y + random_offset_hsl.y;
                                                                 lightness = (rng.Next(101) / 100.0f) * random_strength_hsl.z + random_offset_hsl.z;
                                                                 colorToSet = new ColorHSL(hue, saturation, lightness, 0.8f).ToRGB();
+                                                                break;
+                                                            default:
                                                                 break;
                                                         }
                                                         break;
