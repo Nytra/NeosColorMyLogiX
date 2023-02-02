@@ -17,15 +17,17 @@ namespace ColorMyLogixNodes
     {
         public override string Name => "ColorMyLogiXNodes";
         public override string Author => "Nytra";
-        public override string Version => "1.0.0-alpha7.5.5";
+        public override string Version => "1.0.0-alpha7.5.6";
         public override string Link => "https://github.com/Nytra/NeosColorMyLogiXNodes";
+
+        const string SEP_STRING = "·";
 
         public static ModConfiguration Config;
 
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> MOD_ENABLED = new ModConfigurationKey<bool>("MOD_ENABLED", "Mod Enabled:", () => true);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<dummy> DUMMY_SEP_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_1", "|", () => new dummy());
+        private static ModConfigurationKey<dummy> DUMMY_SEP_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_1", SEP_STRING, () => new dummy());
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> USE_STATIC_COLOR = new ModConfigurationKey<bool>("USE_STATIC_COLOR", "Use Static Node Color:", () => false);
         [AutoRegisterConfigKey]
@@ -35,7 +37,7 @@ namespace ColorMyLogixNodes
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<NodeColorModeEnum> NODE_COLOR_MODE = new ModConfigurationKey<NodeColorModeEnum>("NODE_COLOR_MODE", "Selected Node Factor:", () => NodeColorModeEnum.NodeCategory);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<dummy> DUMMY_SEP_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_2", "|", () => new dummy());
+        private static ModConfigurationKey<dummy> DUMMY_SEP_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_2", SEP_STRING, () => new dummy());
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<ColorModelEnum> COLOR_MODEL = new ModConfigurationKey<ColorModelEnum>("COLOR_MODEL", "Color Model:", () => ColorModelEnum.HSV);
         [AutoRegisterConfigKey]
@@ -43,7 +45,7 @@ namespace ColorMyLogixNodes
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<float2> HSL_SATURATION_AND_LIGHTNESS = new ModConfigurationKey<float2>("HSL_SATURATION_AND_LIGHTNESS", "HSL - Saturation and Lightness:", () => new float2(1f, 1f));
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<dummy> DUMMY_SEP_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_3", "|", () => new dummy());
+        private static ModConfigurationKey<dummy> DUMMY_SEP_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_3", SEP_STRING, () => new dummy());
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> USE_RANDOMNESS = new ModConfigurationKey<bool>("USE_RANDOMNESS", "Use Randomness:", () => false);
         [AutoRegisterConfigKey]
@@ -53,7 +55,7 @@ namespace ColorMyLogixNodes
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<RandomSaturationValueLightnessEnum> RANDOM_SVL = new ModConfigurationKey<RandomSaturationValueLightnessEnum>("RANDOM_SVL", "Random Saturation/Value/Lightness Options:", () => RandomSaturationValueLightnessEnum.Saturation);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<dummy> DUMMY_SEP_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_4", "|", () => new dummy());
+        private static ModConfigurationKey<dummy> DUMMY_SEP_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_4", SEP_STRING, () => new dummy());
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<float3> RANDOM_STRENGTH_HSV = new ModConfigurationKey<float3>("RANDOM_STRENGTH_HSV", "HSV Randomness Channel Strength [*0-1]:", () => new float3(1f, 1f, 1f));
         [AutoRegisterConfigKey]
@@ -63,7 +65,7 @@ namespace ColorMyLogixNodes
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<float3> RANDOM_OFFSET_HSL = new ModConfigurationKey<float3>("RANDOM_OFFSET_HSL", "HSL Randomness Channel Offset [+0-1]:", () => new float3(0f, 0f, 0f));
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<dummy> DUMMY_SEP_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_5", "|", () => new dummy());
+        private static ModConfigurationKey<dummy> DUMMY_SEP_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_5", SEP_STRING, () => new dummy());
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> MULTIPLY_OUTPUT_BY_RGB = new ModConfigurationKey<bool>("MULTIPLY_OUTPUT_BY_RGB", "Should the RGB Channel Multiplier be used on the output color:", () => false);
         [AutoRegisterConfigKey]
