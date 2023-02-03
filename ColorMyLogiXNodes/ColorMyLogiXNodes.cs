@@ -10,6 +10,7 @@ using System.Reflection;
 using BaseX;
 using System.Collections.Generic;
 using System.Linq;
+using FrooxEngine.LogiX.Color;
 
 namespace ColorMyLogixNodes
 {
@@ -17,7 +18,7 @@ namespace ColorMyLogixNodes
     {
         public override string Name => "ColorMyLogiXNodes";
         public override string Author => "Nytra";
-        public override string Version => "1.0.0-alpha7.5.6";
+        public override string Version => "1.0.0-alpha7.5.10";
         public override string Link => "https://github.com/Nytra/NeosColorMyLogiXNodes";
 
         const string SEP_STRING = "·";
@@ -41,15 +42,25 @@ namespace ColorMyLogixNodes
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<ColorModelEnum> COLOR_MODEL = new ModConfigurationKey<ColorModelEnum>("COLOR_MODEL", "Color Model:", () => ColorModelEnum.HSV);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<float2> HSV_SATURATION_AND_VALUE = new ModConfigurationKey<float2>("HSV_SATURATION_AND_VALUE", "HSV - Saturation and Value:", () => new float2(1f, 1f));
+        private static ModConfigurationKey<float3> HSV_VALUES = new ModConfigurationKey<float3>("HSV_VALUES", "HSV - Hue, Saturation and Value:", () => new float3(1f, 1f, 1f));
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<float2> HSL_SATURATION_AND_LIGHTNESS = new ModConfigurationKey<float2>("HSL_SATURATION_AND_LIGHTNESS", "HSL - Saturation and Lightness:", () => new float2(1f, 1f));
+        private static ModConfigurationKey<float3> HSL_VALUES = new ModConfigurationKey<float3>("HSL_VALUES", "HSL - Hue, Saturation and Lightness:", () => new float3(1f, 1f, 1f));
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<bool> USE_STATIC_HUE = new ModConfigurationKey<bool>("USE_STATIC_HUE", "Use Static Hue:", () => false);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<bool> USE_HUE_FROM_STATIC_NODE_COLOR = new ModConfigurationKey<bool>("USE_HUE_FROM_STATIC_NODE_COLOR", "Use Hue From Static Node Color:", () => false);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<bool> USE_RANDOM_RANGE_AROUND_STATIC_HUE = new ModConfigurationKey<bool>("USE_RANDOM_RANGE_AROUND_STATIC_HUE", "Use Random Range Around Static Hue:", () => false);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<float> RANDOM_RANGE_AROUND_STATIC_HUE = new ModConfigurationKey<float>("RANDOM_RANGE_AROUND_STATIC_HUE", "Random Range Around Static Hue [0-1]:", () => 0.2f);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<dummy> DUMMY_SEP_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_3", SEP_STRING, () => new dummy());
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> USE_RANDOMNESS = new ModConfigurationKey<bool>("USE_RANDOMNESS", "Use Randomness:", () => false);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<RandomSeedEnum> RANDOM_SEED_METHOD = new ModConfigurationKey<RandomSeedEnum>("RANDOM_SEED_METHOD", "Randomness Options:", () => RandomSeedEnum.SeededByNodeFactor);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<int> RANDOM_SEED_OFFSET = new ModConfigurationKey<int>("RANDOM_SEED_OFFSET", "Node Factor Seed Offset [+-]:", () => 0);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> USE_RANDOM_SVL = new ModConfigurationKey<bool>("USE_RANDOM_SVL", "Use Random Saturation/Value/Lightness:", () => false);
         [AutoRegisterConfigKey]
@@ -70,8 +81,6 @@ namespace ColorMyLogixNodes
         private static ModConfigurationKey<bool> MULTIPLY_OUTPUT_BY_RGB = new ModConfigurationKey<bool>("MULTIPLY_OUTPUT_BY_RGB", "Should the RGB Channel Multiplier be used on the output color:", () => false);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<float3> RGB_CHANNEL_MULTIPLIER = new ModConfigurationKey<float3>("RGB_CHANNEL_MULTIPLIER", "RGB Channel Multiplier:", () => new float3(1f, 1f, 1f));
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<int> RANDOM_SEED_OFFSET = new ModConfigurationKey<int>("RANDOM_SEED_OFFSET", "Node Factor Seed Offset [+-]:", () => 0);
 
         // INTERNAL ACCESS CONFIG KEYS
         [AutoRegisterConfigKey]
@@ -80,6 +89,9 @@ namespace ColorMyLogixNodes
         private static ModConfigurationKey<int> STRING_MOD_DIVISOR = new ModConfigurationKey<int>("STRING_MOD_DIVISOR", "Modulo divisor for String to Color conversion:", () => 700, internalAccessOnly: true);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> ALTERNATE_CATEGORY_STRING = new ModConfigurationKey<bool>("ALTERNATE_CATEGORY_STRING", "Use alternate node category string (only uses the part after the final '/'):", () => false, internalAccessOnly: true);
+
+        //[AutoRegisterConfigKey]
+        //private static ModConfigurationKey<float> STATIC_HUE = new ModConfigurationKey<float>("STATIC_HUE", "Static Hue [0-1]:", () => 0.0f, internalAccessOnly: true);
         // =====
 
         private enum RandomSaturationValueLightnessEnum
@@ -209,17 +221,48 @@ namespace ColorMyLogixNodes
 
         private static BaseX.color GetHueColorFromUlong(ulong val, ulong divisor)
         {
-            float hue = (val % divisor) / (float)divisor;
+            float hue = 0.0f;
+            if (Config.GetValue(USE_STATIC_HUE))
+            {
+                if (Config.GetValue(USE_HUE_FROM_STATIC_NODE_COLOR))
+                {
+                    ColorHSV colorHSV = new ColorHSV(Config.GetValue(NODE_COLOR));
+                    hue = colorHSV.h;
+                }
+                else
+                {
+                    switch (Config.GetValue(COLOR_MODEL))
+                    {
+                        case ColorModelEnum.HSV:
+                            hue = Config.GetValue(HSV_VALUES).x;
+                            break;
+                        case ColorModelEnum.HSL:
+                            hue = Config.GetValue(HSL_VALUES).x;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                if (Config.GetValue(USE_RANDOM_RANGE_AROUND_STATIC_HUE))
+                {
+                    int coinflip = rngTimeSeeded.Next(2) == 0 ? -1 : 1;
+                    hue = hue + (rngTimeSeeded.Next(101) / 100.0f) * Config.GetValue(RANDOM_RANGE_AROUND_STATIC_HUE) * coinflip;
+                }
+            }
+            else
+            {
+                hue = (val % divisor) / (float)divisor;
+            }
             BaseX.color c = Config.GetValue(NODE_COLOR);
             switch (Config.GetValue(COLOR_MODEL))
             {
                 case ColorModelEnum.HSV:
-                    float2 hsv_values = Config.GetValue(HSV_SATURATION_AND_VALUE);
-                    c = new ColorHSV(hue, hsv_values.x, hsv_values.y, 0.8f).ToRGB();
+                    float3 hsv_values = Config.GetValue(HSV_VALUES);
+                    c = new ColorHSV(hue, hsv_values.y, hsv_values.z, 0.8f).ToRGB();
                     break;
                 case ColorModelEnum.HSL:
-                    float2 hsl_values = Config.GetValue(HSL_SATURATION_AND_LIGHTNESS);
-                    c = new ColorHSL(hue, hsl_values.x, hsl_values.y, 0.8f).ToRGB();
+                    float3 hsl_values = Config.GetValue(HSL_VALUES);
+                    c = new ColorHSL(hue, hsl_values.y, hsl_values.z, 0.8f).ToRGB();
                     break;
                 default:
                     break;
@@ -358,15 +401,18 @@ namespace ColorMyLogixNodes
                                     if (rng != null)
                                     {
                                         // RNG seeded by any constant node factor will always give the same color
+                                        bool useStaticHue = Config.GetValue(USE_STATIC_HUE);
+                                        bool useHueFromStaticNodeColor = Config.GetValue(USE_HUE_FROM_STATIC_NODE_COLOR);
                                         bool useRandomSVL = Config.GetValue(USE_RANDOM_SVL);
+                                        //float staticHue = Config.GetValue(STATIC_HUE);
                                         RandomSaturationValueLightnessEnum randomSVL = Config.GetValue(RANDOM_SVL);
-                                        float2 hsv_values = Config.GetValue(HSV_SATURATION_AND_VALUE);
-                                        float2 hsl_values = Config.GetValue(HSL_SATURATION_AND_LIGHTNESS);
+                                        float3 hsv_values = Config.GetValue(HSV_VALUES);
+                                        float3 hsl_values = Config.GetValue(HSL_VALUES);
                                         float3 random_strength_hsv = Config.GetValue(RANDOM_STRENGTH_HSV);
                                         float3 random_offset_hsv = Config.GetValue(RANDOM_OFFSET_HSV);
                                         float3 random_strength_hsl = Config.GetValue(RANDOM_STRENGTH_HSL);
                                         float3 random_offset_hsl = Config.GetValue(RANDOM_OFFSET_HSL);
-                                        float hue;
+                                        float hue = 0;
                                         float saturation;
                                         float value;
                                         float lightness;
@@ -374,23 +420,43 @@ namespace ColorMyLogixNodes
                                         {
                                             case ColorModelEnum.HSV:
 
-                                                hue = (rng.Next(101) / 100.0f) * random_strength_hsv.x + random_offset_hsv.x;
+                                                if (useStaticHue)
+                                                {
+                                                    if (useHueFromStaticNodeColor)
+                                                    {
+                                                        ColorHSV colorHSV = new ColorHSV(Config.GetValue(NODE_COLOR));
+                                                        hue = colorHSV.h;
+                                                    }
+                                                    else
+                                                    {
+                                                        hue = hsv_values.x;
+                                                    }
+                                                    if (Config.GetValue(USE_RANDOM_RANGE_AROUND_STATIC_HUE))
+                                                    {
+                                                        int coinflip = rng.Next(2) == 0 ? -1 : 1;
+                                                        hue = hue + (rng.Next(101) / 100.0f) * Config.GetValue(RANDOM_RANGE_AROUND_STATIC_HUE) * coinflip;
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    hue = (rng.Next(101) / 100.0f) * random_strength_hsv.x + random_offset_hsv.x;
+                                                }
 
                                                 switch (useRandomSVL)
                                                 {
                                                     case false:
-                                                        colorToSet = new ColorHSV(hue, hsv_values.x, hsv_values.y, 0.8f).ToRGB();
+                                                        colorToSet = new ColorHSV(hue, hsv_values.y, hsv_values.z, 0.8f).ToRGB();
                                                         break;
                                                     case true:
                                                         switch (randomSVL)
                                                         {
                                                             case RandomSaturationValueLightnessEnum.Saturation:
                                                                 saturation = (rng.Next(101) / 100.0f) * random_strength_hsv.y + random_offset_hsv.y;
-                                                                colorToSet = new ColorHSV(hue, saturation, hsv_values.y, 0.8f).ToRGB();
+                                                                colorToSet = new ColorHSV(hue, saturation, hsv_values.z, 0.8f).ToRGB();
                                                                 break;
                                                             case RandomSaturationValueLightnessEnum.Value:
                                                                 value = (rng.Next(101) / 100.0f) * random_strength_hsv.z + random_offset_hsv.z;
-                                                                colorToSet = new ColorHSV(hue, hsv_values.x, value, 0.8f).ToRGB();
+                                                                colorToSet = new ColorHSV(hue, hsv_values.y, value, 0.8f).ToRGB();
                                                                 break;
                                                             case RandomSaturationValueLightnessEnum.SaturationValue:
                                                                 saturation = (rng.Next(101) / 100.0f) * random_strength_hsv.y + random_offset_hsv.y;
@@ -399,11 +465,11 @@ namespace ColorMyLogixNodes
                                                                 break;
                                                             case RandomSaturationValueLightnessEnum.SaturationLightness:
                                                                 saturation = (rng.Next(101) / 100.0f) * random_strength_hsv.y + random_offset_hsv.y;
-                                                                colorToSet = new ColorHSV(hue, saturation, hsv_values.y, 0.8f).ToRGB();
+                                                                colorToSet = new ColorHSV(hue, saturation, hsv_values.z, 0.8f).ToRGB();
                                                                 break;
                                                             case RandomSaturationValueLightnessEnum.ValueLightness:
                                                                 value = value = (rng.Next(101) / 100.0f) * random_strength_hsv.z + random_offset_hsv.z;
-                                                                colorToSet = new ColorHSV(hue, hsv_values.x, value, 0.8f).ToRGB();
+                                                                colorToSet = new ColorHSV(hue, hsv_values.y, value, 0.8f).ToRGB();
                                                                 break;
                                                             case RandomSaturationValueLightnessEnum.SaturationValueLightness:
                                                                 saturation = (rng.Next(101) / 100.0f) * random_strength_hsv.y + random_offset_hsv.y;
@@ -418,23 +484,43 @@ namespace ColorMyLogixNodes
                                                 break;
                                             case ColorModelEnum.HSL:
 
-                                                hue = (rng.Next(101) / 100.0f) * random_strength_hsl.x + random_offset_hsl.x;
+                                                if (useStaticHue)
+                                                {
+                                                    if (useHueFromStaticNodeColor)
+                                                    {
+                                                        ColorHSV colorHSV = new ColorHSV(Config.GetValue(NODE_COLOR));
+                                                        hue = colorHSV.h;
+                                                    }
+                                                    else
+                                                    {
+                                                        hue = hsl_values.x;
+                                                    }
+                                                    if (Config.GetValue(USE_RANDOM_RANGE_AROUND_STATIC_HUE))
+                                                    {
+                                                        int coinflip = rng.Next(2) == 0 ? -1 : 1;
+                                                        hue = hue + (rng.Next(101) / 100.0f) * Config.GetValue(RANDOM_RANGE_AROUND_STATIC_HUE) * coinflip;
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    hue = (rng.Next(101) / 100.0f) * random_strength_hsl.x + random_offset_hsl.x;
+                                                }
 
                                                 switch (useRandomSVL)
                                                 {
                                                     case false:
-                                                        colorToSet = new ColorHSL(hue, hsl_values.x, hsl_values.y, 0.8f).ToRGB();
+                                                        colorToSet = new ColorHSL(hue, hsl_values.y, hsl_values.z, 0.8f).ToRGB();
                                                         break;
                                                     case true:
                                                         switch (randomSVL)
                                                         {
                                                             case RandomSaturationValueLightnessEnum.Saturation:
                                                                 saturation = (rng.Next(101) / 100.0f) * random_strength_hsl.y + random_offset_hsl.y;
-                                                                colorToSet = new ColorHSL(hue, saturation, hsl_values.y, 0.8f).ToRGB();
+                                                                colorToSet = new ColorHSL(hue, saturation, hsl_values.z, 0.8f).ToRGB();
                                                                 break;
                                                             case RandomSaturationValueLightnessEnum.Lightness:
                                                                 lightness = (rng.Next(101) / 100.0f) * random_strength_hsl.z + random_offset_hsl.z;
-                                                                colorToSet = new ColorHSL(hue, hsl_values.x, lightness, 0.8f).ToRGB();
+                                                                colorToSet = new ColorHSL(hue, hsl_values.y, lightness, 0.8f).ToRGB();
                                                                 break;
                                                             case RandomSaturationValueLightnessEnum.SaturationLightness:
                                                                 saturation = (rng.Next(101) / 100.0f) * random_strength_hsl.y + random_offset_hsl.y;
@@ -443,11 +529,11 @@ namespace ColorMyLogixNodes
                                                                 break;
                                                             case RandomSaturationValueLightnessEnum.SaturationValue:
                                                                 saturation = (rng.Next(101) / 100.0f) * random_strength_hsl.y + random_offset_hsl.y;
-                                                                colorToSet = new ColorHSV(hue, saturation, hsl_values.y, 0.8f).ToRGB();
+                                                                colorToSet = new ColorHSV(hue, saturation, hsl_values.z, 0.8f).ToRGB();
                                                                 break;
                                                             case RandomSaturationValueLightnessEnum.ValueLightness:
                                                                 lightness = (rng.Next(101) / 100.0f) * random_strength_hsl.z + random_offset_hsl.z;
-                                                                colorToSet = new ColorHSV(hue, hsl_values.x, lightness, 0.8f).ToRGB();
+                                                                colorToSet = new ColorHSV(hue, hsl_values.y, lightness, 0.8f).ToRGB();
                                                                 break;
                                                             case RandomSaturationValueLightnessEnum.SaturationValueLightness:
                                                                 saturation = (rng.Next(101) / 100.0f) * random_strength_hsl.y + random_offset_hsl.y;
