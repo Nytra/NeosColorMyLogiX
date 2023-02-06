@@ -488,8 +488,8 @@ namespace ColorMyLogixNodes
                                                 {
                                                     if (useHueFromStaticNodeColor)
                                                     {
-                                                        ColorHSV colorHSV = new ColorHSV(Config.GetValue(NODE_COLOR));
-                                                        hue = colorHSV.h;
+                                                        ColorHSL colorHSL = new ColorHSL(Config.GetValue(NODE_COLOR));
+                                                        hue = colorHSL.h;
                                                     }
                                                     else
                                                     {
@@ -529,11 +529,11 @@ namespace ColorMyLogixNodes
                                                                 break;
                                                             case RandomSaturationValueLightnessEnum.SaturationValue:
                                                                 saturation = (rng.Next(101) / 100.0f) * random_strength_hsl.y + random_offset_hsl.y;
-                                                                colorToSet = new ColorHSV(hue, saturation, hsl_values.z, 0.8f).ToRGB();
+                                                                colorToSet = new ColorHSL(hue, saturation, hsl_values.z, 0.8f).ToRGB();
                                                                 break;
                                                             case RandomSaturationValueLightnessEnum.ValueLightness:
                                                                 lightness = (rng.Next(101) / 100.0f) * random_strength_hsl.z + random_offset_hsl.z;
-                                                                colorToSet = new ColorHSV(hue, hsl_values.y, lightness, 0.8f).ToRGB();
+                                                                colorToSet = new ColorHSL(hue, hsl_values.y, lightness, 0.8f).ToRGB();
                                                                 break;
                                                             case RandomSaturationValueLightnessEnum.SaturationValueLightness:
                                                                 saturation = (rng.Next(101) / 100.0f) * random_strength_hsl.y + random_offset_hsl.y;
