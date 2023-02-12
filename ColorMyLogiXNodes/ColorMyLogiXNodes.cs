@@ -18,7 +18,7 @@ namespace ColorMyLogixNodes
     {
         public override string Name => "ColorMyLogiXNodes";
         public override string Author => "Nytra";
-        public override string Version => "1.0.0-alpha7.5.11";
+        public override string Version => "1.0.0-alpha7.6";
         public override string Link => "https://github.com/Nytra/NeosColorMyLogiXNodes";
 
         const string SEP_STRING = "·";
@@ -36,7 +36,9 @@ namespace ColorMyLogixNodes
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<BaseX.color> NODE_ERROR_COLOR = new ModConfigurationKey<BaseX.color>("NODE_ERROR_COLOR", "Node Error Color:", () => new BaseX.color(3.0f, 0.5f, 0.5f, 0.8f));
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<NodeColorModeEnum> NODE_COLOR_MODE = new ModConfigurationKey<NodeColorModeEnum>("NODE_COLOR_MODE", "Selected Node Factor:", () => NodeColorModeEnum.NodeCategory);
+        private static ModConfigurationKey<dummy> DUMMY_SEP_1_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_1_1", SEP_STRING, () => new dummy());
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<NodeColorModeEnum> NODE_COLOR_MODE = new ModConfigurationKey<NodeColorModeEnum>("NODE_COLOR_MODE", "Which Node Factor Determines Color:", () => NodeColorModeEnum.NodeCategory);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<dummy> DUMMY_SEP_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_2", SEP_STRING, () => new dummy());
         [AutoRegisterConfigKey]
@@ -46,9 +48,11 @@ namespace ColorMyLogixNodes
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<float3> HSL_VALUES = new ModConfigurationKey<float3>("HSL_VALUES", "HSL - Hue, Saturation and Lightness:", () => new float3(1f, 1f, 1f));
         [AutoRegisterConfigKey]
+        private static ModConfigurationKey<dummy> DUMMY_SEP_2_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_1", SEP_STRING, () => new dummy());
+        [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> USE_STATIC_HUE = new ModConfigurationKey<bool>("USE_STATIC_HUE", "Use Static Hue:", () => false);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<bool> USE_HUE_FROM_STATIC_NODE_COLOR = new ModConfigurationKey<bool>("USE_HUE_FROM_STATIC_NODE_COLOR", "Use Hue From Static Node Color:", () => false);
+        private static ModConfigurationKey<bool> USE_HUE_FROM_STATIC_NODE_COLOR = new ModConfigurationKey<bool>("USE_HUE_FROM_STATIC_NODE_COLOR", "Get Static Hue From Static Node Color:", () => false);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> USE_RANDOM_RANGE_AROUND_STATIC_HUE = new ModConfigurationKey<bool>("USE_RANDOM_RANGE_AROUND_STATIC_HUE", "Use Random Range Around Static Hue:", () => false);
         [AutoRegisterConfigKey]
@@ -58,15 +62,15 @@ namespace ColorMyLogixNodes
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> USE_RANDOMNESS = new ModConfigurationKey<bool>("USE_RANDOMNESS", "Use Randomness:", () => false);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<RandomSeedEnum> RANDOM_SEED_METHOD = new ModConfigurationKey<RandomSeedEnum>("RANDOM_SEED_METHOD", "Randomness Options:", () => RandomSeedEnum.SeededByNodeFactor);
+        private static ModConfigurationKey<RandomSeedEnum> RANDOM_SEED_METHOD = new ModConfigurationKey<RandomSeedEnum>("RANDOM_SEED_METHOD", "How to Seed the Randomness:", () => RandomSeedEnum.SeededByNodeFactor);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<int> RANDOM_SEED_OFFSET = new ModConfigurationKey<int>("RANDOM_SEED_OFFSET", "Node Factor Seed Offset [+-]:", () => 0);
+        private static ModConfigurationKey<int> RANDOM_SEED_OFFSET = new ModConfigurationKey<int>("RANDOM_SEED_OFFSET", "Seed Offset (If Seeding by Node Factor) [+-]:", () => 0);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<dummy> DUMMY_SEP_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_4", SEP_STRING, () => new dummy());
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> USE_RANDOM_SVL = new ModConfigurationKey<bool>("USE_RANDOM_SVL", "Use Random Saturation/Value/Lightness:", () => false);
         [AutoRegisterConfigKey]
-        private static ModConfigurationKey<RandomSaturationValueLightnessEnum> RANDOM_SVL = new ModConfigurationKey<RandomSaturationValueLightnessEnum>("RANDOM_SVL", "Random Saturation/Value/Lightness Options:", () => RandomSaturationValueLightnessEnum.Saturation);
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<dummy> DUMMY_SEP_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_4", SEP_STRING, () => new dummy());
+        private static ModConfigurationKey<RandomSaturationValueLightnessEnum> RANDOM_SVL = new ModConfigurationKey<RandomSaturationValueLightnessEnum>("RANDOM_SVL", "Which of Saturation/Value/Lightness to Randomize:", () => RandomSaturationValueLightnessEnum.Saturation);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<float3> RANDOM_STRENGTH_HSV = new ModConfigurationKey<float3>("RANDOM_STRENGTH_HSV", "HSV Randomness Channel Strength [*0-1]:", () => new float3(1f, 1f, 1f));
         [AutoRegisterConfigKey]
