@@ -11,6 +11,7 @@ using BaseX;
 using System.Collections.Generic;
 using System.Linq;
 using FrooxEngine.LogiX.Color;
+using FrooxEngine.LogiX.References;
 
 namespace ColorMyLogixNodes
 {
@@ -18,7 +19,7 @@ namespace ColorMyLogixNodes
     {
         public override string Name => "ColorMyLogiXNodes";
         public override string Author => "Nytra";
-        public override string Version => "1.0.0-alpha7.6.1";
+        public override string Version => "1.0.0-alpha7.7.0";
         public override string Link => "https://github.com/Nytra/NeosColorMyLogiXNodes";
 
         const string SEP_STRING = "·";
@@ -35,6 +36,10 @@ namespace ColorMyLogixNodes
         private static ModConfigurationKey<BaseX.color> NODE_COLOR = new ModConfigurationKey<BaseX.color>("NODE_COLOR", "Static Node Color:", () => new BaseX.color(1.0f, 1.0f, 1.0f, 0.8f));
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<BaseX.color> NODE_ERROR_COLOR = new ModConfigurationKey<BaseX.color>("NODE_ERROR_COLOR", "Node Error Color:", () => new BaseX.color(3.0f, 0.5f, 0.5f, 0.8f));
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<bool> COLOR_NULL_REFERENCE_NODES = new ModConfigurationKey<bool>("COLOR_NULL_REFERENCE_NODES", "Should Null Reference Nodes use Node Error Color:", () => true);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<bool> COLOR_NULL_DRIVER_NODES = new ModConfigurationKey<bool>("COLOR_NULL_DRIVER_NODES", "Should Null Driver Nodes use Node Error Color:", () => true);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<dummy> DUMMY_SEP_1_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_1_1", SEP_STRING, () => new dummy());
         [AutoRegisterConfigKey]
@@ -298,6 +303,136 @@ namespace ColorMyLogixNodes
             int stringModDivisor = Config.GetValue(STRING_MOD_DIVISOR);
             ulong divisor = (stringModDivisor > 0) ? (ulong)stringModDivisor : 0ul;
             return GetHueColorFromUlong((ulong)val, divisor);
+        }
+
+        [HarmonyPatch(typeof(LogixNode))]
+        [HarmonyPatch("GenerateVisual")]
+        class Patch_LogixNode_GenerateVisual
+        {
+            static void Postfix(LogixNode __instance)
+            {
+                if (true && Config.GetValue(MOD_ENABLED) == true)
+                {
+                    if (Config.GetValue(COLOR_NULL_REFERENCE_NODES) == true && __instance.Name.Contains("ReferenceNode"))
+                    {
+                        __instance.RunInUpdates(0, () =>
+                        {
+                            Slot visualSlot = __instance.Slot.FindChild((Slot c) => c.Name == "Visual");
+                            if (visualSlot != null) // && visualSlot.Tag != COLOR_SET_TAG)
+                            {
+                                //Msg($"Reference node found! {__instance.Name}");
+                                foreach (Component c in __instance.Slot.Components)
+                                {
+                                    if (c.Name.Contains("ReferenceNode"))
+                                    {
+                                        var refTarget = c.TryGetField("RefTarget");
+                                        if (refTarget == null) continue;
+                                        //Msg(refTarget.ToString());
+                                        if (refTarget.ToString() == "ID0")
+                                        {
+                                            //Msg("Null reference node found!");
+                                            var imageSlot = visualSlot.FindChild((Slot c) => c.Name == "Image");
+                                            if (imageSlot != null)
+                                            {
+                                                var image = imageSlot.GetComponent<Image>();
+                                                if (image != null)
+                                                {
+                                                    TrySetImageTint(image, Config.GetValue(NODE_ERROR_COLOR));
+                                                    //TrySetTag(visualSlot, COLOR_SET_TAG);
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            var imageSlot = visualSlot.FindChild((Slot c) => c.Name == "Image");
+                                            if (imageSlot != null)
+                                            {
+                                                var image = imageSlot.GetComponent<Image>();
+                                                if (image != null)
+                                                {
+                                                    var defaultColor = LogixHelper.GetColor(__instance.GetType().GetGenericArguments()[0]);
+                                                    defaultColor = defaultColor.SetA(0.8f);
+                                                    TrySetImageTint(image, defaultColor);
+                                                    //TrySetTag(visualSlot, COLOR_SET_TAG);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                    else if (Config.GetValue(COLOR_NULL_DRIVER_NODES) == true && __instance.Name.Contains("DriverNode"))
+                    {
+                        __instance.RunInUpdates(0, () =>
+                        {
+                            Slot visualSlot = __instance.Slot.FindChild((Slot c) => c.Name == "Visual");
+                            if (visualSlot != null) // && visualSlot.Tag != COLOR_SET_TAG)
+                            {
+                                //Msg($"Driver node found! {__instance.Name}");
+                                foreach (Component c in __instance.Slot.Components)
+                                {
+                                    if (c.Name.Contains("DriverNode"))
+                                    {
+                                        var refTarget = c.TryGetField("DriveTarget");
+                                        if (refTarget == null) continue;
+                                        //Msg(refTarget.ToString());
+                                        if (refTarget.ToString() == "ID0")
+                                        {
+                                            //Msg("Null driver node found!");
+                                            var imageSlot1 = visualSlot.FindChild((Slot c) => c.Name == "Image");
+                                            if (imageSlot1 != null)
+                                            {
+                                                var image1 = imageSlot1.GetComponent<Image>();
+                                                if (image1 != null)
+                                                {
+                                                    TrySetImageTint(image1, Config.GetValue(NODE_ERROR_COLOR));
+                                                    //TrySetTag(visualSlot, COLOR_SET_TAG);
+                                                    var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");
+                                                    if (imageSlot2 != null)
+                                                    {
+                                                        var image2 = imageSlot2.GetComponent<Image>();
+                                                        if (image2 != null)
+                                                        {
+                                                            TrySetImageTint(image2, Config.GetValue(NODE_ERROR_COLOR));
+                                                            //TrySetTag(visualSlot, COLOR_SET_TAG);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            var imageSlot1 = visualSlot.FindChild((Slot c) => c.Name == "Image");
+                                            if (imageSlot1 != null)
+                                            {
+                                                var image1 = imageSlot1.GetComponent<Image>();
+                                                if (image1 != null)
+                                                {
+                                                    var defaultColor = LogixHelper.GetColor(__instance.GetType().GetGenericArguments()[0]);
+                                                    defaultColor = defaultColor.SetA(0.8f);
+                                                    TrySetImageTint(image1, defaultColor);
+                                                    //TrySetTag(visualSlot, COLOR_SET_TAG);
+                                                    var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");
+                                                    if (imageSlot2 != null)
+                                                    {
+                                                        var image2 = imageSlot2.GetComponent<Image>();
+                                                        if (image2 != null)
+                                                        {
+                                                            TrySetImageTint(image2, defaultColor);
+                                                            //TrySetTag(visualSlot, COLOR_SET_TAG);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            }
         }
 
         [HarmonyPatch(typeof(LogixNode))]
