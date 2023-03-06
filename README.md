@@ -1,4 +1,4 @@
-# ColorMyLogiXNodes
+# ColorMyLogiX
 
 A [NeosModLoader](https://github.com/zkxs/NeosModLoader) mod for [Neos VR](https://neos.com/) that allows you to color your LogiX nodes. This makes the LogiX experience *much* more colorful.
 
