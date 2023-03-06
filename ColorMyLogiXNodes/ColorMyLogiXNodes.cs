@@ -8,10 +8,10 @@ using NeosModLoader;
 using System;
 using System.Reflection;
 using BaseX;
+
+#if DEBUG
 using System.Collections.Generic;
-using System.Linq;
-using FrooxEngine.LogiX.Color;
-using FrooxEngine.LogiX.References;
+#endif
 
 namespace ColorMyLogixNodes
 {
@@ -331,29 +331,49 @@ namespace ColorMyLogixNodes
                                         if (refTarget.ToString() == "ID0")
                                         {
                                             //Msg("Null reference node found!");
-                                            var imageSlot = visualSlot.FindChild((Slot c) => c.Name == "Image");
-                                            if (imageSlot != null)
+                                            var imageSlot1 = visualSlot.FindChild((Slot c) => c.Name == "Image");
+                                            if (imageSlot1 != null)
                                             {
-                                                var image = imageSlot.GetComponent<Image>();
-                                                if (image != null)
+                                                var image1 = imageSlot1.GetComponent<Image>();
+                                                if (image1 != null)
                                                 {
-                                                    TrySetImageTint(image, Config.GetValue(NODE_ERROR_COLOR));
+                                                    TrySetImageTint(image1, Config.GetValue(NODE_ERROR_COLOR));
                                                     //TrySetTag(visualSlot, COLOR_SET_TAG);
+                                                    var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");
+                                                    if (imageSlot2 != null)
+                                                    {
+                                                        var image2 = imageSlot2.GetComponent<Image>();
+                                                        if (image2 != null)
+                                                        {
+                                                            TrySetImageTint(image2, Config.GetValue(NODE_ERROR_COLOR));
+                                                            //TrySetTag(visualSlot, COLOR_SET_TAG);
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
                                         else
                                         {
-                                            var imageSlot = visualSlot.FindChild((Slot c) => c.Name == "Image");
-                                            if (imageSlot != null)
+                                            var imageSlot1 = visualSlot.FindChild((Slot c) => c.Name == "Image");
+                                            if (imageSlot1 != null)
                                             {
-                                                var image = imageSlot.GetComponent<Image>();
-                                                if (image != null)
+                                                var image1 = imageSlot1.GetComponent<Image>();
+                                                if (image1 != null)
                                                 {
                                                     var defaultColor = LogixHelper.GetColor(__instance.GetType().GetGenericArguments()[0]);
                                                     defaultColor = defaultColor.SetA(0.8f);
-                                                    TrySetImageTint(image, defaultColor);
+                                                    TrySetImageTint(image1, defaultColor);
                                                     //TrySetTag(visualSlot, COLOR_SET_TAG);
+                                                    var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");
+                                                    if (imageSlot2 != null)
+                                                    {
+                                                        var image2 = imageSlot2.GetComponent<Image>();
+                                                        if (image2 != null)
+                                                        {
+                                                            TrySetImageTint(image2, defaultColor);
+                                                            //TrySetTag(visualSlot, COLOR_SET_TAG);
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
