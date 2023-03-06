@@ -19,7 +19,7 @@ namespace ColorMyLogixNodes
     {
         public override string Name => "ColorMyLogiXNodes";
         public override string Author => "Nytra";
-        public override string Version => "1.0.0-alpha7.7.0";
+        public override string Version => "1.0.0-alpha7.7.1";
         public override string Link => "https://github.com/Nytra/NeosColorMyLogiXNodes";
 
         const string SEP_STRING = "·";
