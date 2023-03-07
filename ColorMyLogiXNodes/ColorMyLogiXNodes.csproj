@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>ColorMyLogiXNodes</RootNamespace>
-    <AssemblyName>ColorMyLogiXNodes</AssemblyName>
+    <AssemblyName>ColorMyLogiX</AssemblyName>
     <TargetFramework>net472</TargetFramework>
     <LangVersion>9.0</LangVersion>
     <BuildProjectReferences>false</BuildProjectReferences>
