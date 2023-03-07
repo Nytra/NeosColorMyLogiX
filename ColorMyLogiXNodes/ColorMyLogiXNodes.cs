@@ -60,8 +60,6 @@ namespace ColorMyLogixNodes
 		private static ModConfigurationKey<float> RANDOM_RANGE_AROUND_STATIC_HUE = new ModConfigurationKey<float>("RANDOM_RANGE_AROUND_STATIC_HUE", "Random Range around Static Hue [0-1]:", () => 0.2f);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_3", SEP_STRING, () => new dummy());
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<bool> USE_RANDOMNESS = new ModConfigurationKey<bool>("USE_RANDOMNESS", "Use Randomness:", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<RandomSeedEnum> RANDOM_SEED_METHOD = new ModConfigurationKey<RandomSeedEnum>("RANDOM_SEED_METHOD", "How to Seed the Randomness:", () => RandomSeedEnum.SeededByNodeFactor);
 		[AutoRegisterConfigKey]
@@ -74,14 +72,6 @@ namespace ColorMyLogixNodes
 		private static ModConfigurationKey<bool> USE_RANDOM_SVL = new ModConfigurationKey<bool>("USE_RANDOM_SVL", "Use Random Saturation/Value/Lightness:", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<RandomSaturationValueLightnessEnum> RANDOM_SVL = new ModConfigurationKey<RandomSaturationValueLightnessEnum>("RANDOM_SVL", "Which of Saturation/Value/Lightness to Randomize:", () => RandomSaturationValueLightnessEnum.Saturation);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<float3> RANDOM_STRENGTH_HSV = new ModConfigurationKey<float3>("RANDOM_STRENGTH_HSV", "HSV Randomness Channel Strength [*0-1]:", () => new float3(1f, 1f, 1f));
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<float3> RANDOM_OFFSET_HSV = new ModConfigurationKey<float3>("RANDOM_OFFSET_HSV", "HSV Randomness Channel Offset [+0-1]:", () => new float3(0f, 0f, 0f));
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<float3> RANDOM_STRENGTH_HSL = new ModConfigurationKey<float3>("RANDOM_STRENGTH_HSL", "HSL Randomness Channel Strength [*0-1]:", () => new float3(1f, 1f, 1f));
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<float3> RANDOM_OFFSET_HSL = new ModConfigurationKey<float3>("RANDOM_OFFSET_HSL", "HSL Randomness Channel Offset [+0-1]:", () => new float3(0f, 0f, 0f));
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float3> RANDOM_MAX_HSV = new ModConfigurationKey<float3>("RANDOM_MAX_HSV", "HSV Randomness Channel Max [0-1]:", () => new float3(1f, 1f, 1f));
 		[AutoRegisterConfigKey]
@@ -325,138 +315,71 @@ namespace ColorMyLogixNodes
 		{
 			static void Postfix(LogixNode __instance)
 			{
-				if (true && Config.GetValue(MOD_ENABLED) == true)
+				if (Config.GetValue(MOD_ENABLED) == true)
 				{
+					string targetField = null;
 					if (Config.GetValue(COLOR_NULL_REFERENCE_NODES) == true && __instance.Name.Contains("ReferenceNode"))
+					{
+						targetField = "RefTarget";
+					}
+					else if (Config.GetValue(COLOR_NULL_DRIVER_NODES) == true && __instance.Name.Contains("DriverNode"))
+					{
+						targetField = "DriveTarget";
+					}
+					if (targetField != null)
 					{
 						__instance.RunInUpdates(0, () =>
 						{
 							Slot visualSlot = __instance.Slot.FindChild((Slot c) => c.Name == "Visual");
 							if (visualSlot != null) // && visualSlot.Tag != COLOR_SET_TAG)
 							{
-								//Msg($"Reference node found! {__instance.Name}");
-								foreach (Component c in __instance.Slot.Components)
+								var target = __instance.TryGetField(targetField);
+								if (target == null) return;
+								//Msg(target.ToString());
+								if (target.ToString() == "ID0")
 								{
-									if (c.Name.Contains("ReferenceNode"))
+									//Msg("Null targetField found!");
+									var imageSlot1 = visualSlot.FindChild((Slot c) => c.Name == "Image");
+									if (imageSlot1 != null)
 									{
-										var refTarget = c.TryGetField("RefTarget");
-										if (refTarget == null) continue;
-										//Msg(refTarget.ToString());
-										if (refTarget.ToString() == "ID0")
+										var image1 = imageSlot1.GetComponent<Image>();
+										if (image1 != null)
 										{
-											//Msg("Null reference node found!");
-											var imageSlot1 = visualSlot.FindChild((Slot c) => c.Name == "Image");
-											if (imageSlot1 != null)
+											TrySetImageTint(image1, Config.GetValue(NODE_ERROR_COLOR));
+											//TrySetTag(visualSlot, COLOR_SET_TAG);
+											var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");
+											if (imageSlot2 != null)
 											{
-												var image1 = imageSlot1.GetComponent<Image>();
-												if (image1 != null)
+												var image2 = imageSlot2.GetComponent<Image>();
+												if (image2 != null)
 												{
-													TrySetImageTint(image1, Config.GetValue(NODE_ERROR_COLOR));
+													TrySetImageTint(image2, Config.GetValue(NODE_ERROR_COLOR));
 													//TrySetTag(visualSlot, COLOR_SET_TAG);
-													var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");
-													if (imageSlot2 != null)
-													{
-														var image2 = imageSlot2.GetComponent<Image>();
-														if (image2 != null)
-														{
-															TrySetImageTint(image2, Config.GetValue(NODE_ERROR_COLOR));
-															//TrySetTag(visualSlot, COLOR_SET_TAG);
-														}
-													}
-												}
-											}
-										}
-										else
-										{
-											var imageSlot1 = visualSlot.FindChild((Slot c) => c.Name == "Image");
-											if (imageSlot1 != null)
-											{
-												var image1 = imageSlot1.GetComponent<Image>();
-												if (image1 != null)
-												{
-													var defaultColor = LogixHelper.GetColor(__instance.GetType().GetGenericArguments()[0]);
-													defaultColor = defaultColor.SetA(0.8f);
-													TrySetImageTint(image1, defaultColor);
-													//TrySetTag(visualSlot, COLOR_SET_TAG);
-													var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");
-													if (imageSlot2 != null)
-													{
-														var image2 = imageSlot2.GetComponent<Image>();
-														if (image2 != null)
-														{
-															TrySetImageTint(image2, defaultColor);
-															//TrySetTag(visualSlot, COLOR_SET_TAG);
-														}
-													}
 												}
 											}
 										}
 									}
 								}
-							}
-						});
-					}
-					else if (Config.GetValue(COLOR_NULL_DRIVER_NODES) == true && __instance.Name.Contains("DriverNode"))
-					{
-						__instance.RunInUpdates(0, () =>
-						{
-							Slot visualSlot = __instance.Slot.FindChild((Slot c) => c.Name == "Visual");
-							if (visualSlot != null) // && visualSlot.Tag != COLOR_SET_TAG)
-							{
-								//Msg($"Driver node found! {__instance.Name}");
-								foreach (Component c in __instance.Slot.Components)
+								else
 								{
-									if (c.Name.Contains("DriverNode"))
+									var imageSlot1 = visualSlot.FindChild((Slot c) => c.Name == "Image");
+									if (imageSlot1 != null)
 									{
-										var refTarget = c.TryGetField("DriveTarget");
-										if (refTarget == null) continue;
-										//Msg(refTarget.ToString());
-										if (refTarget.ToString() == "ID0")
+										var image1 = imageSlot1.GetComponent<Image>();
+										if (image1 != null)
 										{
-											//Msg("Null driver node found!");
-											var imageSlot1 = visualSlot.FindChild((Slot c) => c.Name == "Image");
-											if (imageSlot1 != null)
+											var defaultColor = LogixHelper.GetColor(__instance.GetType().GetGenericArguments()[0]);
+											defaultColor = defaultColor.SetA(0.8f);
+											TrySetImageTint(image1, defaultColor);
+											//TrySetTag(visualSlot, COLOR_SET_TAG);
+											var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");
+											if (imageSlot2 != null)
 											{
-												var image1 = imageSlot1.GetComponent<Image>();
-												if (image1 != null)
+												var image2 = imageSlot2.GetComponent<Image>();
+												if (image2 != null)
 												{
-													TrySetImageTint(image1, Config.GetValue(NODE_ERROR_COLOR));
+													TrySetImageTint(image2, defaultColor);
 													//TrySetTag(visualSlot, COLOR_SET_TAG);
-													var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");
-													if (imageSlot2 != null)
-													{
-														var image2 = imageSlot2.GetComponent<Image>();
-														if (image2 != null)
-														{
-															TrySetImageTint(image2, Config.GetValue(NODE_ERROR_COLOR));
-															//TrySetTag(visualSlot, COLOR_SET_TAG);
-														}
-													}
-												}
-											}
-										}
-										else
-										{
-											var imageSlot1 = visualSlot.FindChild((Slot c) => c.Name == "Image");
-											if (imageSlot1 != null)
-											{
-												var image1 = imageSlot1.GetComponent<Image>();
-												if (image1 != null)
-												{
-													var defaultColor = LogixHelper.GetColor(__instance.GetType().GetGenericArguments()[0]);
-													defaultColor = defaultColor.SetA(0.8f);
-													TrySetImageTint(image1, defaultColor);
-													//TrySetTag(visualSlot, COLOR_SET_TAG);
-													var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");
-													if (imageSlot2 != null)
-													{
-														var image2 = imageSlot2.GetComponent<Image>();
-														if (image2 != null)
-														{
-															TrySetImageTint(image2, defaultColor);
-															//TrySetTag(visualSlot, COLOR_SET_TAG);
-														}
-													}
 												}
 											}
 										}
@@ -581,11 +504,6 @@ namespace ColorMyLogixNodes
 										RandomSaturationValueLightnessEnum randomSVL = Config.GetValue(RANDOM_SVL);
 										float3 hsv_values = Config.GetValue(HSV_VALUES);
 										float3 hsl_values = Config.GetValue(HSL_VALUES);
-
-										//float3 random_strength_hsv = Config.GetValue(RANDOM_STRENGTH_HSV);
-										//float3 random_offset_hsv = Config.GetValue(RANDOM_OFFSET_HSV);
-										//float3 random_strength_hsl = Config.GetValue(RANDOM_STRENGTH_HSL);
-										//float3 random_offset_hsl = Config.GetValue(RANDOM_OFFSET_HSL);
 
 										float3 random_strength_hsv = MathX.Abs(Config.GetValue(RANDOM_MAX_HSV) - Config.GetValue(RANDOM_MIN_HSV));
 										float3 random_offset_hsv = Config.GetValue(RANDOM_MIN_HSV);
