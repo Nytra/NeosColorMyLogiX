@@ -17,10 +17,10 @@ namespace ColorMyLogixNodes
 {
     public class ColorMyLogixNodes : NeosMod
     {
-        public override string Name => "ColorMyLogiXNodes";
+        public override string Name => "ColorMyLogiX";
         public override string Author => "Nytra";
-        public override string Version => "1.0.0-alpha7.7.1";
-        public override string Link => "https://github.com/Nytra/NeosColorMyLogiXNodes";
+        public override string Version => "1.0.0-alpha7.8.0";
+        public override string Link => "https://github.com/Nytra/NeosColorMyLogiX";
 
         const string SEP_STRING = "·";
 
@@ -36,10 +36,6 @@ namespace ColorMyLogixNodes
         private static ModConfigurationKey<BaseX.color> NODE_COLOR = new ModConfigurationKey<BaseX.color>("NODE_COLOR", "Static Node Color:", () => new BaseX.color(1.0f, 1.0f, 1.0f, 0.8f));
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<BaseX.color> NODE_ERROR_COLOR = new ModConfigurationKey<BaseX.color>("NODE_ERROR_COLOR", "Node Error Color:", () => new BaseX.color(3.0f, 0.5f, 0.5f, 0.8f));
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<bool> COLOR_NULL_REFERENCE_NODES = new ModConfigurationKey<bool>("COLOR_NULL_REFERENCE_NODES", "Should Null Reference Nodes use Node Error Color:", () => true);
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<bool> COLOR_NULL_DRIVER_NODES = new ModConfigurationKey<bool>("COLOR_NULL_DRIVER_NODES", "Should Null Driver Nodes use Node Error Color:", () => true);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<dummy> DUMMY_SEP_1_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_1_1", SEP_STRING, () => new dummy());
         [AutoRegisterConfigKey]
@@ -64,12 +60,14 @@ namespace ColorMyLogixNodes
         private static ModConfigurationKey<float> RANDOM_RANGE_AROUND_STATIC_HUE = new ModConfigurationKey<float>("RANDOM_RANGE_AROUND_STATIC_HUE", "Random Range around Static Hue [0-1]:", () => 0.2f);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<dummy> DUMMY_SEP_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_3", SEP_STRING, () => new dummy());
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<bool> USE_RANDOMNESS = new ModConfigurationKey<bool>("USE_RANDOMNESS", "Use Randomness:", () => false);
+        //[AutoRegisterConfigKey]
+        //private static ModConfigurationKey<bool> USE_RANDOMNESS = new ModConfigurationKey<bool>("USE_RANDOMNESS", "Use Randomness:", () => false);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<RandomSeedEnum> RANDOM_SEED_METHOD = new ModConfigurationKey<RandomSeedEnum>("RANDOM_SEED_METHOD", "How to Seed the Randomness:", () => RandomSeedEnum.SeededByNodeFactor);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<int> RANDOM_SEED_OFFSET = new ModConfigurationKey<int>("RANDOM_SEED_OFFSET", "Seed Offset (If Seeding by Node Factor) [+-]:", () => 0);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<bool> ENABLE_NON_RANDOM_REFID = new ModConfigurationKey<bool>("ENABLE_NON_RANDOM_REFID", "Convert RefID to Color without randomness (Hue-shift effect, selected Node Factor must be RefID):", () => false);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<dummy> DUMMY_SEP_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_4", SEP_STRING, () => new dummy());
         [AutoRegisterConfigKey]
@@ -90,6 +88,12 @@ namespace ColorMyLogixNodes
         private static ModConfigurationKey<bool> MULTIPLY_OUTPUT_BY_RGB = new ModConfigurationKey<bool>("MULTIPLY_OUTPUT_BY_RGB", "Use Output RGB Channel Multiplier:", () => false);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<float3> RGB_CHANNEL_MULTIPLIER = new ModConfigurationKey<float3>("RGB_CHANNEL_MULTIPLIER", "Output RGB Channel Multiplier:", () => new float3(1f, 1f, 1f));
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<dummy> DUMMY_SEP_5_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_1", SEP_STRING, () => new dummy());
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<bool> COLOR_NULL_REFERENCE_NODES = new ModConfigurationKey<bool>("COLOR_NULL_REFERENCE_NODES", "Should Null Reference Nodes use Node Error Color:", () => true);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<bool> COLOR_NULL_DRIVER_NODES = new ModConfigurationKey<bool>("COLOR_NULL_DRIVER_NODES", "Should Null Driver Nodes use Node Error Color:", () => true);
 
         // INTERNAL ACCESS CONFIG KEYS
         [AutoRegisterConfigKey]
@@ -98,6 +102,8 @@ namespace ColorMyLogixNodes
         private static ModConfigurationKey<int> STRING_MOD_DIVISOR = new ModConfigurationKey<int>("STRING_MOD_DIVISOR", "Modulo divisor for String to Color conversion:", () => 700, internalAccessOnly: true);
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<bool> ALTERNATE_CATEGORY_STRING = new ModConfigurationKey<bool>("ALTERNATE_CATEGORY_STRING", "Use alternate node category string (only uses the part after the final '/'):", () => false, internalAccessOnly: true);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<bool> ENABLE_COLOR_FROM_STRING = new ModConfigurationKey<bool>("ENABLE_COLOR_FROM_STRING", "Convert String to Color without randomness:", () => false, internalAccessOnly: true);
 
         //[AutoRegisterConfigKey]
         //private static ModConfigurationKey<float> STATIC_HUE = new ModConfigurationKey<float>("STATIC_HUE", "Static Hue [0-1]:", () => 0.0f, internalAccessOnly: true);
@@ -489,7 +495,7 @@ namespace ColorMyLogixNodes
                                     {
                                         colorToSet = Config.GetValue(NODE_COLOR);
                                     }
-                                    else if (Config.GetValue(USE_RANDOMNESS) == true && Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededBySystemTime)
+                                    else if (Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededBySystemTime)
                                     {
                                         rng = rngTimeSeeded;
                                     }
@@ -498,7 +504,7 @@ namespace ColorMyLogixNodes
                                         switch (Config.GetValue(NODE_COLOR_MODE))
                                         {
                                             case NodeColorModeEnum.NodeName:
-                                                if (Config.GetValue(USE_RANDOMNESS) == true && Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor)
+                                                if (Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor && Config.GetValue(ENABLE_COLOR_FROM_STRING) == false)
                                                 {
                                                     rng = new System.Random(LogixHelper.GetNodeName(__instance.GetType()).GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
                                                 }
@@ -509,7 +515,7 @@ namespace ColorMyLogixNodes
                                                 break;
                                             case NodeColorModeEnum.NodeCategory:
                                                 nodeCategoryString = GetNodeCategoryString(__instance.GetType());
-                                                if (Config.GetValue(USE_RANDOMNESS) == true && Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor)
+                                                if (Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor && Config.GetValue(ENABLE_COLOR_FROM_STRING) == false)
                                                 {
                                                     rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
                                                 }
@@ -520,7 +526,7 @@ namespace ColorMyLogixNodes
                                                 break;
                                             case NodeColorModeEnum.TopmostNodeCategory:
                                                 nodeCategoryString = GetNodeCategoryString(__instance.GetType(), onlyTopmost: true);
-                                                if (Config.GetValue(USE_RANDOMNESS) == true && Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor)
+                                                if (Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor)
                                                 {
                                                     rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
                                                 }
@@ -530,7 +536,7 @@ namespace ColorMyLogixNodes
                                                 }
                                                 break;
                                             case NodeColorModeEnum.FullTypeName:
-                                                if (Config.GetValue(USE_RANDOMNESS) == true && Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor)
+                                                if (Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor && Config.GetValue(ENABLE_COLOR_FROM_STRING) == false)
                                                 {
                                                     rng = new System.Random(__instance.GetType().FullName.GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
                                                 }
@@ -540,7 +546,7 @@ namespace ColorMyLogixNodes
                                                 }
                                                 break;
                                             case NodeColorModeEnum.RefID:
-                                                if (Config.GetValue(USE_RANDOMNESS) == true && Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor)
+                                                if (Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor && Config.GetValue(ENABLE_NON_RANDOM_REFID) == false)
                                                 {
                                                     // maybe use ReferenceID.Position here instead?
                                                     rng = new System.Random(root.Parent.ReferenceID.GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
