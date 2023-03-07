@@ -19,7 +19,7 @@ namespace ColorMyLogixNodes
 	{
 		public override string Name => "ColorMyLogiX";
 		public override string Author => "Nytra";
-		public override string Version => "1.0.0-alpha7.8.0";
+		public override string Version => "1.0.0-alpha7.8.1";
 		public override string Link => "https://github.com/Nytra/NeosColorMyLogiX";
 
 		const string SEP_STRING = "·";
@@ -315,7 +315,7 @@ namespace ColorMyLogixNodes
 		{
 			static void Postfix(LogixNode __instance)
 			{
-				if (Config.GetValue(MOD_ENABLED) == true)
+				if (Config.GetValue(MOD_ENABLED) == true && __instance.ActiveVisual != null && __instance.ActiveVisual.ReferenceID.User == __instance.LocalUser.AllocationID)
 				{
 					string targetField = null;
 					if (Config.GetValue(COLOR_NULL_REFERENCE_NODES) == true && __instance.Name.Contains("ReferenceNode"))
@@ -330,8 +330,7 @@ namespace ColorMyLogixNodes
 					{
 						__instance.RunInUpdates(0, () =>
 						{
-							Slot visualSlot = __instance.Slot.FindChild((Slot c) => c.Name == "Visual");
-							if (visualSlot != null) // && visualSlot.Tag != COLOR_SET_TAG)
+							if (__instance.ActiveVisual != null) // && visualSlot.Tag != COLOR_SET_TAG)
 							{
 								var target = __instance.TryGetField(targetField);
 								if (target == null) return;
@@ -339,7 +338,7 @@ namespace ColorMyLogixNodes
 								if (target.ToString() == "ID0")
 								{
 									//Msg("Null targetField found!");
-									var imageSlot1 = visualSlot.FindChild((Slot c) => c.Name == "Image");
+									var imageSlot1 = __instance.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
 									if (imageSlot1 != null)
 									{
 										var image1 = imageSlot1.GetComponent<Image>();
@@ -362,7 +361,7 @@ namespace ColorMyLogixNodes
 								}
 								else
 								{
-									var imageSlot1 = visualSlot.FindChild((Slot c) => c.Name == "Image");
+									var imageSlot1 = __instance.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
 									if (imageSlot1 != null)
 									{
 										var image1 = imageSlot1.GetComponent<Image>();
