@@ -143,6 +143,7 @@ namespace ColorMyLogixNodes
 		private static readonly System.Random rngTimeSeeded = new System.Random();
 
 		private const string COLOR_SET_TAG = "ColorMyLogiXNodes.ColorSet";
+		private const string DELEGATE_ADDED_TAG = "ColorMyLogiXNodes.DelegateAdded";
 
 #if DEBUG
 		private static List<int> debugAllNums = new List<int>();
@@ -330,14 +331,22 @@ namespace ColorMyLogixNodes
 					{
 						__instance.RunInUpdates(0, () =>
 						{
-							if (__instance.ActiveVisual != null) // && visualSlot.Tag != COLOR_SET_TAG)
+							if (__instance.ActiveVisual != null)
 							{
-								var target = __instance.TryGetField(targetField);
-								if (target == null) return;
-								//Msg(target.ToString());
-								if (target.ToString() == "ID0")
+								// __instance is LogixNode 
+								// targetField is string "RefTarget"
+								// trying to read what the RefTarget field on a ReferenceNode<T> points to
+								var targetSyncRef = __instance.TryGetField(targetField) as ISyncRef;
+								if (targetSyncRef == null) return;
+
+								//targetSyncRef.Changed += (worldElement) => 
+								//{
+								//}
+								//TrySetTag(__instance.ActiveVisual, DELEGATE_ADDED_TAG);
+
+								if (targetSyncRef.Target == null)
 								{
-									//Msg("Null targetField found!");
+									//Msg("Null syncref target found!");
 									var imageSlot1 = __instance.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
 									if (imageSlot1 != null)
 									{
