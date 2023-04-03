@@ -87,23 +87,6 @@ namespace ColorMyLogixNodes
 		//[AutoRegisterConfigKey]
 		//private static ModConfigurationKey<bool> USE_SYSTEM_TIME_RNG = new ModConfigurationKey<bool>("USE_SYSTEM_TIME_RNG", "Use system time as the seed for RNG (This is bad):", () => false, internalAccessOnly: true);
 
-		private enum RandomSaturationValueLightnessEnum
-		{
-			Saturation,
-			Value,
-			Lightness,
-			SaturationValue,
-			SaturationLightness,
-			ValueLightness,
-			SaturationValueLightness
-		}
-
-		private enum RandomSeedEnum
-		{
-			SeededByNodeFactor,
-			SeededBySystemTime
-		}
-
 		private enum ColorModelEnum
 		{
 			HSV,
@@ -124,11 +107,6 @@ namespace ColorMyLogixNodes
 
 		private const string COLOR_SET_TAG = "ColorMyLogiXNodes.ColorSet";
 		//private const string DELEGATE_ADDED_TAG = "ColorMyLogiXNodes.DelegateAdded";
-
-#if DEBUG
-		private static List<int> debugAllNums = new List<int>();
-		private static List<int> debugAllNumsNoRelay = new List<int>();
-#endif
 
 		public override void OnEngineInit()
 		{
