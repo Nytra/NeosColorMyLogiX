@@ -8,7 +8,6 @@ using NeosModLoader;
 using System;
 using System.Reflection;
 using BaseX;
-using static FrooxEngine.FogBoxVolumeMaterial;
 
 #if DEBUG
 using System.Collections.Generic;
@@ -20,7 +19,7 @@ namespace ColorMyLogixNodes
 	{
 		public override string Name => "ColorMyLogiX";
 		public override string Author => "Nytra";
-		public override string Version => "1.0.0-alpha7.9.1";
+		public override string Version => "1.0.0-alpha7.9.2";
 		public override string Link => "https://github.com/Nytra/NeosColorMyLogiX";
 
 		const string SEP_STRING = "·";
@@ -45,42 +44,26 @@ namespace ColorMyLogixNodes
 		private static ModConfigurationKey<dummy> DUMMY_SEP_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_2", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<ColorModelEnum> COLOR_MODEL = new ModConfigurationKey<ColorModelEnum>("COLOR_MODEL", "Color Model:", () => ColorModelEnum.HSV);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<float3> HSV_VALUES = new ModConfigurationKey<float3>("HSV_VALUES", "HSV - Hue, Saturation and Value:", () => new float3(1f, 0.5f, 1f));
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<float3> HSL_VALUES = new ModConfigurationKey<float3>("HSL_VALUES", "HSL - Hue, Saturation and Lightness:", () => new float3(1f, 1f, 1f));
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_2_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_1", SEP_STRING, () => new dummy());
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<bool> USE_STATIC_HUE = new ModConfigurationKey<bool>("USE_STATIC_HUE", "Use Static Hue:", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> USE_HUE_FROM_STATIC_NODE_COLOR = new ModConfigurationKey<bool>("USE_HUE_FROM_STATIC_NODE_COLOR", "Use Static Hue from Static Node Color:", () => false);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<bool> USE_RANDOM_RANGE_AROUND_STATIC_HUE = new ModConfigurationKey<bool>("USE_RANDOM_RANGE_AROUND_STATIC_HUE", "Use Random Range around Static Hue:", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float> RANDOM_RANGE_AROUND_STATIC_HUE = new ModConfigurationKey<float>("RANDOM_RANGE_AROUND_STATIC_HUE", "Random Range around Static Hue [0-1]:", () => 0.1f);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_3", SEP_STRING, () => new dummy());
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<RandomSeedEnum> RANDOM_SEED_METHOD = new ModConfigurationKey<RandomSeedEnum>("RANDOM_SEED_METHOD", "How to Seed the Randomness:", () => RandomSeedEnum.SeededByNodeFactor);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<int> RANDOM_SEED_OFFSET = new ModConfigurationKey<int>("RANDOM_SEED_OFFSET", "Random Seed:", () => 0);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_4", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_4_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_4_1", "These control the upper and lower bounds for the color channels: Hue, Saturation and Value/Lightness", () => new dummy());
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<bool> USE_RANDOM_SVL = new ModConfigurationKey<bool>("USE_RANDOM_SVL", "Use Random Saturation/Value/Lightness:", () => false);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<RandomSaturationValueLightnessEnum> RANDOM_SVL = new ModConfigurationKey<RandomSaturationValueLightnessEnum>("RANDOM_SVL", "Which of Saturation/Value/Lightness to Randomize:", () => RandomSaturationValueLightnessEnum.Saturation);
+
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<float3> RANDOM_MAX_HSV = new ModConfigurationKey<float3>("RANDOM_MAX_HSV", "Color Channels Max [0-1]:", () => new float3(1f, 0.5f, 1f));
+		private static ModConfigurationKey<float3> COLOR_CHANNELS_MAX = new ModConfigurationKey<float3>("COLOR_CHANNELS_MAX", "Color Channels Max [0-1]:", () => new float3(1f, 0.5f, 1f));
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<float3> RANDOM_MIN_HSV = new ModConfigurationKey<float3>("RANDOM_MIN_HSV", "Color Channels Min [0-1]:", () => new float3(0f, 0.5f, 1f));
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<float3> RANDOM_MAX_HSL = new ModConfigurationKey<float3>("RANDOM_MAX_HSL", "HSL Channel Max [0-1]:", () => new float3(1f, 1f, 1f));
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<float3> RANDOM_MIN_HSL = new ModConfigurationKey<float3>("RANDOM_MIN_HSL", "HSL Channel Min [0-1]:", () => new float3(0f, 0f, 0f));
+		private static ModConfigurationKey<float3> COLOR_CHANNELS_MIN = new ModConfigurationKey<float3>("COLOR_CHANNELS_MIN", "Color Channels Min [0-1]:", () => new float3(0f, 0.5f, 1f));
+
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_5", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
@@ -99,17 +82,10 @@ namespace ColorMyLogixNodes
 		// INTERNAL ACCESS CONFIG KEYS
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<int> REFID_MOD_DIVISOR = new ModConfigurationKey<int>("REFID_MOD_DIVISOR", "Modulo divisor for RefID to Color conversion:", () => 100000, internalAccessOnly: true);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<int> STRING_MOD_DIVISOR = new ModConfigurationKey<int>("STRING_MOD_DIVISOR", "Modulo divisor for String to Color conversion:", () => 700, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ALTERNATE_CATEGORY_STRING = new ModConfigurationKey<bool>("ALTERNATE_CATEGORY_STRING", "Use alternate node category string (only uses the part after the final '/'):", () => false, internalAccessOnly: true);
-		
 		//[AutoRegisterConfigKey]
 		//private static ModConfigurationKey<bool> USE_SYSTEM_TIME_RNG = new ModConfigurationKey<bool>("USE_SYSTEM_TIME_RNG", "Use system time as the seed for RNG (This is bad):", () => false, internalAccessOnly: true);
-
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<float> STATIC_HUE = new ModConfigurationKey<float>("STATIC_HUE", "Static Hue [0-1]:", () => 0.0f, internalAccessOnly: true);
-		// =====
 
 		private enum RandomSaturationValueLightnessEnum
 		{
@@ -237,30 +213,13 @@ namespace ColorMyLogixNodes
 			}
 		}
 
-		private static float GetRNGValue(ColorModelEnum colorModel, int index, Random rand)
+		private static float GetRandomColorChannelValue(int index, Random rand)
 		{
-			float3 minsHsv = Config.GetValue(RANDOM_MIN_HSV);
-			float3 maxsHsv = Config.GetValue(RANDOM_MAX_HSV);
-			float3 random_strength_hsv = MathX.Abs(maxsHsv - minsHsv); // 1 - 1 = 0
-			float3 random_offset_hsv = minsHsv; // 1
-			return (rand.Next(101) / 100.0f) * random_strength_hsv[index] + random_offset_hsv[index];
-   //         switch (colorModel)
-			//{
-			//	case ColorModelEnum.HSV:
-			//		float3 minsHsv = Config.GetValue(RANDOM_MIN_HSV);
-			//		float3 maxsHsv = Config.GetValue(RANDOM_MAX_HSV);
-			//		float3 random_strength_hsv = MathX.Abs(maxsHsv - minsHsv);
-			//		float3 random_offset_hsv = minsHsv;
-			//		return (rand.Next(101) / 100.0f) * random_strength_hsv[index] + random_offset_hsv[index];
-			//	case ColorModelEnum.HSL:
-			//		float3 minsHsl = Config.GetValue(RANDOM_MIN_HSL);
-			//		float3 maxsHsl = Config.GetValue(RANDOM_MAX_HSL);
-			//		float3 random_strength_hsl = MathX.Abs(maxsHsl - minsHsl);
-			//		float3 random_offset_hsl = minsHsl;
-			//		return (rand.Next(101) / 100.0f) * random_strength_hsl[index] + random_offset_hsl[index];
-			//	default:
-			//		return 0;
-			//}
+			float3 mins = Config.GetValue(COLOR_CHANNELS_MIN);
+			float3 maxs = Config.GetValue(COLOR_CHANNELS_MAX);
+			float3 random_strength = MathX.Abs(maxs - mins);
+			float3 random_offset = mins;
+			return (rand.Next(101) / 100.0f) * random_strength[index] + random_offset[index];
 		}
 
 		private static BaseX.color GetHueColorFromUlong(ulong val, ulong divisor)
@@ -281,18 +240,10 @@ namespace ColorMyLogixNodes
 			switch (Config.GetValue(COLOR_MODEL))
 			{
 				case ColorModelEnum.HSV:
-					//float3 hsv_values = Config.GetValue(HSV_VALUES);
-					//maybe make this use the min and max values instead
-					//for sat and val
-					//make it use the rng from node factor too?
-					c = new ColorHSV(hue, GetRNGValue(ColorModelEnum.HSV, 1, rngTimeSeeded), GetRNGValue(ColorModelEnum.HSV, 2, rngTimeSeeded), 0.8f).ToRGB();
+					c = new ColorHSV(hue, GetRandomColorChannelValue(1, rngTimeSeeded), GetRandomColorChannelValue(2, rngTimeSeeded), 0.8f).ToRGB();
 					break;
 				case ColorModelEnum.HSL:
-					//float3 hsl_values = Config.GetValue(HSL_VALUES);
-					//maybe make this use the min and max values instead
-					//for sat and light
-					//make it use the rng from node factor too?
-					c = new ColorHSL(hue, GetRNGValue(ColorModelEnum.HSL, 1, rngTimeSeeded), GetRNGValue(ColorModelEnum.HSL, 2, rngTimeSeeded), 0.8f).ToRGB();
+					c = new ColorHSL(hue, GetRandomColorChannelValue(1, rngTimeSeeded), GetRandomColorChannelValue(2, rngTimeSeeded), 0.8f).ToRGB();
 					break;
 				default:
 					break;
@@ -323,9 +274,6 @@ namespace ColorMyLogixNodes
 						{
 							if (__instance.ActiveVisual != null)
 							{
-								// __instance is LogixNode 
-								// targetField is string "RefTarget"
-								// trying to read what the RefTarget field on a ReferenceNode<T> points to
 								var targetSyncRef = __instance.TryGetField(targetField) as ISyncRef;
 								if (targetSyncRef == null) return;
 
@@ -433,49 +381,20 @@ namespace ColorMyLogixNodes
 										switch (Config.GetValue(NODE_COLOR_MODE))
 										{
 											case NodeColorModeEnum.NodeName:
-												//if (Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor)
-												//{
 												rng = new System.Random(LogixHelper.GetNodeName(__instance.GetType()).GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
-												//}
-												//else
-												//{
-												//	colorToSet = GetColorFromString(LogixHelper.GetNodeName(__instance.GetType()));
-												//}
 												break;
 											case NodeColorModeEnum.NodeCategory:
 												nodeCategoryString = GetNodeCategoryString(__instance.GetType());
-												//if (Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor)
-												//{
 												rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
-												//}
-												//else
-												//{
-												//	colorToSet = GetColorFromString(nodeCategoryString);
-												//}
 												break;
 											case NodeColorModeEnum.TopmostNodeCategory:
 												nodeCategoryString = GetNodeCategoryString(__instance.GetType(), onlyTopmost: true);
-												//if (Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor)
-												//{
 												rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
-												//}
-												//else
-												//{
-												//	colorToSet = GetColorFromString(nodeCategoryString);
-												//}
 												break;
 											case NodeColorModeEnum.FullTypeName:
-												//if (Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor)
-												//{
 												rng = new System.Random(__instance.GetType().FullName.GetHashCode() + Config.GetValue(RANDOM_SEED_OFFSET));
-												//}
-												//else
-												//{
-												//	colorToSet = GetColorFromString(__instance.GetType().FullName);
-												//}
 												break;
 											case NodeColorModeEnum.RefID:
-												//if (Config.GetValue(RANDOM_SEED_METHOD) == RandomSeedEnum.SeededByNodeFactor && Config.GetValue(ENABLE_NON_RANDOM_REFID) == false)
 												if (Config.GetValue(ENABLE_NON_RANDOM_REFID) == false)
 												{
 													// maybe use ReferenceID.Position here instead?
@@ -496,23 +415,7 @@ namespace ColorMyLogixNodes
 									if (rng != null)
 									{
 										// RNG seeded by any constant node factor will always give the same color
-										//bool useStaticHue = Config.GetValue(USE_STATIC_HUE);
-										//bool useHueFromStaticNodeColor = Config.GetValue(USE_HUE_FROM_STATIC_NODE_COLOR);
-										//bool useRandomSVL = Config.GetValue(USE_RANDOM_SVL);
-										//float staticHue = Config.GetValue(STATIC_HUE);
-										//RandomSaturationValueLightnessEnum randomSVL = Config.GetValue(RANDOM_SVL);
-										//float3 hsv_values = Config.GetValue(HSV_VALUES);
-										//float3 hsl_values = Config.GetValue(HSL_VALUES);
-
-										//float3 random_strength_hsv = MathX.Abs(Config.GetValue(RANDOM_MAX_HSV) - Config.GetValue(RANDOM_MIN_HSV));
-										//float3 random_offset_hsv = Config.GetValue(RANDOM_MIN_HSV);
-										//float3 random_strength_hsl = MathX.Abs(Config.GetValue(RANDOM_MAX_HSL) - Config.GetValue(RANDOM_MIN_HSL));
-										//float3 random_offset_hsl = Config.GetValue(RANDOM_MIN_HSL);
-
 										float hue;
-										//float saturation;
-										//float value;
-										//float lightness;
 										switch (Config.GetValue(COLOR_MODEL))
 										{
 											case ColorModelEnum.HSV:
@@ -521,28 +424,14 @@ namespace ColorMyLogixNodes
 												{
 													ColorHSV colorHSV = new ColorHSV(Config.GetValue(NODE_COLOR));
 													hue = colorHSV.h;
-													//else
-													//{
-													//	//hue = hsv_values.x;
-													//	hue = GetRNGValue(ColorModelEnum.HSV, 0, rngTimeSeeded);
-													//}
 													int coinflip = rngTimeSeeded.Next(2) == 0 ? -1 : 1;
 													hue = hue + (rngTimeSeeded.Next(101) / 100.0f) * Config.GetValue(RANDOM_RANGE_AROUND_STATIC_HUE) * coinflip;
 												}
 												else
 												{
-													//hue = (rng.Next(101) / 100.0f) * random_strength_hsv.x + random_offset_hsv.x;
-													hue = GetRNGValue(ColorModelEnum.HSV, 0, rng);
+													hue = GetRandomColorChannelValue(0, rng);
 												}
-
-												//switch (useRandomSVL)
-												//{
-												//case false:
-												//colorToSet = new ColorHSV(hue, hsv_values.y, hsv_values.z, 0.8f).ToRGB();
-												//break;
-												//case true:
-												//switch (randomSVL)
-												colorToSet = new ColorHSV(hue, GetRNGValue(ColorModelEnum.HSV, 1, rng), GetRNGValue(ColorModelEnum.HSV, 2, rng), 0.8f).ToRGB();
+												colorToSet = new ColorHSV(hue, GetRandomColorChannelValue(1, rng), GetRandomColorChannelValue(2, rng), 0.8f).ToRGB();
 												//var cHsv = new ColorHSV(colorToSet);
 												//Msg($"{cHsv.h.ToString()} {cHsv.s.ToString()} {cHsv.v.ToString()}");
 												break;
@@ -552,21 +441,15 @@ namespace ColorMyLogixNodes
 												{
 													ColorHSL colorHSL = new ColorHSL(Config.GetValue(NODE_COLOR));
 													hue = colorHSL.h;
-													//else
-													//{
-													//	hue = hsl_values.x;
-													//}
-
 													int coinflip = rngTimeSeeded.Next(2) == 0 ? -1 : 1;
 													hue = hue + (rngTimeSeeded.Next(101) / 100.0f) * Config.GetValue(RANDOM_RANGE_AROUND_STATIC_HUE) * coinflip;
 												}
 												else
 												{
-													//hue = (rng.Next(101) / 100.0f) * random_strength_hsl.x + random_offset_hsl.x;
-													hue = GetRNGValue(ColorModelEnum.HSL, 0, rng);
+													hue = GetRandomColorChannelValue(0, rng);
 												}
 
-												colorToSet = new ColorHSL(hue, GetRNGValue(ColorModelEnum.HSL, 1, rng), GetRNGValue(ColorModelEnum.HSL, 2, rng), 0.8f).ToRGB();
+												colorToSet = new ColorHSL(hue, GetRandomColorChannelValue(1, rng), GetRandomColorChannelValue(2, rng), 0.8f).ToRGB();
 												//var cHsl = new ColorHSL(colorToSet);
 												//Msg($"{cHsl.h.ToString()} {cHsl.s.ToString()} {cHsl.l.ToString()}");
 												break;
