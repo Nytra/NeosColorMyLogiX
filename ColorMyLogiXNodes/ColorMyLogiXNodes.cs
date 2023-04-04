@@ -8,6 +8,8 @@ using NeosModLoader;
 using System;
 using System.Reflection;
 using BaseX;
+using System.Runtime.CompilerServices;
+//using Leap;
 
 #if DEBUG
 using System.Collections.Generic;
@@ -15,6 +17,7 @@ using System.Collections.Generic;
 
 namespace ColorMyLogixNodes
 {
+	
 	public class ColorMyLogixNodes : NeosMod
 	{
 		public override string Name => "ColorMyLogiX";
@@ -106,9 +109,80 @@ namespace ColorMyLogixNodes
 		private static readonly System.Random rngTimeSeeded = new System.Random();
 
 		private const string COLOR_SET_TAG = "ColorMyLogiXNodes.ColorSet";
-		//private const string DELEGATE_ADDED_TAG = "ColorMyLogiXNodes.DelegateAdded";
+		private const string DELEGATE_ADDED_TAG = "ColorMyLogiXNodes.DelegateAdded";
 
-		public override void OnEngineInit()
+        public class SyncRefChangedHandler
+        {
+            public string targetField;
+            public LogixNode node;
+			//private IWorldElement _lastWorldElement;
+            public void OnSyncRefChanged(IWorldElement worldElement)
+            {
+				//this._lastWorldElement = worldElement;
+				node.RunInUpdates(0, () =>
+				{
+                    var targetSyncRef = node.TryGetField(targetField) as ISyncRef;
+                    //Msg($"Node {node.Name} {node.ReferenceID.ToString()} SyncRef Target changed.");
+                    //if (targetSyncRef == null) return;
+                    //worldElement.
+                    if (targetSyncRef.Target == null)
+                    {
+                        //Msg("Null syncref target found!");
+                        var imageSlot1 = node.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
+                        if (imageSlot1 != null)
+                        {
+                            var image1 = imageSlot1.GetComponent<Image>();
+                            if (image1 != null)
+                            {
+                                TrySetImageTint(image1, Config.GetValue(NODE_ERROR_COLOR));
+                                //TrySetTag(visualSlot, COLOR_SET_TAG);
+                                var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");
+                                if (imageSlot2 != null)
+                                {
+                                    var image2 = imageSlot2.GetComponent<Image>();
+                                    if (image2 != null)
+                                    {
+                                        TrySetImageTint(image2, Config.GetValue(NODE_ERROR_COLOR));
+                                        //TrySetTag(visualSlot, COLOR_SET_TAG);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        //Msg($"SyncRef Target not null: {targetSyncRef.Target.ToString()}");
+                        var imageSlot1 = node.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
+                        if (imageSlot1 != null)
+                        {
+                            var image1 = imageSlot1.GetComponent<Image>();
+                            if (image1 != null)
+                            {
+                                var defaultColor = LogixHelper.GetColor(node.GetType().GetGenericArguments()[0]);
+                                defaultColor = defaultColor.SetA(0.8f);
+                                TrySetImageTint(image1, defaultColor);
+                                //TrySetTag(visualSlot, COLOR_SET_TAG);
+                                var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");
+                                if (imageSlot2 != null)
+                                {
+                                    var image2 = imageSlot2.GetComponent<Image>();
+                                    if (image2 != null)
+                                    {
+                                        TrySetImageTint(image2, defaultColor);
+                                        //TrySetTag(visualSlot, COLOR_SET_TAG);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+            }
+        };
+
+        //static List<SyncRefChangedHandler> handlers = new();
+
+        public override void OnEngineInit()
 		{
 			Harmony harmony = new Harmony($"owo.{Author}.{Name}");
 			Config = GetConfiguration()!;
@@ -246,7 +320,7 @@ namespace ColorMyLogixNodes
 					{
 						targetField = "DriveTarget";
 					}
-					if (targetField != null)
+					if (targetField != null && __instance.ActiveVisual.Tag != DELEGATE_ADDED_TAG)
 					{
 						__instance.RunInUpdates(0, () =>
 						{
@@ -255,60 +329,80 @@ namespace ColorMyLogixNodes
 								var targetSyncRef = __instance.TryGetField(targetField) as ISyncRef;
 								if (targetSyncRef == null) return;
 
-								//targetSyncRef.Changed += (worldElement) => 
-								//{
-								//}
-								//TrySetTag(__instance.ActiveVisual, DELEGATE_ADDED_TAG);
+                                SyncRefChangedHandler handler = new();
+								handler.node = __instance;
+								handler.targetField = targetField;
 
-								if (targetSyncRef.Target == null)
+								//Msg($"Creating handler for node {__instance.Name} {__instance.ReferenceID.ToString()}");
+
+								targetSyncRef.Changed += (worldElement) =>
 								{
-									//Msg("Null syncref target found!");
-									var imageSlot1 = __instance.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
-									if (imageSlot1 != null)
-									{
-										var image1 = imageSlot1.GetComponent<Image>();
-										if (image1 != null)
-										{
-											TrySetImageTint(image1, Config.GetValue(NODE_ERROR_COLOR));
-											//TrySetTag(visualSlot, COLOR_SET_TAG);
-											var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");
-											if (imageSlot2 != null)
-											{
-												var image2 = imageSlot2.GetComponent<Image>();
-												if (image2 != null)
-												{
-													TrySetImageTint(image2, Config.GetValue(NODE_ERROR_COLOR));
-													//TrySetTag(visualSlot, COLOR_SET_TAG);
-												}
-											}
-										}
-									}
-								}
-								else
-								{
-									var imageSlot1 = __instance.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
-									if (imageSlot1 != null)
-									{
-										var image1 = imageSlot1.GetComponent<Image>();
-										if (image1 != null)
-										{
-											var defaultColor = LogixHelper.GetColor(__instance.GetType().GetGenericArguments()[0]);
-											defaultColor = defaultColor.SetA(0.8f);
-											TrySetImageTint(image1, defaultColor);
-											//TrySetTag(visualSlot, COLOR_SET_TAG);
-											var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");
-											if (imageSlot2 != null)
-											{
-												var image2 = imageSlot2.GetComponent<Image>();
-												if (image2 != null)
-												{
-													TrySetImageTint(image2, defaultColor);
-													//TrySetTag(visualSlot, COLOR_SET_TAG);
-												}
-											}
-										}
-									}
-								}
+									handler.OnSyncRefChanged(worldElement);
+								};
+
+								//handlers.Add(handler);
+
+								//foreach (var elem in handlers)
+								//{
+								//	Msg($"Handler for node: {elem.node.Name.ToString()} {elem.node.ReferenceID.ToString()}");
+								//}
+
+								//__instance.Destroyed += (worker) =>
+								//{
+								//	handlers.Remove(handler);
+								//};
+
+								TrySetTag(__instance.ActiveVisual, DELEGATE_ADDED_TAG);
+
+								//if (targetSyncRef.Target == null)
+								//{
+								//	//Msg("Null syncref target found!");
+								//	var imageSlot1 = __instance.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
+								//	if (imageSlot1 != null)
+								//	{
+								//		var image1 = imageSlot1.GetComponent<Image>();
+								//		if (image1 != null)
+								//		{
+								//			TrySetImageTint(image1, Config.GetValue(NODE_ERROR_COLOR));
+								//			//TrySetTag(visualSlot, COLOR_SET_TAG);
+								//			var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");
+								//			if (imageSlot2 != null)
+								//			{
+								//				var image2 = imageSlot2.GetComponent<Image>();
+								//				if (image2 != null)
+								//				{
+								//					TrySetImageTint(image2, Config.GetValue(NODE_ERROR_COLOR));
+								//					//TrySetTag(visualSlot, COLOR_SET_TAG);
+								//				}
+								//			}
+								//		}
+								//	}
+								//}
+								//else
+								//{
+								//	var imageSlot1 = __instance.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
+								//	if (imageSlot1 != null)
+								//	{
+								//		var image1 = imageSlot1.GetComponent<Image>();
+								//		if (image1 != null)
+								//		{
+								//			var defaultColor = LogixHelper.GetColor(__instance.GetType().GetGenericArguments()[0]);
+								//			defaultColor = defaultColor.SetA(0.8f);
+								//			TrySetImageTint(image1, defaultColor);
+								//			//TrySetTag(visualSlot, COLOR_SET_TAG);
+								//			var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");
+								//			if (imageSlot2 != null)
+								//			{
+								//				var image2 = imageSlot2.GetComponent<Image>();
+								//				if (image2 != null)
+								//				{
+								//					TrySetImageTint(image2, defaultColor);
+								//					//TrySetTag(visualSlot, COLOR_SET_TAG);
+								//				}
+								//			}
+								//		}
+								//	}
+								//}
 							}
 						});
 					}
