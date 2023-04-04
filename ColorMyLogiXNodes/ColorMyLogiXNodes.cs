@@ -208,7 +208,7 @@ namespace ColorMyLogixNodes
 				ColorHSV colorHSV = new ColorHSV(Config.GetValue(NODE_COLOR));
 				hue = colorHSV.h;
 				int coinflip = rngTimeSeeded.Next(2) == 0 ? -1 : 1;
-				hue = hue + (rngTimeSeeded.Next(101) / 100.0f) * Config.GetValue(RANDOM_RANGE_AROUND_STATIC_HUE) * coinflip;
+				hue = hue + (rngTimeSeeded.Next(101) / 100.0f) * Config.GetValue(RANDOM_RANGE_AROUND_STATIC_HUE) * coinflip / 2;
 			}
 			else
 			{
@@ -403,7 +403,7 @@ namespace ColorMyLogixNodes
 													ColorHSV colorHSV = new ColorHSV(Config.GetValue(NODE_COLOR));
 													hue = colorHSV.h;
 													int coinflip = rngTimeSeeded.Next(2) == 0 ? -1 : 1;
-													hue = hue + (rngTimeSeeded.Next(101) / 100.0f) * Config.GetValue(RANDOM_RANGE_AROUND_STATIC_HUE) * coinflip;
+													hue = hue + (rngTimeSeeded.Next(101) / 100.0f) * Config.GetValue(RANDOM_RANGE_AROUND_STATIC_HUE) * coinflip / 2;
 												}
 												else
 												{
@@ -420,7 +420,7 @@ namespace ColorMyLogixNodes
 													ColorHSL colorHSL = new ColorHSL(Config.GetValue(NODE_COLOR));
 													hue = colorHSL.h;
 													int coinflip = rngTimeSeeded.Next(2) == 0 ? -1 : 1;
-													hue = hue + (rngTimeSeeded.Next(101) / 100.0f) * Config.GetValue(RANDOM_RANGE_AROUND_STATIC_HUE) * coinflip;
+													hue = hue + (rngTimeSeeded.Next(101) / 100.0f) * Config.GetValue(RANDOM_RANGE_AROUND_STATIC_HUE) * coinflip / 2;
 												}
 												else
 												{
