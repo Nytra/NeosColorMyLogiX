@@ -30,23 +30,23 @@ namespace ColorMyLogixNodes
 
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> MOD_ENABLED = new ModConfigurationKey<bool>("MOD_ENABLED", "Mod Enabled:", () => true);
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<dummy> DUMMY_SEP_0_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_5", SEP_STRING, () => new dummy());
-        //[AutoRegisterConfigKey]
-        //private static ModConfigurationKey<dummy> DUMMY_SEP_0_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_1", "<i>Color model channels reference</i>", () => new dummy());
-        //[AutoRegisterConfigKey]
-        //private static ModConfigurationKey<dummy> DUMMY_SEP_0_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_1", "[COLOR MODEL]", () => new dummy());
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<dummy> DUMMY_SEP_0_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_2", "<i>HSV: Hue, Saturation and Value</i>", () => new dummy());
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<dummy> DUMMY_SEP_0_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_3", "<i>HSL: Hue, Saturation and Lightness</i>", () => new dummy());
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<dummy> DUMMY_SEP_0_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_4", "<i>RGB: Red, Green and Blue</i>", () => new dummy());
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<ColorModelEnum> COLOR_MODEL = new ModConfigurationKey<ColorModelEnum>("COLOR_MODEL", "Color Model:", () => ColorModelEnum.HSV);
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<dummy> DUMMY_SEP_0 = new ModConfigurationKey<dummy>("DUMMY_SEP_0", SEP_STRING, () => new dummy());
-        [AutoRegisterConfigKey]
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_0_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_5", SEP_STRING, () => new dummy());
+		//[AutoRegisterConfigKey]
+		//private static ModConfigurationKey<dummy> DUMMY_SEP_0_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_1", "<i>Color model channels reference</i>", () => new dummy());
+		//[AutoRegisterConfigKey]
+		//private static ModConfigurationKey<dummy> DUMMY_SEP_0_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_1", "[COLOR MODEL]", () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_0_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_2", "<i>HSV: Hue, Saturation and Value</i>", () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_0_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_3", "<i>HSL: Hue, Saturation and Lightness</i>", () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_0_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_4", "<i>RGB: Red, Green and Blue</i>", () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<ColorModelEnum> COLOR_MODEL = new ModConfigurationKey<ColorModelEnum>("COLOR_MODEL", "Color Model:", () => ColorModelEnum.HSV);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_0 = new ModConfigurationKey<dummy>("DUMMY_SEP_0", SEP_STRING, () => new dummy());
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_1", "[STATIC]", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> USE_STATIC_COLOR = new ModConfigurationKey<bool>("USE_STATIC_COLOR", "Use Static Node Color (Disables the dynamic section):", () => false);
@@ -54,38 +54,38 @@ namespace ColorMyLogixNodes
 		private static ModConfigurationKey<BaseX.color> NODE_COLOR = new ModConfigurationKey<BaseX.color>("NODE_COLOR", "Static Node Color:", () => new BaseX.color(0.5f, 1.0f, 1.0f, 0.8f));
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> USE_STATIC_RANGES = new ModConfigurationKey<bool>("USE_STATIC_RANGES", "Use Random Ranges around Static Node Color:", () => true);
-        [AutoRegisterConfigKey]
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float3> RANDOM_RANGES_AROUND_STATIC_VALUES = new ModConfigurationKey<float3>("RANDOM_RANGES_AROUND_STATIC_VALUES", "Random Ranges for Color Model Channels [0-1]:", () => new float3(0.1f, 0.1f, 0.1f));
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<dummy> DUMMY_SEP_1_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_1_1", "<i>Channels with negative ranges will use seeded randomness from the dynamic section</i>", () => new dummy());
-        //[AutoRegisterConfigKey]
-        //private static ModConfigurationKey<dummy> DUMMY_SEP_1_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_1_2", SEP_STRING, () => new dummy());
-        //[AutoRegisterConfigKey]
-        //private static ModConfigurationKey<dummy> DUMMY_SEP_1_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_1_1", "[MODE]", () => new dummy());
-        //[AutoRegisterConfigKey]
-        //private static ModConfigurationKey<bool> USE_HUE_FROM_STATIC_NODE_COLOR = new ModConfigurationKey<bool>("USE_HUE_FROM_STATIC_NODE_COLOR", "Use Hue from Static Node Color:", () => false);
-        //[AutoRegisterConfigKey]
-        //private static ModConfigurationKey<bool> USE_SAT_FROM_STATIC_NODE_COLOR = new ModConfigurationKey<bool>("USE_SAT_FROM_STATIC_NODE_COLOR", "Use Saturation from Static Node Color:", () => false);
-        //[AutoRegisterConfigKey]
-        //private static ModConfigurationKey<bool> USE_VAL_LIGHTNESS_FROM_STATIC_NODE_COLOR = new ModConfigurationKey<bool>("USE_VAL_LIGHTNESS_FROM_STATIC_NODE_COLOR", "Use Value/Lightness from Static Node Color:", () => false);
-        //[AutoRegisterConfigKey]
-        //private static ModConfigurationKey<bool> USE_VALUES_FROM_STATIC_NODE_COLOR = new ModConfigurationKey<bool>("USE_VALUES_FROM_STATIC_NODE_COLOR", "Get Hue, Saturation and Value/Lightness from Static Node Color:", () => false);
-        //[AutoRegisterConfigKey]
-        //private static ModConfigurationKey<float> RANDOM_RANGE_AROUND_STATIC_HUE = new ModConfigurationKey<float>("RANDOM_RANGE_AROUND_STATIC_HUE", "Random Range around those values [0-1]:", () => 0.1f);
-        [AutoRegisterConfigKey]
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_1_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_1_1", "<i>Channels with negative ranges will use seeded randomness from the dynamic section</i>", () => new dummy());
+		//[AutoRegisterConfigKey]
+		//private static ModConfigurationKey<dummy> DUMMY_SEP_1_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_1_2", SEP_STRING, () => new dummy());
+		//[AutoRegisterConfigKey]
+		//private static ModConfigurationKey<dummy> DUMMY_SEP_1_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_1_1", "[MODE]", () => new dummy());
+		//[AutoRegisterConfigKey]
+		//private static ModConfigurationKey<bool> USE_HUE_FROM_STATIC_NODE_COLOR = new ModConfigurationKey<bool>("USE_HUE_FROM_STATIC_NODE_COLOR", "Use Hue from Static Node Color:", () => false);
+		//[AutoRegisterConfigKey]
+		//private static ModConfigurationKey<bool> USE_SAT_FROM_STATIC_NODE_COLOR = new ModConfigurationKey<bool>("USE_SAT_FROM_STATIC_NODE_COLOR", "Use Saturation from Static Node Color:", () => false);
+		//[AutoRegisterConfigKey]
+		//private static ModConfigurationKey<bool> USE_VAL_LIGHTNESS_FROM_STATIC_NODE_COLOR = new ModConfigurationKey<bool>("USE_VAL_LIGHTNESS_FROM_STATIC_NODE_COLOR", "Use Value/Lightness from Static Node Color:", () => false);
+		//[AutoRegisterConfigKey]
+		//private static ModConfigurationKey<bool> USE_VALUES_FROM_STATIC_NODE_COLOR = new ModConfigurationKey<bool>("USE_VALUES_FROM_STATIC_NODE_COLOR", "Get Hue, Saturation and Value/Lightness from Static Node Color:", () => false);
+		//[AutoRegisterConfigKey]
+		//private static ModConfigurationKey<float> RANDOM_RANGE_AROUND_STATIC_HUE = new ModConfigurationKey<float>("RANDOM_RANGE_AROUND_STATIC_HUE", "Random Range around those values [0-1]:", () => 0.1f);
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_3_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_3_1", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_3", "[DYNAMIC]", () => new dummy());
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<NodeColorModeEnum> NODE_COLOR_MODE = new ModConfigurationKey<NodeColorModeEnum>("NODE_COLOR_MODE", "Which Node Factor Determines Color:", () => NodeColorModeEnum.NodeCategory);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<NodeColorModeEnum> NODE_COLOR_MODE = new ModConfigurationKey<NodeColorModeEnum>("NODE_COLOR_MODE", "Which Node Factor Determines Color:", () => NodeColorModeEnum.NodeCategory);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float3> COLOR_CHANNELS_MAX = new ModConfigurationKey<float3>("COLOR_CHANNELS_MAX", "Random Max [0-1]:", () => new float3(1f, 0.5f, 1f));
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float3> COLOR_CHANNELS_MIN = new ModConfigurationKey<float3>("COLOR_CHANNELS_MIN", "Random Min [0-1]:", () => new float3(0f, 0.5f, 1f));
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<dummy> DUMMY_SEP_4_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_4_1", "<i>Maximum and minimum bounds for randomness in the color model channels</i>", () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_4_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_4_1", "<i>Maximum and minimum bounds for randomness in the color model channels</i>", () => new dummy());
 
-        [AutoRegisterConfigKey]
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_3", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_5", "[OUTPUT]", () => new dummy());
@@ -101,11 +101,11 @@ namespace ColorMyLogixNodes
 		private static ModConfigurationKey<bool> ENABLE_NON_RANDOM_REFID = new ModConfigurationKey<bool>("ENABLE_NON_RANDOM_REFID", "Convert RefID to Hue without randomness (Hue-shift effect, selected Node Factor must be RefID):", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<BaseX.color> NODE_ERROR_COLOR = new ModConfigurationKey<BaseX.color>("NODE_ERROR_COLOR", "Node Error Color:", () => new BaseX.color(3.0f, 0.5f, 0.5f, 0.8f));
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<int> RANDOM_SEED = new ModConfigurationKey<int>("RANDOM_SEED", "Random Seed:", () => 0);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<int> RANDOM_SEED = new ModConfigurationKey<int>("RANDOM_SEED", "Random Seed:", () => 0);
 
-        // INTERNAL ACCESS CONFIG KEYS
-        [AutoRegisterConfigKey]
+		// INTERNAL ACCESS CONFIG KEYS
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> COLOR_NULL_REFERENCE_NODES = new ModConfigurationKey<bool>("COLOR_NULL_REFERENCE_NODES", "Should Null Reference Nodes use Node Error Color:", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> COLOR_NULL_DRIVER_NODES = new ModConfigurationKey<bool>("COLOR_NULL_DRIVER_NODES", "Should Null Driver Nodes use Node Error Color:", () => true, internalAccessOnly: true);
@@ -273,10 +273,10 @@ namespace ColorMyLogixNodes
 				float range = Config.GetValue(RANDOM_RANGES_AROUND_STATIC_VALUES)[index];
 				if (range >= 0)
 				{
-                    coinflip = rngTimeSeeded.Next(2) == 0 ? -1 : 1;
-                    val += (rngTimeSeeded.Next(101) / 100.0f) * range * coinflip / 2;
-                }
-                else
+					coinflip = rngTimeSeeded.Next(2) == 0 ? -1 : 1;
+					val += (rngTimeSeeded.Next(101) / 100.0f) * range * coinflip / 2;
+				}
+				else
 				{
 					val = GetRandomColorChannelValue(index, rngTimeSeeded);
 				}
@@ -296,16 +296,16 @@ namespace ColorMyLogixNodes
 		private static float GetColorChannelValue(int index, Random rand, ColorModelEnum model)
 		{
 			float val = 0;
-            if (Config.GetValue(USE_STATIC_COLOR))
-            {
-                val = GetRandomFloatAroundStaticValue(index, model);
-            }
+			if (Config.GetValue(USE_STATIC_COLOR))
+			{
+				val = GetRandomFloatAroundStaticValue(index, model);
+			}
 			else
 			{
 				val = GetRandomColorChannelValue(index, rand);
 			}
 			return val;
-        }
+		}
 
 		private static BaseX.color GetHueColorFromUlong(ulong val, ulong divisor)
 		{
@@ -328,12 +328,12 @@ namespace ColorMyLogixNodes
 				case ColorModelEnum.HSV:
 					sat = GetColorChannelValue(1, rngTimeSeeded, ColorModelEnum.HSV);
 					val_lightness = GetColorChannelValue(2, rngTimeSeeded, ColorModelEnum.HSV);
-                    c = new ColorHSV(hue, sat, val_lightness, 0.8f).ToRGB();
+					c = new ColorHSV(hue, sat, val_lightness, 0.8f).ToRGB();
 					break;
 				case ColorModelEnum.HSL:
-                    sat = GetColorChannelValue(1, rngTimeSeeded, ColorModelEnum.HSL);
-                    val_lightness = GetColorChannelValue(2, rngTimeSeeded, ColorModelEnum.HSL);
-                    c = new ColorHSL(hue, sat, val_lightness, 0.8f).ToRGB();
+					sat = GetColorChannelValue(1, rngTimeSeeded, ColorModelEnum.HSL);
+					val_lightness = GetColorChannelValue(2, rngTimeSeeded, ColorModelEnum.HSL);
+					c = new ColorHSL(hue, sat, val_lightness, 0.8f).ToRGB();
 					break;
 				default:
 					break;
@@ -626,17 +626,17 @@ namespace ColorMyLogixNodes
 										{
 											case ColorModelEnum.HSV:
 												hue = GetColorChannelValue(0, rng, ColorModelEnum.HSV);
-                                                sat = GetColorChannelValue(1, rng, ColorModelEnum.HSV);
-                                                val_lightness = GetColorChannelValue(2, rng, ColorModelEnum.HSV);
-                                                colorToSet = new ColorHSV(hue, sat, val_lightness, 0.8f).ToRGB();
+												sat = GetColorChannelValue(1, rng, ColorModelEnum.HSV);
+												val_lightness = GetColorChannelValue(2, rng, ColorModelEnum.HSV);
+												colorToSet = new ColorHSV(hue, sat, val_lightness, 0.8f).ToRGB();
 												//var cHsv = new ColorHSV(colorToSet);
 												//Msg($"{cHsv.h.ToString()} {cHsv.s.ToString()} {cHsv.v.ToString()}");
 												break;
 											case ColorModelEnum.HSL:
-                                                hue = GetColorChannelValue(0, rng, ColorModelEnum.HSL);
-                                                sat = GetColorChannelValue(1, rng, ColorModelEnum.HSL);
-                                                val_lightness = GetColorChannelValue(2, rng, ColorModelEnum.HSL);
-                                                colorToSet = new ColorHSL(hue, sat, val_lightness, 0.8f).ToRGB();
+												hue = GetColorChannelValue(0, rng, ColorModelEnum.HSL);
+												sat = GetColorChannelValue(1, rng, ColorModelEnum.HSL);
+												val_lightness = GetColorChannelValue(2, rng, ColorModelEnum.HSL);
+												colorToSet = new ColorHSL(hue, sat, val_lightness, 0.8f).ToRGB();
 												//var cHsl = new ColorHSL(colorToSet);
 												//Msg($"{cHsl.h.ToString()} {cHsl.s.ToString()} {cHsl.l.ToString()}");
 												break;
