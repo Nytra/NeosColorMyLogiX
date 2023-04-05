@@ -21,7 +21,7 @@ namespace ColorMyLogixNodes
 	{
 		public override string Name => "ColorMyLogiX";
 		public override string Author => "Nytra";
-		public override string Version => "1.0.0-alpha8.9";
+		public override string Version => "1.0.0-alpha8.9.1";
 		public override string Link => "https://github.com/Nytra/NeosColorMyLogiX";
 
 		const string SEP_STRING = "<size=0>·</size>";
@@ -274,8 +274,8 @@ namespace ColorMyLogixNodes
 				if (range >= 0)
 				{
 					// use system time rng for the coinflip?
-					coinflip = rand.Next(2) == 0 ? -1 : 1;
-					val += (rand.Next(101) / 100.0f) * range * (float)coinflip / 2f;
+					coinflip = rngTimeSeeded.Next(2) == 0 ? -1 : 1;
+					val += (rngTimeSeeded.Next(101) / 100.0f) * range * (float)coinflip / 2f;
 				}
 				else
 				{
@@ -555,16 +555,16 @@ namespace ColorMyLogixNodes
 			float val_lightness;
 			if (Config.GetValue(USE_SYSTEM_TIME_RNG))
 			{
-                hue = GetColorChannelValue(0, ref rngTimeSeeded, Config.GetValue(COLOR_MODEL));
-                sat = GetColorChannelValue(1, ref rngTimeSeeded, Config.GetValue(COLOR_MODEL));
-                val_lightness = GetColorChannelValue(2, ref rngTimeSeeded, Config.GetValue(COLOR_MODEL));
-            }
+				hue = GetColorChannelValue(0, ref rngTimeSeeded, Config.GetValue(COLOR_MODEL));
+				sat = GetColorChannelValue(1, ref rngTimeSeeded, Config.GetValue(COLOR_MODEL));
+				val_lightness = GetColorChannelValue(2, ref rngTimeSeeded, Config.GetValue(COLOR_MODEL));
+			}
 			else
 			{
-                hue = GetColorChannelValue(0, ref rand, Config.GetValue(COLOR_MODEL));
-                sat = GetColorChannelValue(1, ref rand, Config.GetValue(COLOR_MODEL));
-                val_lightness = GetColorChannelValue(2, ref rand, Config.GetValue(COLOR_MODEL));
-            }
+				hue = GetColorChannelValue(0, ref rand, Config.GetValue(COLOR_MODEL));
+				sat = GetColorChannelValue(1, ref rand, Config.GetValue(COLOR_MODEL));
+				val_lightness = GetColorChannelValue(2, ref rand, Config.GetValue(COLOR_MODEL));
+			}
 			switch (Config.GetValue(COLOR_MODEL))
 			{
 				case ColorModelEnum.HSV:
@@ -654,34 +654,34 @@ namespace ColorMyLogixNodes
 									}
 									else
 									{
-                                        string nodeCategoryString;
+										string nodeCategoryString;
 										//Random rand = rngTimeSeeded;
 										//Msg("node color mode: " + Config.GetValue(NODE_COLOR_MODE).ToString());
-                                        switch (Config.GetValue(NODE_COLOR_MODE))
-                                        {
-                                            case NodeColorModeEnum.NodeName:
-                                                rng = new System.Random(LogixHelper.GetNodeName(__instance.GetType()).GetHashCode() + Config.GetValue(RANDOM_SEED));
-                                                break;
-                                            case NodeColorModeEnum.NodeCategory:
-                                                nodeCategoryString = GetNodeCategoryString(__instance.GetType());
-                                                rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
-                                                break;
-                                            case NodeColorModeEnum.TopmostNodeCategory:
-                                                nodeCategoryString = GetNodeCategoryString(__instance.GetType(), onlyTopmost: true);
-                                                rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
-                                                break;
-                                            case NodeColorModeEnum.FullTypeName:
-                                                rng = new System.Random(__instance.GetType().FullName.GetHashCode() + Config.GetValue(RANDOM_SEED));
-                                                break;
-                                            case NodeColorModeEnum.RefID:
-                                                // maybe use ReferenceID.Position here instead?
-                                                rng = new System.Random(root.Parent.ReferenceID.GetHashCode() + Config.GetValue(RANDOM_SEED));
-                                                //Msg($"RefID Position: {root.Parent.ReferenceID.Position.ToString()}");
-                                                break;
-                                            default:
-                                                break;
-                                        }
-                                    }
+										switch (Config.GetValue(NODE_COLOR_MODE))
+										{
+											case NodeColorModeEnum.NodeName:
+												rng = new System.Random(LogixHelper.GetNodeName(__instance.GetType()).GetHashCode() + Config.GetValue(RANDOM_SEED));
+												break;
+											case NodeColorModeEnum.NodeCategory:
+												nodeCategoryString = GetNodeCategoryString(__instance.GetType());
+												rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
+												break;
+											case NodeColorModeEnum.TopmostNodeCategory:
+												nodeCategoryString = GetNodeCategoryString(__instance.GetType(), onlyTopmost: true);
+												rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
+												break;
+											case NodeColorModeEnum.FullTypeName:
+												rng = new System.Random(__instance.GetType().FullName.GetHashCode() + Config.GetValue(RANDOM_SEED));
+												break;
+											case NodeColorModeEnum.RefID:
+												// maybe use ReferenceID.Position here instead?
+												rng = new System.Random(root.Parent.ReferenceID.GetHashCode() + Config.GetValue(RANDOM_SEED));
+												//Msg($"RefID Position: {root.Parent.ReferenceID.Position.ToString()}");
+												break;
+											default:
+												break;
+										}
+									}
 
 									if (rng != null)
 									{
@@ -690,8 +690,8 @@ namespace ColorMyLogixNodes
 									}
 									else
 									{
-                                        //Msg("Rng is null");
-                                    }
+										//Msg("Rng is null");
+									}
 
 									if (Config.GetValue(MULTIPLY_OUTPUT_BY_RGB))
 									{
