@@ -9,7 +9,6 @@ using System;
 using System.Reflection;
 using BaseX;
 using System.Collections.Generic;
-using Microsoft.SqlServer.Server;
 
 #if DEBUG
 
@@ -22,7 +21,7 @@ namespace ColorMyLogixNodes
 	{
 		public override string Name => "ColorMyLogiX";
 		public override string Author => "Nytra";
-		public override string Version => "1.0.0-alpha8.3.2";
+		public override string Version => "1.0.0-alpha8.3.7";
 		public override string Link => "https://github.com/Nytra/NeosColorMyLogiX";
 
 		const string SEP_STRING = "·";
@@ -78,12 +77,12 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ENABLE_NON_RANDOM_REFID = new ModConfigurationKey<bool>("ENABLE_NON_RANDOM_REFID", "Convert RefID to Color without randomness (Hue-shift effect, selected Node Factor must be RefID):", () => false);
 
-        // INTERNAL ACCESS CONFIG KEYS
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<bool> COLOR_NULL_REFERENCE_NODES = new ModConfigurationKey<bool>("COLOR_NULL_REFERENCE_NODES", "Should Null Reference Nodes use Node Error Color:", () => true, internalAccessOnly: true);
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<bool> COLOR_NULL_DRIVER_NODES = new ModConfigurationKey<bool>("COLOR_NULL_DRIVER_NODES", "Should Null Driver Nodes use Node Error Color:", () => true, internalAccessOnly: true);
-        [AutoRegisterConfigKey]
+		// INTERNAL ACCESS CONFIG KEYS
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> COLOR_NULL_REFERENCE_NODES = new ModConfigurationKey<bool>("COLOR_NULL_REFERENCE_NODES", "Should Null Reference Nodes use Node Error Color:", () => true, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> COLOR_NULL_DRIVER_NODES = new ModConfigurationKey<bool>("COLOR_NULL_DRIVER_NODES", "Should Null Driver Nodes use Node Error Color:", () => true, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<int> REFID_MOD_DIVISOR = new ModConfigurationKey<int>("REFID_MOD_DIVISOR", "Modulo divisor for RefID to Color conversion:", () => 100000, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ALTERNATE_CATEGORY_STRING = new ModConfigurationKey<bool>("ALTERNATE_CATEGORY_STRING", "Use alternate node category string (only uses the part after the final '/'):", () => false, internalAccessOnly: true);
@@ -311,114 +310,79 @@ namespace ColorMyLogixNodes
 		{
 			Debug($"Subscribing to events for node {node.Name} {node.ReferenceID.ToString()}");
 
-            var targetSyncRef = node.TryGetField(targetField) as ISyncRef;
-            if (targetSyncRef == null) return;
+			var targetSyncRef = node.TryGetField(targetField) as ISyncRef;
+			if (targetSyncRef == null) return;
 
-            // find out when the nearest component or slot gets destroyed
-            Component nearestComp = targetSyncRef.Target.FindNearestParent<Component>();
-            Slot nearestSlot = targetSyncRef.Target.FindNearestParent<Slot>();
+			// find out when the nearest component or slot gets destroyed
+			Component nearestComp = targetSyncRef.Target.FindNearestParent<Component>();
+			Slot nearestSlot = targetSyncRef.Target.FindNearestParent<Slot>();
 
-            Action<IChangeable> func = (worldElement) =>
-            {
-                UpdateRefOrDriverNodeColor(node, targetField);
-            };
+			Action<IChangeable> func = (worldElement) =>
+			{
+				UpdateRefOrDriverNodeColor(node, targetField);
+			};
 
-            Action<IChangeable> func3 = (worldElement) =>
-            {
+			Action<IChangeable> func3 = (worldElement) =>
+			{
+				Debug($"targetSyncRef Changed. Clearing IWorldElement HashSet for node {node.Name} {node.ReferenceID.ToString()} and resubscribing to events.");
+				nodeElementMap[node].Clear();
+				nodeElementMap[node].Add(targetSyncRef);
 				SubscribeToEvents(node, targetField);
-            	UpdateRefOrDriverNodeColor (node, targetField);
-            };
+				UpdateRefOrDriverNodeColor (node, targetField);
+			};
 
-            if (!IsWorldElementInNodeElementMap(node, targetSyncRef))
-            {
-                Debug($"Subscribing to SyncRef Changed event for node {node.Name} {node.ReferenceID.ToString()}");
-                targetSyncRef.Changed += func3;
-                nodeElementMap[node].Add(targetSyncRef);
-            }
+			if (!IsWorldElementInNodeElementMap(node, targetSyncRef))
+			{
+				Debug($"Subscribing to SyncRef Changed event for node {node.Name} {node.ReferenceID.ToString()}");
+				targetSyncRef.Changed += func3;
+				nodeElementMap[node].Add(targetSyncRef);
+			}
 
-            // targetSyncRef Target Parent Component 
-            // targetSyncRef Target changed -> get parent slot / component and inject delegates
+			if (nearestSlot != null) Debug($"Found nearest slot: {nearestSlot.ToString()}");
+			if (nearestComp != null) Debug($"Found nearest component: {nearestComp.ToString()}");
 
-            //var activeVisualSyncRef = __instance.TryGetField("_activeVisual") as ISyncRef;
-            //activeVisualSyncRef.Changed += func;
+			if (nearestSlot == null && nearestComp == null)
+			{
+				// maybe do the node color update here as well?
+			}
+			else
+			{
+				if (nearestSlot != null)
+				{
+					Action<Worker> func2 = (worker) =>
+					{
+						UpdateRefOrDriverNodeColor(node, targetField);
+					};
+					if (!IsWorldElementInNodeElementMap(node, nearestSlot))
+					{
+						Debug("Subscribing for nearest slot");
+						nearestSlot.Disposing += func2;
+						nodeElementMap[node].Add(nearestSlot);
+					}
+					if (nearestComp != null && nearestComp.IsChildOfElement(nearestSlot) && nearestComp != ((Component)node))
+					{
+						if (!IsWorldElementInNodeElementMap(node, nearestComp))
+						{
+							Debug("Subscribing for nearest component");
+							nearestComp.Destroyed += func;
+							nodeElementMap[node].Add(nearestComp);
+						}
+					}
+				}
+				else if (nearestComp != null && nearestComp != ((Component)node))
+				{
+					if (!IsWorldElementInNodeElementMap(node, nearestComp))
+					{
+						Debug("Subscribing for nearest component");
+						nearestComp.Destroyed += func;
+						nodeElementMap[node].Add(nearestComp);
+					}
+				}
 
-            if (nearestSlot != null) Msg($"Found nearest slot: {nearestSlot.ToString()}");
-            if (nearestComp != null) Msg($"Found nearest component: {nearestComp.ToString()}");
-
-            if (nearestSlot == null && nearestComp == null)
-            {
-                //TrySetTag(node.ActiveVisual, DELEGATE_ADDED_TAG);
-                //Debug("nearestSlot and nearestComp null, setting slot tag and exiting");
-                // maybe do the node color update here as well?
-            }
-            else
-            {
-                //if (nearestComp == null || (nearestSlot != null && !nearestComp.IsChildOfElement(nearestSlot)))
-                //{
-                //	Action<Worker> func2 = (worker) =>
-                //	{
-                //		UpdateRefOrDriverNodeColor(__instance, targetField);
-                //	};
-                //                               if (!IsWorldElementInNodeElementMap(__instance, nearestSlot))
-                //                               {
-                //                                   Debug("Subscribing for nearest slot");
-                //                                   nearestSlot.Disposing += func2;
-                //                                   nodeElementMap[__instance].Add(nearestSlot);
-                //                               }
-                //                           }
-                //else if (nearestComp != null)
-                //{
-                //                               if (!IsWorldElementInNodeElementMap(__instance, nearestComp))
-                //                               {
-                //                                   Debug("Subscribing for nearest component");
-                //                                   nearestComp.Destroyed += func;
-                //                                   nodeElementMap[__instance].Add(nearestComp);
-                //                               }
-                //                           }
-
-                // add it to both
-                // if the slot is not null , add it to the slot
-                // if the component is not null, add it to the component 
-                // component could be null if the syncref points to a slot field
-                // slot could be null if the component doesnt have a slot
-                // check that component is child of slot if slot exists
-
-                if (nearestSlot != null)
-                {
-                    Action<Worker> func2 = (worker) =>
-                    {
-                        UpdateRefOrDriverNodeColor(node, targetField);
-                    };
-                    if (!IsWorldElementInNodeElementMap(node, nearestSlot))
-                    {
-                        Debug("Subscribing for nearest slot");
-                        nearestSlot.Disposing += func2;
-                        nodeElementMap[node].Add(nearestSlot);
-                    }
-                    if (nearestComp != null && nearestComp.IsChildOfElement(nearestSlot))
-                    {
-                        if (!IsWorldElementInNodeElementMap(node, nearestComp))
-                        {
-                            Debug("Subscribing for nearest component");
-                            nearestComp.Destroyed += func;
-                            nodeElementMap[node].Add(nearestComp);
-                        }
-                    }
-                }
-                else if (nearestComp != null)
-                {
-                    if (!IsWorldElementInNodeElementMap(node, nearestComp))
-                    {
-                        Debug("Subscribing for nearest component");
-                        nearestComp.Destroyed += func;
-                        nodeElementMap[node].Add(nearestComp);
-                    }
-                }
-
-                //TrySetTag(node.ActiveVisual, DELEGATE_ADDED_TAG);
-                //Debug("Setting slot tag");
-            }
-        }
+				//TrySetTag(node.ActiveVisual, DELEGATE_ADDED_TAG);
+				//Debug("Setting slot tag");
+			}
+		}
 
 		[HarmonyPatch(typeof(LogixNode))]
 		[HarmonyPatch("GenerateVisual")]
@@ -451,131 +415,15 @@ namespace ColorMyLogixNodes
 
 							UpdateRefOrDriverNodeColor(__instance, targetField);
 
-                            TrySetTag(__instance.ActiveVisual, DELEGATE_ADDED_TAG);
-                            Debug("Setting slot tag");
+							TrySetTag(__instance.ActiveVisual, DELEGATE_ADDED_TAG);
+							Debug("Setting slot tag");
 
-                            //Component 
-
-                            // remove node from nodeElementMap when it gets destroyed
-                            ((Component)__instance).Destroyed += (worker) =>
-                            {
-                                nodeElementMap.Remove(__instance);
-                                Debug($"Component destroyed. Removed node {__instance.Name} {__instance.ReferenceID.ToString()} from nodeElementMap.");
-                            };
-
-                            if (true)//__instance.ActiveVisual != null)
+							// remove node from nodeElementMap when it gets destroyed
+							((Component)__instance).Destroyed += (worker) =>
 							{
-								//var targetSyncRef = __instance.TryGetField(targetField) as ISyncRef;
-								//if (targetSyncRef == null) return;
-
-								//// find out when the nearest component or slot gets destroyed
-								//Component nearestComp = targetSyncRef.Target.FindNearestParent<Component>();
-								//Slot nearestSlot = targetSyncRef.Target.FindNearestParent<Slot>();
-
-								//Action<IChangeable> func = (worldElement) => 
-								//{
-								//	UpdateRefOrDriverNodeColor(__instance, targetField);
-								//};
-
-								////Action<IChangeable> func3 = (worldElement) =>
-								////{
-
-								////	UpdateRefOrDriverNodeColor (__instance, targetField);
-								////};
-
-								//if (!IsWorldElementInNodeElementMap(__instance, targetSyncRef))
-								//{
-								//	Debug($"Subscribing to Changed Event for node {__instance.Name} {__instance.ReferenceID.ToString()}");
-								//	targetSyncRef.Changed += func;
-								//	nodeElementMap[__instance].Add(targetSyncRef);
-								//	//targetSyncRef.Changed
-								//}
-
-								//// targetSyncRef Target Parent Component 
-								//// targetSyncRef Target changed -> get parent slot / component and inject delegates
-
-								////var activeVisualSyncRef = __instance.TryGetField("_activeVisual") as ISyncRef;
-								////activeVisualSyncRef.Changed += func;
-
-								//if (nearestSlot != null) Msg($"Found nearest slot: {nearestSlot.ToString()}");
-								//if (nearestComp != null) Msg($"Found nearest component: {nearestComp.ToString()}");
-
-								//if (nearestSlot == null && nearestComp == null)
-								//{
-								//	TrySetTag(__instance.ActiveVisual, DELEGATE_ADDED_TAG);
-								//	Debug("nearestSlot and nearestComp null, setting slot tag and exiting");
-								//	// maybe do the node color update here as well?
-								//}
-								//else
-								//{
-								//	//if (nearestComp == null || (nearestSlot != null && !nearestComp.IsChildOfElement(nearestSlot)))
-								//	//{
-								//	//	Action<Worker> func2 = (worker) =>
-								//	//	{
-								//	//		UpdateRefOrDriverNodeColor(__instance, targetField);
-								//	//	};
-								// //                               if (!IsWorldElementInNodeElementMap(__instance, nearestSlot))
-								// //                               {
-								// //                                   Debug("Subscribing for nearest slot");
-								// //                                   nearestSlot.Disposing += func2;
-								// //                                   nodeElementMap[__instance].Add(nearestSlot);
-								// //                               }
-								// //                           }
-								//	//else if (nearestComp != null)
-								//	//{
-								// //                               if (!IsWorldElementInNodeElementMap(__instance, nearestComp))
-								// //                               {
-								// //                                   Debug("Subscribing for nearest component");
-								// //                                   nearestComp.Destroyed += func;
-								// //                                   nodeElementMap[__instance].Add(nearestComp);
-								// //                               }
-								// //                           }
-
-								//	// add it to both
-								//	// if the slot is not null , add it to the slot
-								//	// if the component is not null, add it to the component 
-								//	// component could be null if the syncref points to a slot field
-								//	// slot could be null if the component doesnt have a slot
-								//	// check that component is child of slot if slot exists
-
-								//	if (nearestSlot != null)
-								//	{
-								//                                Action<Worker> func2 = (worker) =>
-								//                                {
-								//                                    UpdateRefOrDriverNodeColor(__instance, targetField);
-								//                                };
-								//                                if (!IsWorldElementInNodeElementMap(__instance, nearestSlot))
-								//                                {
-								//                                    Debug("Subscribing for nearest slot");
-								//                                    nearestSlot.Disposing += func2;
-								//                                    nodeElementMap[__instance].Add(nearestSlot);
-								//                                }
-								//		if (nearestComp != null && nearestComp.IsChildOfElement(nearestSlot))
-								//		{
-								//                                    if (!IsWorldElementInNodeElementMap(__instance, nearestComp))
-								//			{
-								//				Debug("Subscribing for nearest component");
-								//				nearestComp.Destroyed += func;
-								//				nodeElementMap[__instance].Add(nearestComp);
-								//			}
-								//		}
-								//                            }
-								//	else if (nearestComp != null)
-								//	{
-								//                                if (!IsWorldElementInNodeElementMap(__instance, nearestComp))
-								//                                {
-								//                                    Debug("Subscribing for nearest component");
-								//                                    nearestComp.Destroyed += func;
-								//                                    nodeElementMap[__instance].Add(nearestComp);
-								//                                }
-								//                            }
-
-								//	TrySetTag(__instance.ActiveVisual, DELEGATE_ADDED_TAG);
-								//	Debug("Setting slot tag");
-								//}
-
-								
-							}
+								nodeElementMap.Remove(__instance);
+								Debug($"Component destroyed. Removed node {__instance.Name} {__instance.ReferenceID.ToString()} from nodeElementMap.");
+							};
 						});
 					}
 					else if (targetField != null)
