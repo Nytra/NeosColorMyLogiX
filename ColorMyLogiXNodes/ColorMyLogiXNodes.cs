@@ -39,7 +39,7 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_0_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_3", "<i>RGB: Red, Green and Blue</i>", () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<ColorModelEnum> COLOR_MODEL = new ModConfigurationKey<ColorModelEnum>("COLOR_MODEL", "Color Model:", () => ColorModelEnum.HSV);
+		private static ModConfigurationKey<ColorModelEnum> COLOR_MODEL = new ModConfigurationKey<ColorModelEnum>("COLOR_MODEL", "Selected Color Model:", () => ColorModelEnum.HSV);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_1", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
@@ -53,20 +53,20 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float3> RANDOM_RANGES_AROUND_STATIC_VALUES = new ModConfigurationKey<float3>("RANDOM_RANGES_AROUND_STATIC_VALUES", "Random Ranges for Color Model Channels [0-1]:", () => new float3(0.1f, 0.1f, 0.1f));
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_1_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_1_2", "<i>Channels with negative ranges will use seeded randomness from the dynamic section</i>", () => new dummy());
+		private static ModConfigurationKey<dummy> DUMMY_SEP_1_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_1_2", "<i>Channels with negative ranges will use randomness from the dynamic section</i>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_2", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_2_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_1", "[DYNAMIC]", () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<NodeColorModeEnum> NODE_COLOR_MODE = new ModConfigurationKey<NodeColorModeEnum>("NODE_COLOR_MODE", "Which Node Factor Determines Color:", () => NodeColorModeEnum.NodeCategory);
-		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float3> COLOR_CHANNELS_MAX = new ModConfigurationKey<float3>("COLOR_CHANNELS_MAX", "Random Max [0-1]:", () => new float3(1f, 0.5f, 1f));
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float3> COLOR_CHANNELS_MIN = new ModConfigurationKey<float3>("COLOR_CHANNELS_MIN", "Random Min [0-1]:", () => new float3(0f, 0.5f, 1f));
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_2_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_2", "<i>Maximum and minimum bounds for randomness in the color model channels</i>", () => new dummy());
-		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_2_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_2", "<i>Maximum and minimum bounds for randomness in the channels of the selected color model</i>", () => new dummy());
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<NodeColorModeEnum> NODE_COLOR_MODE = new ModConfigurationKey<NodeColorModeEnum>("NODE_COLOR_MODE", "Which Node Factor Determines Color:", () => NodeColorModeEnum.NodeCategory);
+        [AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_3", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_3_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_3_1", "[OUTPUT]", () => new dummy());
@@ -97,7 +97,9 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ALTERNATE_CATEGORY_STRING = new ModConfigurationKey<bool>("ALTERNATE_CATEGORY_STRING", "Use alternate node category string (only uses the part after the final '/'):", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> USE_SYSTEM_TIME_RNG = new ModConfigurationKey<bool>("USE_SYSTEM_TIME_RNG", "Always use randomness seeded by system time (Complete randomness):", () => false, internalAccessOnly: true);
+		private static ModConfigurationKey<bool> USE_SYSTEM_TIME_RNG = new ModConfigurationKey<bool>("USE_SYSTEM_TIME_RNG", "Always use randomness seeded by system time (Complete randomness, not suitable for normal use):", () => false, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<StaticRangeModeEnum> STATIC_RANGE_MODE = new ModConfigurationKey<StaticRangeModeEnum>("STATIC_RANGE_MODE", "Seed for Random Ranges around Static Node Color:", () => StaticRangeModeEnum.SystemTime, internalAccessOnly: true);
 
 		private enum ColorModelEnum
 		{
@@ -115,14 +117,18 @@ namespace ColorMyLogixNodes
 			RefID
 		}
 
+		private enum StaticRangeModeEnum
+		{
+			NodeFactor,
+			SystemTime
+		}
+
 		private static System.Random rng;
 		private static System.Random rngTimeSeeded = new System.Random();
 
 		private const string COLOR_SET_TAG = "ColorMyLogiXNodes.ColorSet";
 		private const string DELEGATE_ADDED_TAG = "ColorMyLogiXNodes.DelegateAdded";
 
-		// this maybe should be cleared out every once in a while to reduce memory usage
-		// or at least find some way for items to be removed from the HashSet when they become null or get destroyed
 		static Dictionary<LogixNode, HashSet<IWorldElement>> nodeElementMap = new();
 
 		public override void OnEngineInit()
@@ -273,9 +279,19 @@ namespace ColorMyLogixNodes
 				float range = Config.GetValue(RANDOM_RANGES_AROUND_STATIC_VALUES)[index];
 				if (range >= 0)
 				{
-					// use system time rng for the coinflip?
-					coinflip = rngTimeSeeded.Next(2) == 0 ? -1 : 1;
-					val += (rngTimeSeeded.Next(101) / 100.0f) * range * (float)coinflip / 2f;
+					switch (Config.GetValue(STATIC_RANGE_MODE))
+					{
+						case StaticRangeModeEnum.NodeFactor:
+							coinflip = rand.Next(2) == 0 ? -1 : 1;
+							val += (rand.Next(101) / 100.0f) * range * (float)coinflip / 2f;
+							break;
+						case StaticRangeModeEnum.SystemTime:
+							coinflip = rngTimeSeeded.Next(2) == 0 ? -1 : 1;
+							val += (rngTimeSeeded.Next(101) / 100.0f) * range * (float)coinflip / 2f;
+							break;
+						default:
+							break;
+					}
 				}
 				else
 				{
@@ -424,6 +440,7 @@ namespace ColorMyLogixNodes
 			if (targetSyncRef == null) return;
 
 			// find out when the nearest component or slot gets destroyed
+			// and update the node color when that happens
 			Component nearestComp = targetSyncRef.Target.FindNearestParent<Component>();
 			Slot nearestSlot = targetSyncRef.Target.FindNearestParent<Slot>();
 
@@ -453,7 +470,7 @@ namespace ColorMyLogixNodes
 
 			if (nearestSlot == null && nearestComp == null)
 			{
-				// maybe do the node color update here as well?
+				// xD
 			}
 			else
 			{
@@ -617,30 +634,7 @@ namespace ColorMyLogixNodes
 								{
 									// default color
 									BaseX.color colorToSet = Config.GetValue(NODE_COLOR);
-
 									rng = null;
-
-									// requires rng to be set
-									//                           if (Config.GetValue(USE_STATIC_COLOR) == true)
-									//                           {
-									//                               //colorToSet = Config.GetValue(NODE_COLOR);
-									//                               rng = GetSeededRandom(__instance, root);
-									//                               //colorToSet = GetColorWithRNG(rng);
-									//	//rng = null;
-									//	// it needs to do the rng != null color steps here
-									//                           }
-									//else if (Config.GetValue(ENABLE_NON_RANDOM_REFID))
-									//{
-									//                               int refidModDivisor = Config.GetValue(REFID_MOD_DIVISOR);
-									//                               ulong divisor = (refidModDivisor > 0) ? (ulong)refidModDivisor : 0;
-									//	// gets color values with rngTimeSeeded
-									//                               colorToSet = GetColorFromUlong(root.Parent.ReferenceID.Position, divisor);
-									//                               rng = null;
-									//                           }
-									//else
-									//{
-									//                               rng = GetSeededRandom(__instance, root);
-									//                           }
 
 									//float3 ranges = Config.GetValue(RANDOM_RANGES_AROUND_STATIC_VALUES);
 									//Msg($"ranges: {ranges[0].ToString()} {ranges[1].ToString()} {ranges[2].ToString()}");
@@ -649,13 +643,12 @@ namespace ColorMyLogixNodes
 									{
 										int refidModDivisor = Config.GetValue(REFID_MOD_DIVISOR);
 										ulong divisor = (refidModDivisor > 0) ? (ulong)refidModDivisor : 0;
-										// gets color values with rngTimeSeeded
+										// this gets color values with rngTimeSeeded
 										colorToSet = GetColorFromUlong(root.Parent.ReferenceID.Position, divisor);
 									}
 									else
 									{
 										string nodeCategoryString;
-										//Random rand = rngTimeSeeded;
 										//Msg("node color mode: " + Config.GetValue(NODE_COLOR_MODE).ToString());
 										switch (Config.GetValue(NODE_COLOR_MODE))
 										{
@@ -687,10 +680,6 @@ namespace ColorMyLogixNodes
 									{
 										//Msg("Rng not null");
 										colorToSet = GetColorWithRNG(ref rng);
-									}
-									else
-									{
-										//Msg("Rng is null");
 									}
 
 									if (Config.GetValue(MULTIPLY_OUTPUT_BY_RGB))
