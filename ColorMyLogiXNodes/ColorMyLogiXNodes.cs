@@ -21,7 +21,7 @@ namespace ColorMyLogixNodes
 	{
 		public override string Name => "ColorMyLogiX";
 		public override string Author => "Nytra";
-		public override string Version => "1.0.0-alpha9";
+		public override string Version => "1.0.0-alpha9-rc2";
 		public override string Link => "https://github.com/Nytra/NeosColorMyLogiX";
 
 		const string SEP_STRING = "<size=0>·</size>";
@@ -55,9 +55,11 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> USE_STATIC_RANGES = new ModConfigurationKey<bool>("USE_STATIC_RANGES", "Use Random Ranges around Static Node Color:", () => false);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<float3> RANDOM_RANGES_AROUND_STATIC_VALUES = new ModConfigurationKey<float3>("RANDOM_RANGES_AROUND_STATIC_VALUES", "Random Ranges for Channels of the Selected Color Model [0-1]:", () => new float3(0.1f, 0.1f, 0.1f));
+		private static ModConfigurationKey<float3> RANDOM_RANGES_AROUND_STATIC_VALUES = new ModConfigurationKey<float3>("RANDOM_RANGES_AROUND_STATIC_VALUES", "Random Ranges around Static Node Color [0-1]:", () => new float3(0.1f, 0.1f, 0.1f));
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_1_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_1_2", $"<color={DETAIL_TEXT_COLOR}><i>Channels with negative ranges will get their values from the dynamic section</i></color>", () => new dummy());
+		private static ModConfigurationKey<dummy> DUMMY_SEP_1_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_1_2", $"<color={DETAIL_TEXT_COLOR}><i>These ranges are for the channels of the selected color model</i></color>", () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_1_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_1_3", $"<color={DETAIL_TEXT_COLOR}><i>Channels with negative ranges will get their values from the dynamic section</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_2", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
