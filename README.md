@@ -10,6 +10,8 @@ A [NeosModLoader](https://github.com/zkxs/NeosModLoader) mod for [Neos VR](https
 ## What does this actually do?
 It sets the Tint color on the Image component for LogiX nodes that have been newly created or newly unpacked by you. The colors are not permanent, they will go back to the default if the node gets unpacked by someone else. No extra slots or components are created. The way that the nodes get colored can be configured via [NeosModSettings](https://github.com/badhaloninja/NeosModSettings).
 
+The colors are not local. Everybody can see them.
+
 It also makes null reference nodes and null driver nodes have your chosen error color.
 
 ## Config
