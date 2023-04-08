@@ -20,7 +20,7 @@ There are a lot of options here to give you a lot of control over the types of c
 
 The static node color can be used if you just want a single color to be used for all nodes. There is also an option here to use a random range around this color to allow for some subtle (or not-so-subtle) variations.
 
-You can select which Node Factor is used to seed the randomness in the dynamic section. It is generally best to go with Node Category for this one. The others will introduce more or less variations. Using FullTypeName for example will cause the color of the node to change when it gets overloaded to another type. Choosing RefID will make every node you create have a different color. TopmostNodeCategory is like NodeCategory, except it ignores nested categories and only cares about the first one. NodeName uses the slot name of the node.
+You can select which Node Factor is used to seed the randomness in the dynamic section. It is generally best to go with Node Category for this one. The others will introduce more or less variations. Using FullTypeName for example will cause the color of the node to change when it gets overloaded to another type. Choosing RefID will make every node you create have a different color (essentially random mode). TopmostNodeCategory is like NodeCategory, except it ignores nested categories and only cares about the first one. NodeName uses the slot name of the node.
 
 The Seed option in the dynamic section can be used to get a completely different set of colors being generated. It works in addition to the Selected Node Factor.
 
