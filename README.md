@@ -4,7 +4,7 @@ A [NeosModLoader](https://github.com/zkxs/NeosModLoader) mod for [Neos VR](https
 
 ## Installation
 1. Install [NeosModLoader](https://github.com/zkxs/NeosModLoader).
-1. Place [ColorMyLogiX.dll](https://github.com/Nytra/NeosColorMyLogiXNodes/releases) into your `nml_mods` folder. This folder should be at `C:\Program Files (x86)\Steam\steamapps\common\NeosVR\nml_mods` for a default install. You can create it if it's missing, or if you launch the game once with NeosModLoader installed it will create the folder for you.
+1. Place [ColorMyLogiX.dll](https://github.com/Nytra/NeosColorMyLogiX/releases/latest/download/ColorMyLogiX.dll) into your `nml_mods` folder. This folder should be at `C:\Program Files (x86)\Steam\steamapps\common\NeosVR\nml_mods` for a default install. You can create it if it's missing, or if you launch the game once with NeosModLoader installed it will create the folder for you.
 1. Start the game. If you want to verify that the mod is working you can check your Neos logs.
 
 ## What does this actually do?
@@ -24,7 +24,6 @@ You can use the output RGB multiplier to suppress or amplify the color channels 
 
 The random seed can be changed to get a completely different set of random colors being generated.
 
-![20230128225328_1](https://user-images.githubusercontent.com/14206961/230005974-c436c7c1-f421-4f4c-a1a7-fdf6e9a6238e.jpg)
 ![20230314204710_1](https://user-images.githubusercontent.com/14206961/230007411-8b7b9387-019b-4918-8974-8b7c8553f367.jpg)
 ![20230225035345_1](https://user-images.githubusercontent.com/14206961/230007717-d8d3ffbf-9e50-48d0-a5f4-0c91dc91d67f.jpg)
-![20230126112728_1](https://user-images.githubusercontent.com/14206961/230008861-d6b8d76c-0719-44f5-8a36-0cc52f59cbe5.jpg)
+![20230407033902_1](https://user-images.githubusercontent.com/14206961/230702924-0649d190-b838-4edd-bfab-fd218fa5ac22.jpg)
