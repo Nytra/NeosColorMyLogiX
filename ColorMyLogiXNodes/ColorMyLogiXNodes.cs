@@ -112,7 +112,7 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ALLOW_NEGATIVE_AND_EMISSIVE_COLORS = new ModConfigurationKey<bool>("ALLOW_NEGATIVE_AND_EMISSIVE_COLORS", "Allow negative and emissive colors:", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> ENABLE_TEXT_CONTRAST = new ModConfigurationKey<bool>("ENABLE_TEXT_CONTRAST", "Change node text color to contrast better with the node background:", () => true, internalAccessOnly: true);
+		private static ModConfigurationKey<bool> ENABLE_TEXT_CONTRAST = new ModConfigurationKey<bool>("ENABLE_TEXT_CONTRAST", "Change the text color of nodes to contrast better with the node background:", () => true, internalAccessOnly: true);
 
 		private enum ColorModelEnum
 		{
@@ -148,7 +148,7 @@ namespace ColorMyLogixNodes
 		private const string COLOR_SET_TAG = "ColorMyLogiXNodes.ColorSet";
 		private const string DELEGATE_ADDED_TAG = "ColorMyLogiXNodes.DelegateAdded";
 
-		static Dictionary<LogixNode, HashSet<IWorldElement>> nodeElementMap = new();
+		static Dictionary<World, Dictionary<LogixNode, HashSet<IWorldElement>>> worldNodeMap = new();
 
 		public override void OnEngineInit()
 		{
@@ -482,6 +482,7 @@ namespace ColorMyLogixNodes
 		private static float GetPerceptualLightness(float luminance)
 		{
 			// 1 = white, 0.5 = middle gray, 0 = black
+			// the power can be tweaked here. ~0.6 to ~0.8
 			return (float)Math.Pow(luminance, 0.6);
 		}
 
@@ -554,11 +555,10 @@ namespace ColorMyLogixNodes
 			});
 		}
 
-		private static bool IsWorldElementInNodeElementMap(LogixNode key, IWorldElement key2)
+		private static bool IsIWorldElementInNodeElementMap(LogixNode node, IWorldElement worldElement)
 		{
-			HashSet<IWorldElement> worldElements;
-			nodeElementMap.TryGetValue(key, out worldElements);
-			return worldElements.Contains(key2);
+			if (worldNodeMap.ContainsKey(node.World) && worldNodeMap[node.World].ContainsKey(node)) return worldNodeMap[node.World][node].Contains(worldElement);
+			return false;
 		}
 
 		private static void SubscribeToEvents(LogixNode node, string targetField)
@@ -573,25 +573,19 @@ namespace ColorMyLogixNodes
 			Component nearestComp = targetSyncRef.Target.FindNearestParent<Component>();
 			Slot nearestSlot = targetSyncRef.Target.FindNearestParent<Slot>();
 
-			Action<IChangeable> func = (worldElement) =>
-			{
-				UpdateRefOrDriverNodeColor(node, targetField);
-			};
-
-			Action<IChangeable> func3 = (worldElement) =>
-			{
-				Debug($"targetSyncRef Changed. Clearing IWorldElement HashSet for node {node.Name} {node.ReferenceID.ToString()} and resubscribing to events.");
-				nodeElementMap[node].Clear();
-				nodeElementMap[node].Add(targetSyncRef);
-				SubscribeToEvents(node, targetField);
-				UpdateRefOrDriverNodeColor (node, targetField);
-			};
-
-			if (!IsWorldElementInNodeElementMap(node, targetSyncRef))
+			if (!IsIWorldElementInNodeElementMap(node, targetSyncRef))
 			{
 				Debug($"Subscribing to SyncRef Changed event for node {node.Name} {node.ReferenceID.ToString()}");
-				targetSyncRef.Changed += func3;
-				nodeElementMap[node].Add(targetSyncRef);
+				targetSyncRef.Changed += (iChangeable) =>
+				{
+					Debug($"targetSyncRef Changed. Clearing IWorldElement HashSet for node {node.Name} {node.ReferenceID.ToString()} and resubscribing to events.");
+					worldNodeMap[node.World][node].Clear();
+					worldNodeMap[node.World][node].TrimExcess();
+					worldNodeMap[node.World][node].Add(targetSyncRef);
+					SubscribeToEvents(node, targetField);
+					UpdateRefOrDriverNodeColor(node, targetField);
+				};
+				worldNodeMap[node.World][node].Add(targetSyncRef);
 			}
 
 			if (nearestSlot != null) Debug($"Found nearest slot: {nearestSlot.ToString()}");
@@ -603,35 +597,38 @@ namespace ColorMyLogixNodes
 			}
 			else
 			{
+				Action<IChangeable> func = (worldElement) =>
+				{
+					UpdateRefOrDriverNodeColor(node, targetField);
+				};
 				if (nearestSlot != null)
 				{
-					Action<Worker> func2 = (worker) =>
-					{
-						UpdateRefOrDriverNodeColor(node, targetField);
-					};
-					if (!IsWorldElementInNodeElementMap(node, nearestSlot))
+					if (!IsIWorldElementInNodeElementMap(node, nearestSlot))
 					{
 						Debug("Subscribing for nearest slot");
-						nearestSlot.Disposing += func2;
-						nodeElementMap[node].Add(nearestSlot);
+						nearestSlot.Disposing += (worker) =>
+						{
+							UpdateRefOrDriverNodeColor(node, targetField);
+						};
+						worldNodeMap[node.World][node].Add(nearestSlot);
 					}
 					if (nearestComp != null && nearestComp.IsChildOfElement(nearestSlot) && nearestComp != ((Component)node))
 					{
-						if (!IsWorldElementInNodeElementMap(node, nearestComp))
+						if (!IsIWorldElementInNodeElementMap(node, nearestComp))
 						{
 							Debug("Subscribing for nearest component");
 							nearestComp.Destroyed += func;
-							nodeElementMap[node].Add(nearestComp);
+							worldNodeMap[node.World][node].Add(nearestComp);
 						}
 					}
 				}
 				else if (nearestComp != null && nearestComp != ((Component)node))
 				{
-					if (!IsWorldElementInNodeElementMap(node, nearestComp))
+					if (!IsIWorldElementInNodeElementMap(node, nearestComp))
 					{
 						Debug("Subscribing for nearest component");
 						nearestComp.Destroyed += func;
-						nodeElementMap[node].Add(nearestComp);
+						worldNodeMap[node.World][node].Add(nearestComp);
 					}
 				}
 			}
@@ -658,9 +655,19 @@ namespace ColorMyLogixNodes
 					if (targetField != null && __instance.ActiveVisual.Tag != DELEGATE_ADDED_TAG)
 					{
 						Debug("Running main event subscription code");
-						if (!nodeElementMap.ContainsKey(__instance))
+						if (!worldNodeMap.ContainsKey(__instance.World))
 						{
-							nodeElementMap.Add(__instance, new HashSet<IWorldElement>());
+							worldNodeMap.Add(__instance.World, new Dictionary<LogixNode, HashSet<IWorldElement>>());
+							Debug($"Adding new world {__instance.World.Name} {__instance.World.ToString()} to worldNodeMap.");
+							__instance.World.WorldDestroyed += (world) =>
+							{
+								worldNodeMap[__instance.World] = null;
+								worldNodeMap.Remove(__instance.World);
+							};
+						}
+						if (!worldNodeMap[__instance.World].ContainsKey(__instance))
+						{
+							worldNodeMap[__instance.World].Add(__instance, new HashSet<IWorldElement>());
 							Debug($"Adding new node {__instance.Name} {__instance.ReferenceID.ToString()} to nodeElementMap.");
 						}
 						__instance.RunInUpdates(0, () =>
@@ -673,11 +680,21 @@ namespace ColorMyLogixNodes
 							Debug("Setting slot tag");
 
 							// remove node from nodeElementMap when it gets destroyed
-							((Component)__instance).Destroyed += (worker) =>
+							((Component)__instance).Destroyed += (iChangeable) =>
 							{
-								nodeElementMap.Remove(__instance);
+								worldNodeMap[__instance.World][__instance] = null;
+								worldNodeMap[__instance.World].Remove(__instance);
 								Debug($"Component destroyed. Removed node {__instance.Name} {__instance.ReferenceID.ToString()} from nodeElementMap.");
 							};
+							if (__instance.Slot != null)
+							{
+								__instance.Slot.Disposing += (worker) =>
+								{
+									worldNodeMap[__instance.World][__instance] = null;
+									worldNodeMap[__instance.World].Remove(__instance);
+									Debug($"Slot disposing. Removed node {__instance.Name} {__instance.ReferenceID.ToString()} from nodeElementMap.");
+								};
+							}
 						});
 					}
 					else if (targetField != null)
@@ -812,27 +829,13 @@ namespace ColorMyLogixNodes
 										// need to wait 3 updates because who knows why...
 										__instance.RunInUpdates(3, () =>
 										{
-											Text firstText = root.GetComponentInChildren<Text>();
-											bool flag = false;
-
-											//if (firstText != null)
-											//{
-												//Debug($"found firstText: {firstText.Slot.Name} {firstText.Slot.Parent.Name} {firstText.Slot.ToString()}");
-											//}
-
 											foreach (Text text in root.GetComponentsInChildren<Text>())
 											{
-												if (text.Slot.Parent.Name == "Vertical Layout" || text.Slot.Parent.Name == "Horizontal Layout" || text.Slot.Parent.Name == "TextPadding")
+												if (text.Slot.Name == "Text" && (text.Slot.Parent.Name == "Vertical Layout" || text.Slot.Parent.Name == "Horizontal Layout" || text.Slot.Parent.Name == "TextPadding"))
 												{
-													flag = true;
 													TrySetTextColor(text, GetTextColor(colorToSet));
-													break;
+													//break;
 												}
-											}
-
-											if (firstText != null && !flag)
-											{
-												TrySetTextColor(firstText, GetTextColor(colorToSet));
 											}
 										});
 									}
