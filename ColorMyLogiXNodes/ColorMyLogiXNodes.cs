@@ -9,7 +9,6 @@ using System;
 using System.Reflection;
 using BaseX;
 using System.Collections.Generic;
-using System.CodeDom;
 
 #if DEBUG
 
@@ -447,8 +446,6 @@ namespace ColorMyLogixNodes
 
 		private static color GetColorWithRNG(ref Random rand)
 		{
-			//color colorToSet = Config.GetValue(NODE_COLOR);
-
 			// RNG seeded by any constant node factor will always give the same color
 			float hue;
 			float sat;
@@ -462,71 +459,35 @@ namespace ColorMyLogixNodes
 			{
 				case ColorModelEnum.HSV:
 					return new ColorHSV(hue, sat, val_lightness, 0.8f).ToRGB();
-					//var cHsv = new ColorHSV(colorToSet);
-					//Msg($"{cHsv.h.ToString()} {cHsv.s.ToString()} {cHsv.v.ToString()}");
-					//break;
 				case ColorModelEnum.HSL:
 					return new ColorHSL(hue, sat, val_lightness, 0.8f).ToRGB();
-					//var cHsl = new ColorHSL(colorToSet);
-					//Msg($"{cHsl.h.ToString()} {cHsl.s.ToString()} {cHsl.l.ToString()}");
-					//break;
 				case ColorModelEnum.RGB:
 					return new color(hue, sat, val_lightness, 0.8f);
-					//var cRgb = new color(colorToSet);
-					//Msg($"{cRgb.r.ToString()} {cRgb.g.ToString()} {cRgb.b.ToString()}");
-					//break;
 				default:
 					return Config.GetValue(NODE_COLOR);
-					//break;
-			}
-			//return colorToSet;
-		}
-
-		private static float sRGBtoLin(float v)
-		{
-			if (v < 0.04045)
-			{
-				return v / 12.92f;
-			}
-			else
-			{
-				return (float)Math.Pow((v + 0.055) / 1.055, 2.4);
 			}
 		}
 
-		private static float GetLuminance(color a)
+		private static float GetLuminance(color c)
 		{
-			float sR = (float)Math.Pow(a.r, 1f / 2.2f);
-			float sG = (float)Math.Pow(a.g, 1f / 2.2f);
-			float sB = (float)Math.Pow(a.b, 1f / 2.2f);
+			float sR = (float)Math.Pow(c.r, 2.2f);
+			float sG = (float)Math.Pow(c.g, 2.2f);
+			float sB = (float)Math.Pow(c.b, 2.2f);
 
-			float y = (0.2126f * sRGBtoLin(sR) + 0.7152f * sRGBtoLin(sG) + 0.0722f * sRGBtoLin(sB));
+			float luminance = (0.2126f * sR + 0.7152f * sG + 0.0722f * sB);
 			
-			return y;
+			return luminance;
 		}
 
 		private static float GetPerceptualLightness(float luminance)
 		{
-			if (luminance <= (216f/24389f))
-			{
-				return luminance * (24389f / 27f);
-			}
-			else
-			{
-				return (float)Math.Pow(luminance, (1f / 3f)) * 116f - 16f;
-			}
-		}
-
-		private static float GetContrast(color a, color b)
-		{
-			return (Math.Max(GetLuminance(a), GetLuminance(b)) + 0.05f) / (Math.Min(GetLuminance(a), GetLuminance(b)) + 0.05f);
+			// 1 = white, 0.5 = middle gray, 0 = black
+			return (float)Math.Pow(luminance, 0.6);
 		}
 
 		private static color GetTextColor(color bg)
 		{
-			float whiteContrast = GetContrast(bg, color.White);
-			float blackContrast = GetContrast(bg, color.Black);
-			return whiteContrast > blackContrast ? color.White : color.Black;
+			return GetPerceptualLightness(GetLuminance(bg)) >= 0.5f ? color.Black : color.White;
 		}
 
 		private static void UpdateRefOrDriverNodeColor(LogixNode node, string targetField)
@@ -673,20 +634,8 @@ namespace ColorMyLogixNodes
 						nodeElementMap[node].Add(nearestComp);
 					}
 				}
-
-				//TrySetTag(node.ActiveVisual, DELEGATE_ADDED_TAG);
-				//Debug("Setting slot tag");
 			}
 		}
-
-		//private static int GetInt32FromUlong(ulong ul)
-		//{
-		//	ulong range = (ulong)Int32.MaxValue + (ulong)Math.Abs(Int32.MinValue);
-		//	int corrected;
-		//	corrected = (int)(ul % range);
-		//	corrected += Int32.MinValue;
-  //          return corrected;
-		//}
 
 		[HarmonyPatch(typeof(LogixNode))]
 		[HarmonyPatch("GenerateVisual")]
@@ -804,6 +753,7 @@ namespace ColorMyLogixNodes
 									if (Config.GetValue(ENABLE_NON_RANDOM_REFID))
 									{
 										int refidModDivisor = Config.GetValue(REFID_MOD_DIVISOR);
+
 										// force it to 1 to avoid dividing by 0
 										ulong divisor = (refidModDivisor > 0) ? (ulong)refidModDivisor : 1;
 
@@ -862,7 +812,7 @@ namespace ColorMyLogixNodes
 										// need to wait 3 updates because who knows why...
 										__instance.RunInUpdates(3, () =>
 										{
-											Text firstText = root.GetComponent<Text>();
+											Text firstText = root.GetComponentInChildren<Text>();
 											bool flag = false;
 
 											//if (firstText != null)
