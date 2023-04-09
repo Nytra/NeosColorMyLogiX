@@ -172,6 +172,10 @@ namespace ColorMyLogixNodes
 		{
 			try
 			{
+				if (image.Tint.IsDriven)
+				{
+					image.Tint.ReleaseLink(image.Tint.ActiveLink);
+				}
 				image.Tint.Value = color;
 			}
 			catch (Exception e)
@@ -612,7 +616,8 @@ namespace ColorMyLogixNodes
 		[HarmonyPatch("GenerateVisual")]
 		class Patch_LogixNode_GenerateVisual
 		{
-			static void Postfix(LogixNode __instance)
+            //[HarmonyAfter(new string[] { "Banane9.LogixVisualCustomizer" })]
+            static void Postfix(LogixNode __instance)
 			{
 				if (Config.GetValue(MOD_ENABLED) == true && __instance.ActiveVisual != null && __instance.ActiveVisual.ReferenceID.User == __instance.LocalUser.AllocationID)
 				{
@@ -663,7 +668,8 @@ namespace ColorMyLogixNodes
 		[HarmonyPatch("GenerateUI")]
 		class Patch_LogixNode_GenerateUI
 		{
-			static void Postfix(LogixNode __instance, Slot root)
+            [HarmonyAfter(new string[] { "Banane9.LogixVisualCustomizer" })]
+            static void Postfix(LogixNode __instance, Slot root)
 			{
 				// only run if the logix node visual slot is allocated to the local user
 				if (Config.GetValue(MOD_ENABLED) == true && root != null && root.ReferenceID.User == root.LocalUser.AllocationID)
