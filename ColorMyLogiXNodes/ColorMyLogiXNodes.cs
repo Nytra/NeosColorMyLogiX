@@ -9,6 +9,7 @@ using System;
 using System.Reflection;
 using BaseX;
 using System.Collections.Generic;
+using System.CodeDom;
 
 #if DEBUG
 
@@ -112,7 +113,7 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ALLOW_NEGATIVE_AND_EMISSIVE_COLORS = new ModConfigurationKey<bool>("ALLOW_NEGATIVE_AND_EMISSIVE_COLORS", "Allow negative and emissive colors:", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> ENABLE_TEXT_CONTRAST = new ModConfigurationKey<bool>("ENABLE_TEXT_CONTRAST", "Make node text color contrast with the node background color:", () => true, internalAccessOnly: true);
+		private static ModConfigurationKey<bool> ENABLE_TEXT_CONTRAST = new ModConfigurationKey<bool>("ENABLE_TEXT_CONTRAST", "Change node text color to contrast better with the node background:", () => true, internalAccessOnly: true);
 
 		private enum ColorModelEnum
 		{
@@ -680,10 +681,11 @@ namespace ColorMyLogixNodes
 
 		//private static int GetInt32FromUlong(ulong ul)
 		//{
+		//	ulong range = (ulong)Int32.MaxValue + (ulong)Math.Abs(Int32.MinValue);
 		//	int corrected;
-		//	//corrected = (int)(ul - (ulong)Int32.MaxValue * Math.Floor(((double)ul / (double)Int32.MaxValue)));
-		//	corrected = (int)(ul % (ulong)Int32.MaxValue);
-  //          return corrected + Int32.MinValue;
+		//	corrected = (int)(ul % range);
+		//	corrected += Int32.MinValue;
+  //          return corrected;
 		//}
 
 		[HarmonyPatch(typeof(LogixNode))]
@@ -792,7 +794,7 @@ namespace ColorMyLogixNodes
 											rng = new System.Random(__instance.GetType().FullName.GetHashCode() + Config.GetValue(RANDOM_SEED));
 											break;
 										case NodeColorModeEnum.RefID:
-											rng = new System.Random(root.Parent.ReferenceID.Position.GetHashCode() + Config.GetValue(RANDOM_SEED));
+											rng = new System.Random((int)root.Parent.ReferenceID.Position + Config.GetValue(RANDOM_SEED));
 											//Msg($"RefID Position: {root.Parent.ReferenceID.Position.ToString()}");
 											break;
 										default:
@@ -857,14 +859,20 @@ namespace ColorMyLogixNodes
 									if (Config.GetValue(ENABLE_TEXT_CONTRAST))
 									{
 										// set node label's text color
-										__instance.RunInUpdates(0, () =>
+										// need to wait 3 updates because who knows why...
+										__instance.RunInUpdates(3, () =>
 										{
 											Text firstText = root.GetComponent<Text>();
 											bool flag = false;
 
+											//if (firstText != null)
+											//{
+												//Debug($"found firstText: {firstText.Slot.Name} {firstText.Slot.Parent.Name} {firstText.Slot.ToString()}");
+											//}
+
 											foreach (Text text in root.GetComponentsInChildren<Text>())
 											{
-												if (text.Slot.Parent.Name == "Vertical Layout" || text.Slot.Parent.Name == "Horizontal Layout")
+												if (text.Slot.Parent.Name == "Vertical Layout" || text.Slot.Parent.Name == "Horizontal Layout" || text.Slot.Parent.Name == "TextPadding")
 												{
 													flag = true;
 													TrySetTextColor(text, GetTextColor(colorToSet));
@@ -872,7 +880,7 @@ namespace ColorMyLogixNodes
 												}
 											}
 
-											if (!flag)
+											if (firstText != null && !flag)
 											{
 												TrySetTextColor(firstText, GetTextColor(colorToSet));
 											}
