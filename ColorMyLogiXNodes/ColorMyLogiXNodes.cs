@@ -111,6 +111,8 @@ namespace ColorMyLogixNodes
 		private static ModConfigurationKey<StaticRangeModeEnum> STATIC_RANGE_MODE = new ModConfigurationKey<StaticRangeModeEnum>("STATIC_RANGE_MODE", "Seed for Random Ranges around Static Node Color:", () => StaticRangeModeEnum.SystemTime, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ALLOW_NEGATIVE_AND_EMISSIVE_COLORS = new ModConfigurationKey<bool>("ALLOW_NEGATIVE_AND_EMISSIVE_COLORS", "Allow negative and emissive colors:", () => false, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> ENABLE_TEXT_CONTRAST = new ModConfigurationKey<bool>("ENABLE_TEXT_CONTRAST", "Make node text color contrast with the node background color:", () => true, internalAccessOnly: true);
 
 		private enum ColorModelEnum
 		{
@@ -156,7 +158,7 @@ namespace ColorMyLogixNodes
 			harmony.PatchAll();
 		}
 
-		private static void TrySetTag(Slot s, string tag)
+		private static void TrySetSlotTag(Slot s, string tag)
 		{
 			try
 			{
@@ -184,23 +186,23 @@ namespace ColorMyLogixNodes
 			}
 		}
 
-        private static void TrySetTextColor(Text text, BaseX.color color)
-        {
-            try
-            {
-                if (text.Color.IsDriven)
-                {
-                    text.Color.ReleaseLink(text.Color.ActiveLink);
-                }
-                text.Color.Value = color;
-            }
-            catch (Exception e)
-            {
-                Error($"Error occurred while trying to set Text Color Value.\nError message: {e.Message}");
-            }
-        }
+		private static void TrySetTextColor(Text text, BaseX.color color)
+		{
+			try
+			{
+				if (text.Color.IsDriven)
+				{
+					text.Color.ReleaseLink(text.Color.ActiveLink);
+				}
+				text.Color.Value = color;
+			}
+			catch (Exception e)
+			{
+				Error($"Error occurred while trying to set Text Color Value.\nError message: {e.Message}");
+			}
+		}
 
-        private static string GetNodeCategoryString(Type logixType, bool onlyTopmost = false)
+		private static string GetNodeCategoryString(Type logixType, bool onlyTopmost = false)
 		{
 			Category customAttribute = logixType.GetCustomAttribute<Category>();
 			if (customAttribute == null)
@@ -349,7 +351,7 @@ namespace ColorMyLogixNodes
 
 		private static float GetColorChannelValue(int index, ref Random rand, ColorModelEnum model)
 		{
-			float val = 0;
+			float val;
 			if (Config.GetValue(USE_STATIC_COLOR))
 			{
 				val = GetStaticColorChannelValue(index, model, ref rand);
@@ -444,7 +446,7 @@ namespace ColorMyLogixNodes
 
 		private static color GetColorWithRNG(ref Random rand)
 		{
-			color colorToSet = Config.GetValue(NODE_COLOR);
+			//color colorToSet = Config.GetValue(NODE_COLOR);
 
 			// RNG seeded by any constant node factor will always give the same color
 			float hue;
@@ -458,30 +460,66 @@ namespace ColorMyLogixNodes
 			switch (Config.GetValue(COLOR_MODEL))
 			{
 				case ColorModelEnum.HSV:
-					colorToSet = new ColorHSV(hue, sat, val_lightness, 0.8f).ToRGB();
+					return new ColorHSV(hue, sat, val_lightness, 0.8f).ToRGB();
 					//var cHsv = new ColorHSV(colorToSet);
 					//Msg($"{cHsv.h.ToString()} {cHsv.s.ToString()} {cHsv.v.ToString()}");
-					break;
+					//break;
 				case ColorModelEnum.HSL:
-					colorToSet = new ColorHSL(hue, sat, val_lightness, 0.8f).ToRGB();
+					return new ColorHSL(hue, sat, val_lightness, 0.8f).ToRGB();
 					//var cHsl = new ColorHSL(colorToSet);
 					//Msg($"{cHsl.h.ToString()} {cHsl.s.ToString()} {cHsl.l.ToString()}");
-					break;
+					//break;
 				case ColorModelEnum.RGB:
-					colorToSet = new color(hue, sat, val_lightness, 0.8f);
+					return new color(hue, sat, val_lightness, 0.8f);
 					//var cRgb = new color(colorToSet);
 					//Msg($"{cRgb.r.ToString()} {cRgb.g.ToString()} {cRgb.b.ToString()}");
-					break;
+					//break;
 				default:
-					break;
+					return Config.GetValue(NODE_COLOR);
+					//break;
 			}
-			return colorToSet;
+			//return colorToSet;
+		}
+
+		private static float sRGBtoLin(float v)
+		{
+			if (v < 0.04045)
+			{
+				return v / 12.92f;
+			}
+			else
+			{
+				return (float)Math.Pow((v + 0.055) / 1.055, 2.4);
+			}
+		}
+
+		private static float GetLuminance(color a)
+		{
+			float sR = (float)Math.Pow(a.r, 1f / 2.2f);
+			float sG = (float)Math.Pow(a.g, 1f / 2.2f);
+			float sB = (float)Math.Pow(a.b, 1f / 2.2f);
+
+			float y = (0.2126f * sRGBtoLin(sR) + 0.7152f * sRGBtoLin(sG) + 0.0722f * sRGBtoLin(sB));
+			
+			return y;
+		}
+
+		private static float GetPerceptualLightness(float luminance)
+		{
+			if (luminance <= (216f/24389f))
+			{
+				return luminance * (24389f / 27f);
+			}
+			else
+			{
+				return (float)Math.Pow(luminance, (1f / 3f)) * 116f - 16f;
+			}
 		}
 
 		private static float GetContrast(color a, color b)
 		{
-			return (MathX.Max(a.Luminance, b.Luminance) + 0.05f) / (MathX.Min(a.Luminance, b.Luminance) + 0.05f);
-        }
+			return (Math.Max(GetLuminance(a), GetLuminance(b)) + 0.05f) / (Math.Min(GetLuminance(a), GetLuminance(b)) + 0.05f);
+		}
 
 		private static color GetTextColor(color bg)
 		{
@@ -490,7 +528,7 @@ namespace ColorMyLogixNodes
 			return whiteContrast > blackContrast ? color.White : color.Black;
 		}
 
-        private static void UpdateRefOrDriverNodeColor(LogixNode node, string targetField)
+		private static void UpdateRefOrDriverNodeColor(LogixNode node, string targetField)
 		{
 			if (node == null) return;
 			if (node.ActiveVisual == null) return;
@@ -640,12 +678,20 @@ namespace ColorMyLogixNodes
 			}
 		}
 
+		//private static int GetInt32FromUlong(ulong ul)
+		//{
+		//	int corrected;
+		//	//corrected = (int)(ul - (ulong)Int32.MaxValue * Math.Floor(((double)ul / (double)Int32.MaxValue)));
+		//	corrected = (int)(ul % (ulong)Int32.MaxValue);
+  //          return corrected + Int32.MinValue;
+		//}
+
 		[HarmonyPatch(typeof(LogixNode))]
 		[HarmonyPatch("GenerateVisual")]
 		class Patch_LogixNode_GenerateVisual
 		{
-            //[HarmonyAfter(new string[] { "Banane9.LogixVisualCustomizer" })]
-            static void Postfix(LogixNode __instance)
+			//[HarmonyAfter(new string[] { "Banane9.LogixVisualCustomizer" })]
+			static void Postfix(LogixNode __instance)
 			{
 				if (Config.GetValue(MOD_ENABLED) == true && __instance.ActiveVisual != null && __instance.ActiveVisual.ReferenceID.User == __instance.LocalUser.AllocationID)
 				{
@@ -672,7 +718,7 @@ namespace ColorMyLogixNodes
 
 							UpdateRefOrDriverNodeColor(__instance, targetField);
 
-							TrySetTag(__instance.ActiveVisual, DELEGATE_ADDED_TAG);
+							TrySetSlotTag(__instance.ActiveVisual, DELEGATE_ADDED_TAG);
 							Debug("Setting slot tag");
 
 							// remove node from nodeElementMap when it gets destroyed
@@ -696,8 +742,8 @@ namespace ColorMyLogixNodes
 		[HarmonyPatch("GenerateUI")]
 		class Patch_LogixNode_GenerateUI
 		{
-            [HarmonyAfter(new string[] { "Banane9.LogixVisualCustomizer" })]
-            static void Postfix(LogixNode __instance, Slot root)
+			[HarmonyAfter(new string[] { "Banane9.LogixVisualCustomizer" })]
+			static void Postfix(LogixNode __instance, Slot root)
 			{
 				// only run if the logix node visual slot is allocated to the local user
 				if (Config.GetValue(MOD_ENABLED) == true && root != null && root.ReferenceID.User == root.LocalUser.AllocationID)
@@ -746,8 +792,7 @@ namespace ColorMyLogixNodes
 											rng = new System.Random(__instance.GetType().FullName.GetHashCode() + Config.GetValue(RANDOM_SEED));
 											break;
 										case NodeColorModeEnum.RefID:
-											// maybe use ReferenceID.Position here instead?
-											rng = new System.Random(root.Parent.ReferenceID.GetHashCode() + Config.GetValue(RANDOM_SEED));
+											rng = new System.Random(root.Parent.ReferenceID.Position.GetHashCode() + Config.GetValue(RANDOM_SEED));
 											//Msg($"RefID Position: {root.Parent.ReferenceID.Position.ToString()}");
 											break;
 										default:
@@ -808,10 +853,33 @@ namespace ColorMyLogixNodes
 									//Msg($"after clamp {colorToSet.r.ToString()} {colorToSet.g.ToString()} {colorToSet.b.ToString()}");
 
 									TrySetImageTint(image, colorToSet);
-									TrySetTag(root, COLOR_SET_TAG);
 
-									Text text = root.GetComponentInChildren<Text>();
-									TrySetTextColor(text, GetTextColor(colorToSet));
+									if (Config.GetValue(ENABLE_TEXT_CONTRAST))
+									{
+										// set node label's text color
+										__instance.RunInUpdates(0, () =>
+										{
+											Text firstText = root.GetComponent<Text>();
+											bool flag = false;
+
+											foreach (Text text in root.GetComponentsInChildren<Text>())
+											{
+												if (text.Slot.Parent.Name == "Vertical Layout" || text.Slot.Parent.Name == "Horizontal Layout")
+												{
+													flag = true;
+													TrySetTextColor(text, GetTextColor(colorToSet));
+													break;
+												}
+											}
+
+											if (!flag)
+											{
+												TrySetTextColor(firstText, GetTextColor(colorToSet));
+											}
+										});
+									}
+
+									TrySetSlotTag(root, COLOR_SET_TAG);
 								}
 							}
 						}
