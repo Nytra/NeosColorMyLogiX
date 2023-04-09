@@ -184,7 +184,23 @@ namespace ColorMyLogixNodes
 			}
 		}
 
-		private static string GetNodeCategoryString(Type logixType, bool onlyTopmost = false)
+        private static void TrySetTextColor(Text text, BaseX.color color)
+        {
+            try
+            {
+                if (text.Color.IsDriven)
+                {
+                    text.Color.ReleaseLink(text.Color.ActiveLink);
+                }
+                text.Color.Value = color;
+            }
+            catch (Exception e)
+            {
+                Error($"Error occurred while trying to set Text Color Value.\nError message: {e.Message}");
+            }
+        }
+
+        private static string GetNodeCategoryString(Type logixType, bool onlyTopmost = false)
 		{
 			Category customAttribute = logixType.GetCustomAttribute<Category>();
 			if (customAttribute == null)
@@ -462,7 +478,19 @@ namespace ColorMyLogixNodes
 			return colorToSet;
 		}
 
-		private static void UpdateRefOrDriverNodeColor(LogixNode node, string targetField)
+		private static float GetContrast(color a, color b)
+		{
+			return (MathX.Max(a.Luminance, b.Luminance) + 0.05f) / (MathX.Min(a.Luminance, b.Luminance) + 0.05f);
+        }
+
+		private static color GetTextColor(color bg)
+		{
+			float whiteContrast = GetContrast(bg, color.White);
+			float blackContrast = GetContrast(bg, color.Black);
+			return whiteContrast > blackContrast ? color.White : color.Black;
+		}
+
+        private static void UpdateRefOrDriverNodeColor(LogixNode node, string targetField)
 		{
 			if (node == null) return;
 			if (node.ActiveVisual == null) return;
@@ -781,6 +809,9 @@ namespace ColorMyLogixNodes
 
 									TrySetImageTint(image, colorToSet);
 									TrySetTag(root, COLOR_SET_TAG);
+
+									Text text = root.GetComponentInChildren<Text>();
+									TrySetTextColor(text, GetTextColor(colorToSet));
 								}
 							}
 						}
