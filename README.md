@@ -26,6 +26,8 @@ You can select which Node Factor is used to seed the randomness in the dynamic s
 
 The Seed option in the dynamic section can be used to get a completely different set of colors being generated. It works in addition to the Selected Node Factor.
 
+The Random Max and Random Min options will set the bounds for randomness in the channels of the Selected Color Model. For example, if your Selected Color Model is HSV, the options will control randomness for Hue, Saturation and Value respectively. If you set the min and max for Saturation to zero, you will get grayscale nodes where the Value channel controls how light or dark they are.
+
 You can use the output RGB multiplier to suppress or amplify the color channels of red, green or blue. If you don't want any red in your nodes, set the multiplier for red to zero. Or amplify it, if you like.
 
 Hue-shift mode will take the RefID of the node and convert it directly into a value for Hue. So as the RefID values increase in the world you will get Hue values that constantly shift alongside it.
