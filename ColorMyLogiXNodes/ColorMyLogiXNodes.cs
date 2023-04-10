@@ -599,7 +599,7 @@ namespace ColorMyLogixNodes
 		[HarmonyPatch("GenerateUI")]
 		class Patch_LogixNode_GenerateUI
 		{
-			[HarmonyAfter(new string[] { "Banane9.LogixVisualCustomizer" })]
+			[HarmonyAfter(new string[] { "Banane9.LogixVisualCustomizer", "Banane9, Fro Zen.LogixVisualCustomizer" })]
 			static void Postfix(LogixNode __instance, Slot root)
 			{
 				// only run if the logix node visual slot is allocated to the local user
