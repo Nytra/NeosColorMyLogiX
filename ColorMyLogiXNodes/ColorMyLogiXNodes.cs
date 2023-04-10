@@ -8,7 +8,6 @@ using NeosModLoader;
 using System;
 using System.Reflection;
 using BaseX;
-using System.Collections.Generic;
 
 #if DEBUG
 
@@ -147,8 +146,6 @@ namespace ColorMyLogixNodes
 
 		private const string COLOR_SET_TAG = "ColorMyLogiXNodes.ColorSet";
 		private const string DELEGATE_ADDED_TAG = "ColorMyLogiXNodes.DelegateAdded";
-
-		static Dictionary<World, Dictionary<LogixNode, HashSet<IWorldElement>>> worldNodeMap = new();
 
 		public override void OnEngineInit()
 		{
@@ -555,90 +552,10 @@ namespace ColorMyLogixNodes
 			});
 		}
 
-		private static bool IsIWorldElementInNodeElementMap(LogixNode node, IWorldElement worldElement)
-		{
-			if (worldNodeMap.ContainsKey(node.World) && worldNodeMap[node.World].ContainsKey(node)) return worldNodeMap[node.World][node].Contains(worldElement);
-			return false;
-		}
-
-		private static void SubscribeToEvents(LogixNode node, string targetField)
-		{
-			Debug($"Subscribing to events for node {node.Name} {node.ReferenceID.ToString()}");
-
-			var targetSyncRef = node.TryGetField(targetField) as ISyncRef;
-			if (targetSyncRef == null) return;
-
-			// find out when the nearest component or slot gets destroyed
-			// and update the node color when that happens
-			Component nearestComp = targetSyncRef.Target.FindNearestParent<Component>();
-			Slot nearestSlot = targetSyncRef.Target.FindNearestParent<Slot>();
-
-			if (!IsIWorldElementInNodeElementMap(node, targetSyncRef))
-			{
-				Debug($"Subscribing to SyncRef Changed event for node {node.Name} {node.ReferenceID.ToString()}");
-				targetSyncRef.Changed += (iChangeable) =>
-				{
-					Debug($"targetSyncRef Changed. Clearing IWorldElement HashSet for node {node.Name} {node.ReferenceID.ToString()} and resubscribing to events.");
-					worldNodeMap[node.World][node].Clear();
-					worldNodeMap[node.World][node].TrimExcess();
-					worldNodeMap[node.World][node].Add(targetSyncRef);
-					SubscribeToEvents(node, targetField);
-					UpdateRefOrDriverNodeColor(node, targetField);
-				};
-				worldNodeMap[node.World][node].Add(targetSyncRef);
-			}
-
-			if (nearestSlot != null) Debug($"Found nearest slot: {nearestSlot.ToString()}");
-			if (nearestComp != null) Debug($"Found nearest component: {nearestComp.ToString()}");
-
-			if (nearestSlot == null && nearestComp == null)
-			{
-				// xD
-			}
-			else
-			{
-				Action<IChangeable> func = (worldElement) =>
-				{
-					UpdateRefOrDriverNodeColor(node, targetField);
-				};
-				if (nearestSlot != null)
-				{
-					if (!IsIWorldElementInNodeElementMap(node, nearestSlot))
-					{
-						Debug("Subscribing for nearest slot");
-						nearestSlot.Disposing += (worker) =>
-						{
-							UpdateRefOrDriverNodeColor(node, targetField);
-						};
-						worldNodeMap[node.World][node].Add(nearestSlot);
-					}
-					if (nearestComp != null && nearestComp.IsChildOfElement(nearestSlot) && nearestComp != ((Component)node))
-					{
-						if (!IsIWorldElementInNodeElementMap(node, nearestComp))
-						{
-							Debug("Subscribing for nearest component");
-							nearestComp.Destroyed += func;
-							worldNodeMap[node.World][node].Add(nearestComp);
-						}
-					}
-				}
-				else if (nearestComp != null && nearestComp != ((Component)node))
-				{
-					if (!IsIWorldElementInNodeElementMap(node, nearestComp))
-					{
-						Debug("Subscribing for nearest component");
-						nearestComp.Destroyed += func;
-						worldNodeMap[node.World][node].Add(nearestComp);
-					}
-				}
-			}
-		}
-
 		[HarmonyPatch(typeof(LogixNode))]
 		[HarmonyPatch("GenerateVisual")]
 		class Patch_LogixNode_GenerateVisual
 		{
-			//[HarmonyAfter(new string[] { "Banane9.LogixVisualCustomizer" })]
 			static void Postfix(LogixNode __instance)
 			{
 				if (Config.GetValue(MOD_ENABLED) == true && __instance.ActiveVisual != null && __instance.ActiveVisual.ReferenceID.User == __instance.LocalUser.AllocationID)
@@ -652,49 +569,21 @@ namespace ColorMyLogixNodes
 					{
 						targetField = "DriveTarget";
 					}
-					if (targetField != null && __instance.ActiveVisual.Tag != DELEGATE_ADDED_TAG)
+					if (targetField != null && __instance.Slot.Tag != DELEGATE_ADDED_TAG)
 					{
-						Debug("Running main event subscription code");
-						if (!worldNodeMap.ContainsKey(__instance.World))
-						{
-							worldNodeMap.Add(__instance.World, new Dictionary<LogixNode, HashSet<IWorldElement>>());
-							Debug($"Adding new world {__instance.World.Name} {__instance.World.ToString()} to worldNodeMap.");
-							__instance.World.WorldDestroyed += (world) =>
-							{
-								worldNodeMap[__instance.World] = null;
-								worldNodeMap.Remove(__instance.World);
-							};
-						}
-						if (!worldNodeMap[__instance.World].ContainsKey(__instance))
-						{
-							worldNodeMap[__instance.World].Add(__instance, new HashSet<IWorldElement>());
-							Debug($"Adding new node {__instance.Name} {__instance.ReferenceID.ToString()} to nodeElementMap.");
-						}
 						__instance.RunInUpdates(0, () =>
 						{
-							SubscribeToEvents(__instance, targetField);
+							ISyncRef syncRef = __instance.TryGetField(targetField) as ISyncRef;
+
+							syncRef.Changed += (iChangeable) =>
+							{
+								UpdateRefOrDriverNodeColor(__instance, targetField);
+							};
 
 							UpdateRefOrDriverNodeColor(__instance, targetField);
 
-							TrySetSlotTag(__instance.ActiveVisual, DELEGATE_ADDED_TAG);
+							TrySetSlotTag(__instance.Slot, DELEGATE_ADDED_TAG);
 							Debug("Setting slot tag");
-
-							// remove node from nodeElementMap when it gets destroyed
-							((Component)__instance).Destroyed += (iChangeable) =>
-							{
-								worldNodeMap[__instance.World][__instance] = null;
-								worldNodeMap[__instance.World].Remove(__instance);
-								Debug($"Component destroyed. Removed node {__instance.Name} {__instance.ReferenceID.ToString()} from nodeElementMap.");
-							};
-							if (__instance.Slot != null)
-							{
-								__instance.Slot.Disposing += (worker) =>
-								{
-									worldNodeMap[__instance.World][__instance] = null;
-									worldNodeMap[__instance.World].Remove(__instance);
-									Debug($"Slot disposing. Removed node {__instance.Name} {__instance.ReferenceID.ToString()} from nodeElementMap.");
-								};
-							}
 						});
 					}
 					else if (targetField != null)
