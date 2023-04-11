@@ -77,7 +77,17 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_4", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_4_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_4_1", $"<color={HEADER_TEXT_COLOR}>[EXTRA]</color>", () => new dummy());
+		private static ModConfigurationKey<dummy> DUMMY_SEP_4_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_4_1", $"<color={HEADER_TEXT_COLOR}>[TEXT]</color>", () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> ENABLE_TEXT_CONTRAST = new ModConfigurationKey<bool>("ENABLE_TEXT_CONTRAST", "Automatically change the color of text to contrast better with the node background:", () => true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> USE_STATIC_TEXT_COLOR = new ModConfigurationKey<bool>("USE_STATIC_TEXT_COLOR", "Use Static Text Color (Disables automatic text coloring):", () => false);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<BaseX.color> STATIC_TEXT_COLOR = new ModConfigurationKey<BaseX.color>("STATIC_TEXT_COLOR", "Static Text Color:", () => new BaseX.color(0f, 0f, 0f, 1f));
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_5", SEP_STRING, () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_5_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_1", $"<color={HEADER_TEXT_COLOR}>[EXTRA]</color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> MULTIPLY_OUTPUT_BY_RGB = new ModConfigurationKey<bool>("MULTIPLY_OUTPUT_BY_RGB", "Use Output RGB Channel Multiplier:", () => false);
 		[AutoRegisterConfigKey]
@@ -111,13 +121,7 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ALLOW_NEGATIVE_AND_EMISSIVE_COLORS = new ModConfigurationKey<bool>("ALLOW_NEGATIVE_AND_EMISSIVE_COLORS", "Allow negative and emissive colors:", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> ENABLE_TEXT_CONTRAST = new ModConfigurationKey<bool>("ENABLE_TEXT_CONTRAST", "Automatically change the text color of nodes to contrast better with the node background:", () => true, internalAccessOnly: true);
-		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float> PERCEPTUAL_LIGHTNESS_EXPONENT = new ModConfigurationKey<float>("PERCEPTUAL_LIGHTNESS_EXPONENT", "Exponent for perceptual lightness calculation (affects automatic text color, best ~0.6 to ~0.8):", () => 0.6f, internalAccessOnly: true);
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> USE_STATIC_TEXT_COLOR = new ModConfigurationKey<bool>("USE_STATIC_TEXT_COLOR", "Use Static Text Color (Disables automatic text contrast):", () => false, internalAccessOnly: true);
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<BaseX.color> STATIC_TEXT_COLOR = new ModConfigurationKey<BaseX.color>("STATIC_TEXT_COLOR", "Static Text Color:", () => new BaseX.color(0f, 0f, 0f, 1f), internalAccessOnly: true);
 
 		private enum ColorModelEnum
 		{
@@ -491,14 +495,33 @@ namespace ColorMyLogixNodes
 
 		private static color GetTextColor(color bg)
 		{
+			color c;
 			if (Config.GetValue(USE_STATIC_TEXT_COLOR))
 			{
-				return Config.GetValue(STATIC_TEXT_COLOR);
+				c = Config.GetValue(STATIC_TEXT_COLOR);
 			}
 			else
 			{
-				return GetPerceptualLightness(GetLuminance(bg)) >= 0.5f ? color.Black : color.White;
+				c = GetPerceptualLightness(GetLuminance(bg)) >= 0.5f ? color.Black : color.White;
 			}
+			if (!Config.GetValue(ALLOW_NEGATIVE_AND_EMISSIVE_COLORS))
+			{
+				ClampColor(ref c);
+			}
+			return c;
+		}
+
+		private static void ClampColor(ref color c)
+		{
+			// clamp color to min 0 and max 1 (no negative or emissive colors allowed)
+			if (c.r > 1) c = c.SetR(1f);
+			if (c.r < 0) c = c.SetR(0f);
+
+			if (c.g > 1) c = c.SetG(1f);
+			if (c.g < 0) c = c.SetG(0f);
+
+			if (c.b > 1) c = c.SetB(1f);
+			if (c.b < 0) c = c.SetB(0f);
 		}
 
 		private static void UpdateRefOrDriverNodeColor(LogixNode node, string targetField)
@@ -711,15 +734,7 @@ namespace ColorMyLogixNodes
 									//Msg($"before clamp {colorToSet.r.ToString()} {colorToSet.g.ToString()} {colorToSet.b.ToString()}");
 									if (!Config.GetValue(ALLOW_NEGATIVE_AND_EMISSIVE_COLORS))
 									{
-										// clamp color to min 0 and max 1 (no negative or emissive colors allowed)
-										if (colorToSet.r > 1) colorToSet = colorToSet.SetR(1f);
-										if (colorToSet.r < 0) colorToSet = colorToSet.SetR(0f);
-
-										if (colorToSet.g > 1) colorToSet = colorToSet.SetG(1f);
-										if (colorToSet.g < 0) colorToSet = colorToSet.SetG(0f);
-
-										if (colorToSet.b > 1) colorToSet = colorToSet.SetB(1f);
-										if (colorToSet.b < 0) colorToSet = colorToSet.SetB(0f);
+										ClampColor(ref colorToSet);
 									}
 									//Msg($"after clamp {colorToSet.r.ToString()} {colorToSet.g.ToString()} {colorToSet.b.ToString()}");
 
