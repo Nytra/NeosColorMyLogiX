@@ -111,7 +111,13 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ALLOW_NEGATIVE_AND_EMISSIVE_COLORS = new ModConfigurationKey<bool>("ALLOW_NEGATIVE_AND_EMISSIVE_COLORS", "Allow negative and emissive colors:", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> ENABLE_TEXT_CONTRAST = new ModConfigurationKey<bool>("ENABLE_TEXT_CONTRAST", "Change the text color of nodes to contrast better with the node background:", () => true, internalAccessOnly: true);
+		private static ModConfigurationKey<bool> ENABLE_TEXT_CONTRAST = new ModConfigurationKey<bool>("ENABLE_TEXT_CONTRAST", "Automatically change the text color of nodes to contrast better with the node background:", () => true, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<float> PERCEPTUAL_LIGHTNESS_EXPONENT = new ModConfigurationKey<float>("PERCEPTUAL_LIGHTNESS_EXPONENT", "Exponent for perceptual lightness calculation (affects automatic text color, best ~0.6 to ~0.8):", () => 0.6f, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> USE_STATIC_TEXT_COLOR = new ModConfigurationKey<bool>("USE_STATIC_TEXT_COLOR", "Use Static Text Color (Disables automatic text contrast):", () => false, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<BaseX.color> STATIC_TEXT_COLOR = new ModConfigurationKey<BaseX.color>("STATIC_TEXT_COLOR", "Static Text Color:", () => new BaseX.color(0f, 0f, 0f, 1f), internalAccessOnly: true);
 
 		private enum ColorModelEnum
 		{
@@ -480,12 +486,19 @@ namespace ColorMyLogixNodes
 		{
 			// 1 = white, 0.5 = middle gray, 0 = black
 			// the power can be tweaked here. ~0.6 to ~0.8
-			return (float)Math.Pow(luminance, 0.6);
+			return (float)Math.Pow(luminance, Config.GetValue(PERCEPTUAL_LIGHTNESS_EXPONENT));
 		}
 
 		private static color GetTextColor(color bg)
 		{
-			return GetPerceptualLightness(GetLuminance(bg)) >= 0.5f ? color.Black : color.White;
+			if (Config.GetValue(USE_STATIC_TEXT_COLOR))
+			{
+				return Config.GetValue(STATIC_TEXT_COLOR);
+			}
+			else
+			{
+				return GetPerceptualLightness(GetLuminance(bg)) >= 0.5f ? color.Black : color.White;
+			}
 		}
 
 		private static void UpdateRefOrDriverNodeColor(LogixNode node, string targetField)
@@ -712,7 +725,7 @@ namespace ColorMyLogixNodes
 
 									TrySetImageTint(image, colorToSet);
 
-									if (Config.GetValue(ENABLE_TEXT_CONTRAST))
+									if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 									{
 										// set node label's text color
 										// need to wait 3 updates because who knows why...
