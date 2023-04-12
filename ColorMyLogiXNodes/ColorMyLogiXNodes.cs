@@ -154,8 +154,8 @@ namespace ColorMyLogixNodes
 		private static System.Random rng;
 		private static System.Random rngTimeSeeded = new System.Random();
 
-		private const string COLOR_SET_TAG = "ColorMyLogiXNodes.ColorSet";
-		private const string DELEGATE_ADDED_TAG = "ColorMyLogiXNodes.DelegateAdded";
+		private const string COLOR_SET_TAG = "ColorMyLogiX.ColorSet";
+		private const string DELEGATE_ADDED_TAG = "ColorMyLogiX.DelegateAdded";
 
 		public override void OnEngineInit()
 		{
