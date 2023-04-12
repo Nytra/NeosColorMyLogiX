@@ -30,6 +30,8 @@ The Seed option in the dynamic section can be used to get a completely different
 
 The Random Max and Random Min options will set the bounds for randomness in the channels of the Selected Color Model. For example, if your Selected Color Model is HSV, the options will control randomness for Hue, Saturation and Value respectively. If you set the max and min for Saturation to zero, you will get grayscale nodes, and the Value channel will control how light or dark they are.
 
+For text, the option for automatic text coloring will make the text color either black or white depending on the perceptual lightness of the node's background color. You can also use a static text color that doesn't change if you want.
+
 You can use the output RGB multiplier to suppress or amplify the color channels of red, green or blue. If you don't want any red in your nodes, set the multiplier for red to zero. Or amplify it, if you like.
 
 Hue-shift mode will take the RefID of the node and convert it directly into a value for Hue. So as the RefID values increase in the world you will get Hue values that constantly shift alongside it.
