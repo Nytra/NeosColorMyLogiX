@@ -36,6 +36,8 @@ Hue-shift mode will take the RefID of the node and convert it directly into a va
 
 There are more advanced options in the internal access config. You can get to these by going to the config page for NeosModSettings in Neos and toggle on the option that lets you see internal access config keys.
 
+![20230410153906_1](https://user-images.githubusercontent.com/14206961/231432280-326c448d-84c1-4874-95f4-23c710b939e5.jpg)
+![20230412111720_1](https://user-images.githubusercontent.com/14206961/231432333-337ac6dd-23f1-4358-aacb-b54569e68d2d.jpg)
 ![20230225035345_1](https://user-images.githubusercontent.com/14206961/230007717-d8d3ffbf-9e50-48d0-a5f4-0c91dc91d67f.jpg)
 ![20230128145825_1](https://user-images.githubusercontent.com/14206961/230704434-b7b8f450-c0f1-4865-8b9f-6fdfed30abe2.jpg)
 ![20230407033902_1](https://user-images.githubusercontent.com/14206961/230702924-0649d190-b838-4edd-bfab-fd218fa5ac22.jpg)
