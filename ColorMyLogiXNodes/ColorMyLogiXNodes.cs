@@ -592,6 +592,7 @@ namespace ColorMyLogixNodes
 		[HarmonyPatch("GenerateVisual")]
 		class Patch_LogixNode_GenerateVisual
 		{
+			[HarmonyAfter(new string[] { "Banane9.LogixVisualCustomizer", "Banane9, Fro Zen.LogixVisualCustomizer" })]
 			static void Postfix(LogixNode __instance)
 			{
 				if (Config.GetValue(MOD_ENABLED) == true && __instance.ActiveVisual != null && __instance.ActiveVisual.ReferenceID.User == __instance.LocalUser.AllocationID)
