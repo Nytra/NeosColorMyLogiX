@@ -19,7 +19,7 @@ namespace ColorMyLogixNodes
 	{
 		public override string Name => "ColorMyLogiX";
 		public override string Author => "Nytra";
-		public override string Version => "1.1.0";
+		public override string Version => "1.1.1";
 		public override string Link => "https://github.com/Nytra/NeosColorMyLogiX";
 
 		const string SEP_STRING = "<size=0></size>";
@@ -121,7 +121,7 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ALLOW_NEGATIVE_AND_EMISSIVE_COLORS = new ModConfigurationKey<bool>("ALLOW_NEGATIVE_AND_EMISSIVE_COLORS", "Allow negative and emissive colors:", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<float> PERCEPTUAL_LIGHTNESS_EXPONENT = new ModConfigurationKey<float>("PERCEPTUAL_LIGHTNESS_EXPONENT", "Exponent for perceptual lightness calculation (affects automatic text color, best ~0.6 to ~0.8):", () => 0.6f, internalAccessOnly: true);
+		private static ModConfigurationKey<float> PERCEPTUAL_LIGHTNESS_EXPONENT = new ModConfigurationKey<float>("PERCEPTUAL_LIGHTNESS_EXPONENT", "Exponent for perceptual lightness calculation (affects automatic text color, best ~0.6 to ~0.8):", () => 0.5f, internalAccessOnly: true);
 
 		private enum ColorModelEnum
 		{
@@ -260,10 +260,10 @@ namespace ColorMyLogixNodes
 			}
 		}
 
-		private static float GetStaticColorChannelValue(int index, ColorModelEnum model, ref Random rand)
+		private static float GetStaticColorChannelValue(int index, ColorModelEnum model, Random rand)
 		{
 			float val = 0;
-			int coinflip = 0;
+			int coinflip;
 			switch (model)
 			{
 				case ColorModelEnum.HSV:
@@ -329,11 +329,11 @@ namespace ColorMyLogixNodes
 					{
 						case StaticRangeModeEnum.NodeFactor:
 							coinflip = rand.Next(2) == 0 ? -1 : 1;
-							val += (rand.Next(101) / 100.0f) * range * (float)coinflip / 2f;
+							val += (float)rand.NextDouble() * range * (float)coinflip / 2f;
 							break;
 						case StaticRangeModeEnum.SystemTime:
 							coinflip = rngTimeSeeded.Next(2) == 0 ? -1 : 1;
-							val += (rngTimeSeeded.Next(101) / 100.0f) * range * (float)coinflip / 2f;
+							val += (float)rngTimeSeeded.NextDouble() * range * (float)coinflip / 2f;
 							break;
 						default:
 							break;
@@ -341,36 +341,36 @@ namespace ColorMyLogixNodes
 				}
 				else
 				{
-					val = GetRandomColorChannelValue(index, ref rand);
+					val = GetRandomColorChannelValue(index, rand);
 				}
 			}
 			return val;
 		}
 
-		private static float GetRandomColorChannelValue(int index, ref Random rand)
+		private static float GetRandomColorChannelValue(int index, Random rand)
 		{
 			float3 mins = Config.GetValue(COLOR_CHANNELS_MIN);
 			float3 maxs = Config.GetValue(COLOR_CHANNELS_MAX);
 			float3 random_strength = MathX.Abs(maxs - mins);
 			float3 random_offset = mins;
-			return (rand.Next(101) / 100.0f) * random_strength[index] + random_offset[index];
+			return (float)rand.NextDouble() * random_strength[index] + random_offset[index];
 		}
 
-		private static float GetColorChannelValue(int index, ref Random rand, ColorModelEnum model)
+		private static float GetColorChannelValue(int index, Random rand, ColorModelEnum model)
 		{
 			float val;
 			if (Config.GetValue(USE_STATIC_COLOR))
 			{
-				val = GetStaticColorChannelValue(index, model, ref rand);
+				val = GetStaticColorChannelValue(index, model, rand);
 			}
 			else
 			{
-				val = GetRandomColorChannelValue(index, ref rand);
+				val = GetRandomColorChannelValue(index, rand);
 			}
 			return val;
 		}
 
-		private static BaseX.color GetColorFromUlong(ulong val, ulong divisor, ref Random rand)
+		private static BaseX.color GetColorFromUlong(ulong val, ulong divisor, Random rand)
 		{
 			float hue = 0f;
 			float sat = 0f;
@@ -381,7 +381,7 @@ namespace ColorMyLogixNodes
 
 			if (Config.GetValue(COLOR_MODEL) == ColorModelEnum.RGB)
 			{
-				hue = GetColorChannelValue(0, ref rand, Config.GetValue(COLOR_MODEL));
+				hue = GetColorChannelValue(0, rand, Config.GetValue(COLOR_MODEL));
 			}
 			else
 			{
@@ -429,8 +429,8 @@ namespace ColorMyLogixNodes
 			//	val_lightness = GetColorChannelValue(2, ref rngTimeSeeded, Config.GetValue(COLOR_MODEL));
 			//}
 
-			sat = GetColorChannelValue(1, ref rand, Config.GetValue(COLOR_MODEL));
-			val_lightness = GetColorChannelValue(2, ref rand, Config.GetValue(COLOR_MODEL));
+			sat = GetColorChannelValue(1, rand, Config.GetValue(COLOR_MODEL));
+			val_lightness = GetColorChannelValue(2, rand, Config.GetValue(COLOR_MODEL));
 
 			BaseX.color c = Config.GetValue(NODE_COLOR);
 			switch (Config.GetValue(COLOR_MODEL))
@@ -451,16 +451,16 @@ namespace ColorMyLogixNodes
 			return c;
 		}
 
-		private static color GetColorWithRNG(ref Random rand)
+		private static color GetColorWithRNG(Random rand)
 		{
 			// RNG seeded by any constant node factor will always give the same color
 			float hue;
 			float sat;
 			float val_lightness;
 
-			hue = GetColorChannelValue(0, ref rand, Config.GetValue(COLOR_MODEL));
-			sat = GetColorChannelValue(1, ref rand, Config.GetValue(COLOR_MODEL));
-			val_lightness = GetColorChannelValue(2, ref rand, Config.GetValue(COLOR_MODEL));
+            hue = GetColorChannelValue(0, rand, Config.GetValue(COLOR_MODEL));
+			sat = GetColorChannelValue(1, rand, Config.GetValue(COLOR_MODEL));
+			val_lightness = GetColorChannelValue(2, rand, Config.GetValue(COLOR_MODEL));
 
 			switch (Config.GetValue(COLOR_MODEL))
 			{
@@ -686,7 +686,7 @@ namespace ColorMyLogixNodes
 											rng = new System.Random(__instance.GetType().FullName.GetHashCode() + Config.GetValue(RANDOM_SEED));
 											break;
 										case NodeColorModeEnum.RefID:
-											rng = new System.Random((int)root.Parent.ReferenceID.Position + Config.GetValue(RANDOM_SEED));
+											rng = new System.Random(root.Parent.ReferenceID.GetHashCode() + Config.GetValue(RANDOM_SEED));
 											//Msg($"RefID Position: {root.Parent.ReferenceID.Position.ToString()}");
 											break;
 										default:
@@ -702,11 +702,11 @@ namespace ColorMyLogixNodes
 
 										if (Config.GetValue(USE_SYSTEM_TIME_RNG))
 										{
-											colorToSet = GetColorFromUlong(root.Parent.ReferenceID.Position, divisor, ref rngTimeSeeded);
+											colorToSet = GetColorFromUlong(root.Parent.ReferenceID.Position, divisor, rngTimeSeeded);
 										}
 										else
 										{
-											colorToSet = GetColorFromUlong(root.Parent.ReferenceID.Position, divisor, ref rng);
+											colorToSet = GetColorFromUlong(root.Parent.ReferenceID.Position, divisor, rng);
 										}
 
 										rng = null;
@@ -716,11 +716,11 @@ namespace ColorMyLogixNodes
 									{
 										if (Config.GetValue(USE_SYSTEM_TIME_RNG))
 										{
-											colorToSet = GetColorWithRNG(ref rngTimeSeeded);
+											colorToSet = GetColorWithRNG(rngTimeSeeded);
 										}
 										else
 										{
-											colorToSet = GetColorWithRNG(ref rng);
+											colorToSet = GetColorWithRNG(rng);
 										}
 									}
 
