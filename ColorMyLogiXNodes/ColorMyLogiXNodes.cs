@@ -55,6 +55,8 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float3> RANDOM_RANGES_AROUND_STATIC_VALUES = new ModConfigurationKey<float3>("RANDOM_RANGES_AROUND_STATIC_VALUES", "Random Ranges around Static Node Color [0 to 1]:", () => new float3(0.1f, 0.1f, 0.1f));
 		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<StaticRangeModeEnum> STATIC_RANGE_MODE = new ModConfigurationKey<StaticRangeModeEnum>("STATIC_RANGE_MODE", "Seed for Random Ranges around Static Node Color:", () => StaticRangeModeEnum.SystemTime, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_1_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_1_2", $"<color={DETAIL_TEXT_COLOR}><i>These ranges are for the channels of the Selected Color Model</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_1_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_1_3", $"<color={DETAIL_TEXT_COLOR}><i>Channels with negative ranges will always get their values from the dynamic section</i></color>", () => new dummy());
@@ -65,6 +67,8 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<NodeColorModeEnum> NODE_COLOR_MODE = new ModConfigurationKey<NodeColorModeEnum>("NODE_COLOR_MODE", "Selected Node Factor:", () => NodeColorModeEnum.NodeCategory);
 		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> ALTERNATE_CATEGORY_STRING = new ModConfigurationKey<bool>("ALTERNATE_CATEGORY_STRING", "Use alternate node category string (only uses the part after the final '/'):", () => false, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<int> RANDOM_SEED = new ModConfigurationKey<int>("RANDOM_SEED", "Seed:", () => 0);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float3> COLOR_CHANNELS_MAX = new ModConfigurationKey<float3>("COLOR_CHANNELS_MAX", "Random Max [0 to 1]:", () => new float3(1f, 0.5f, 1f));
@@ -73,6 +77,10 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_2_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_2", $"<color={DETAIL_TEXT_COLOR}><i>Maximum and minimum bounds for randomness in the channels of the Selected Color Model</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> USE_NODE_ALPHA = new ModConfigurationKey<bool>("USE_NODE_ALPHA", "Use node alpha value:", () => false, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<float> NODE_ALPHA = new ModConfigurationKey<float>("NODE_ALPHA", "Node alpha value:", () => 0.8f, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_2_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_3", $"<color={DETAIL_TEXT_COLOR}><i>The randomness in this section is affected by the Selected Node Factor plus the Seed</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_4", SEP_STRING, () => new dummy());
@@ -80,6 +88,8 @@ namespace ColorMyLogixNodes
 		private static ModConfigurationKey<dummy> DUMMY_SEP_4_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_4_1", $"<color={HEADER_TEXT_COLOR}>[TEXT]</color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ENABLE_TEXT_CONTRAST = new ModConfigurationKey<bool>("ENABLE_TEXT_CONTRAST", "Automatically change the color of text to contrast better with the node background:", () => true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<float> PERCEPTUAL_LIGHTNESS_EXPONENT = new ModConfigurationKey<float>("PERCEPTUAL_LIGHTNESS_EXPONENT", "Exponent for perceptual lightness calculation (affects automatic text color, best ~0.6 to ~0.8):", () => 0.5f, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> USE_STATIC_TEXT_COLOR = new ModConfigurationKey<bool>("USE_STATIC_TEXT_COLOR", "Use Static Text Color (Disables automatic text coloring):", () => false);
 		[AutoRegisterConfigKey]
@@ -93,9 +103,11 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<BaseX.color> DISPLAY_COLOR_OVERRIDE = new ModConfigurationKey<BaseX.color>("DISPLAY_COLOR_OVERRIDE", "Display node color override:", () => new BaseX.color(0f, 0f, 0f, 0.8f));
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> USE_INPUT_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_INPUT_COLOR_OVERRIDE", "Use input node color override:", () => false);
+		private static ModConfigurationKey<bool> USE_INPUT_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_INPUT_COLOR_OVERRIDE", "Use input node color override:", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<BaseX.color> INPUT_COLOR_OVERRIDE = new ModConfigurationKey<BaseX.color>("INPUT_COLOR_OVERRIDE", "Input node color override:", () => new BaseX.color(1f, 1f, 1f, 0.8f));
+		private static ModConfigurationKey<BaseX.color> INPUT_COLOR_OVERRIDE = new ModConfigurationKey<BaseX.color>("INPUT_COLOR_OVERRIDE", "Input node color override:", () => new BaseX.color(1f, 1f, 1f, 0.8f), internalAccessOnly: true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> OVERRIDE_DYNAMIC_VARIABLE_INPUT = new ModConfigurationKey<bool>("OVERRIDE_DYNAMIC_VARIABLE_INPUT", "Include DynamicVariableInput nodes in Input node color override:", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_5", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
@@ -125,19 +137,13 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<int> REFID_MOD_DIVISOR = new ModConfigurationKey<int>("REFID_MOD_DIVISOR", "RefID divisor for Channel Shift (Smaller value = faster shifting, minimum 1):", () => 100000, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> ALTERNATE_CATEGORY_STRING = new ModConfigurationKey<bool>("ALTERNATE_CATEGORY_STRING", "Use alternate node category string (only uses the part after the final '/'):", () => false, internalAccessOnly: true);
-		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> USE_SYSTEM_TIME_RNG = new ModConfigurationKey<bool>("USE_SYSTEM_TIME_RNG", "Always use randomness seeded by system time (Complete randomness, not suitable for normal use):", () => false, internalAccessOnly: true);
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<StaticRangeModeEnum> STATIC_RANGE_MODE = new ModConfigurationKey<StaticRangeModeEnum>("STATIC_RANGE_MODE", "Seed for Random Ranges around Static Node Color:", () => StaticRangeModeEnum.SystemTime, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ALLOW_NEGATIVE_AND_EMISSIVE_COLORS = new ModConfigurationKey<bool>("ALLOW_NEGATIVE_AND_EMISSIVE_COLORS", "Allow negative and emissive colors:", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<float> PERCEPTUAL_LIGHTNESS_EXPONENT = new ModConfigurationKey<float>("PERCEPTUAL_LIGHTNESS_EXPONENT", "Exponent for perceptual lightness calculation (affects automatic text color, best ~0.6 to ~0.8):", () => 0.5f, internalAccessOnly: true);
+		private static ModConfigurationKey<bool> COLOR_RELAY_NODES = new ModConfigurationKey<bool>("COLOR_RELAY_NODES", "Color relay nodes:", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> COLOR_RELAY_NODES = new ModConfigurationKey<bool>("COLOR_RELAY_NODES", "Apply colors to relay nodes:", () => false, internalAccessOnly: true);
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> OVERRIDE_DYNAMIC_VARIABLE_INPUT = new ModConfigurationKey<bool>("OVERRIDE_DYNAMIC_VARIABLE_INPUT", "Include DynamicVariableInput nodes in Input node color override:", () => true, internalAccessOnly: true);
+		private static ModConfigurationKey<bool> MAKE_CONNECT_POINTS_FULL_ALPHA = new ModConfigurationKey<bool>("MAKE_CONNECT_POINTS_FULL_ALPHA", "Make connect points on nodes have full alpha:", () => true, internalAccessOnly: true);
 
 		private enum ColorModelEnum
 		{
@@ -394,6 +400,11 @@ namespace ColorMyLogixNodes
 			float hue = 0f;
 			float sat = 0f;
 			float val_lightness = 0f;
+			float alpha = 0.8f;
+			if (Config.GetValue(USE_NODE_ALPHA))
+			{
+				alpha = Config.GetValue(NODE_ALPHA);
+			}
 
 			//float shift = 0f;
 			float strength = (val % divisor) / (float)divisor;
@@ -451,18 +462,23 @@ namespace ColorMyLogixNodes
 			sat = GetColorChannelValue(1, rand, Config.GetValue(COLOR_MODEL));
 			val_lightness = GetColorChannelValue(2, rand, Config.GetValue(COLOR_MODEL));
 
+			if (Config.GetValue(USE_STATIC_COLOR))
+			{
+				alpha = Config.GetValue(NODE_COLOR).a;
+			}
+
 			BaseX.color c = Config.GetValue(NODE_COLOR);
 			switch (Config.GetValue(COLOR_MODEL))
 			{
 				case ColorModelEnum.HSV:
-					c = new ColorHSV(hue, sat, val_lightness, 0.8f).ToRGB();
+					c = new ColorHSV(hue, sat, val_lightness, alpha).ToRGB();
 					break;
 				case ColorModelEnum.HSL:
-					c = new ColorHSL(hue, sat, val_lightness, 0.8f).ToRGB();
+					c = new ColorHSL(hue, sat, val_lightness, alpha).ToRGB();
 					break;
 				case ColorModelEnum.RGB:
 					// hue = r, sat = g, val_lightness = b
-					c = new color(hue, sat, val_lightness, 0.8f);
+					c = new color(hue, sat, val_lightness, alpha);
 					break;
 				default:
 					break;
@@ -476,19 +492,29 @@ namespace ColorMyLogixNodes
 			float hue;
 			float sat;
 			float val_lightness;
+			float alpha = 0.8f;
+			if (Config.GetValue(USE_NODE_ALPHA))
+			{
+				alpha = Config.GetValue(NODE_ALPHA);
+			}
 
 			hue = GetColorChannelValue(0, rand, Config.GetValue(COLOR_MODEL));
 			sat = GetColorChannelValue(1, rand, Config.GetValue(COLOR_MODEL));
 			val_lightness = GetColorChannelValue(2, rand, Config.GetValue(COLOR_MODEL));
 
+			if (Config.GetValue(USE_STATIC_COLOR))
+			{
+				alpha = Config.GetValue(NODE_COLOR).a;
+			}
+
 			switch (Config.GetValue(COLOR_MODEL))
 			{
 				case ColorModelEnum.HSV:
-					return new ColorHSV(hue, sat, val_lightness, 0.8f).ToRGB();
+					return new ColorHSV(hue, sat, val_lightness, alpha).ToRGB();
 				case ColorModelEnum.HSL:
-					return new ColorHSL(hue, sat, val_lightness, 0.8f).ToRGB();
+					return new ColorHSL(hue, sat, val_lightness, alpha).ToRGB();
 				case ColorModelEnum.RGB:
-					return new color(hue, sat, val_lightness, 0.8f);
+					return new color(hue, sat, val_lightness, alpha);
 				default:
 					return Config.GetValue(NODE_COLOR);
 			}
@@ -541,6 +567,9 @@ namespace ColorMyLogixNodes
 
 			if (c.b > 1) c = c.SetB(1f);
 			if (c.b < 0) c = c.SetB(0f);
+
+			if (c.a > 1) c = c.SetA(1f);
+			if (c.a < 0) c = c.SetA(0f);
 		}
 
 		private static void UpdateRefOrDriverNodeColor(LogixNode node, string targetField)
@@ -683,7 +712,7 @@ namespace ColorMyLogixNodes
 					// don't apply custom color to cast nodes, because it makes it confusing to read the data types
 					if (__instance.Name.StartsWith("CastClass")) return;
 					if (__instance.Name.StartsWith("Cast_")) return;
-					if (!Config.GetValue(COLOR_RELAY_NODES) && __instance.Name.StartsWith("RelayNode")) return;
+					if (!Config.GetValue(COLOR_RELAY_NODES) && (__instance.Name.StartsWith("RelayNode") || __instance.Name.StartsWith("ImpulseRelay"))) return;
 
 					if (root.Tag != COLOR_SET_TAG)
 					{
@@ -703,11 +732,12 @@ namespace ColorMyLogixNodes
 									BaseX.color colorToSet = Config.GetValue(NODE_COLOR);
 									rng = null;
 
-									if (Config.GetValue(USE_DISPLAY_COLOR_OVERRIDE) && __instance.Name.StartsWith("Display_"))
+									if (Config.GetValue(USE_DISPLAY_COLOR_OVERRIDE) && (__instance.Name.StartsWith("Display_") || __instance.Name == "DisplayImpulse"))
 									{
 										colorToSet = Config.GetValue(DISPLAY_COLOR_OVERRIDE);
 									}
-									else if (Config.GetValue(USE_INPUT_COLOR_OVERRIDE) && (__instance.Name.EndsWith("Input") || (Config.GetValue(OVERRIDE_DYNAMIC_VARIABLE_INPUT) && __instance.Name.StartsWith("DynamicVariableInput"))))
+									//else if (Config.GetValue(USE_INPUT_COLOR_OVERRIDE) && (__instance.Name.EndsWith("Input") || (Config.GetValue(OVERRIDE_DYNAMIC_VARIABLE_INPUT) && __instance.Name.StartsWith("DynamicVariableInput"))))
+									else if (Config.GetValue(USE_INPUT_COLOR_OVERRIDE) && (GetNodeCategoryString(__instance.GetType()) == "LogiX/Input" || (Config.GetValue(OVERRIDE_DYNAMIC_VARIABLE_INPUT) && __instance.Name.StartsWith("DynamicVariableInput"))))
 									{
 										colorToSet = Config.GetValue(INPUT_COLOR_OVERRIDE);
 									}
@@ -790,9 +820,18 @@ namespace ColorMyLogixNodes
 									//Msg($"after clamp {colorToSet.r.ToString()} {colorToSet.g.ToString()} {colorToSet.b.ToString()}");
 
 									// ensure the alpha is always 0.8 (default alpha)
-									colorToSet = colorToSet.SetA(0.8f);
+									//colorToSet = colorToSet.SetA(0.8f);
 
 									TrySetImageTint(image, colorToSet);
+
+									if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA))
+									{
+										// Make the type-colored images on nodes have full alpha to make them easier to read
+										foreach (Image i in imageSlot.GetComponentsInChildren<Image>())
+										{
+											if (i != image) TrySetImageTint(i, i.Tint.Value.SetA(1f));
+										}
+									}
 
 									if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 									{
