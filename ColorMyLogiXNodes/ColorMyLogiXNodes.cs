@@ -19,7 +19,7 @@ namespace ColorMyLogixNodes
 	{
 		public override string Name => "ColorMyLogiX";
 		public override string Author => "Nytra";
-		public override string Version => "1.1.1";
+		public override string Version => "1.2.0";
 		public override string Link => "https://github.com/Nytra/NeosColorMyLogiX";
 
 		const string SEP_STRING = "<size=0></size>";
@@ -85,6 +85,18 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<BaseX.color> STATIC_TEXT_COLOR = new ModConfigurationKey<BaseX.color>("STATIC_TEXT_COLOR", "Static Text Color:", () => new BaseX.color(0f, 0f, 0f, 1f));
 		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_6 = new ModConfigurationKey<dummy>("DUMMY_SEP_6", SEP_STRING, () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_6_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_6_1", $"<color={HEADER_TEXT_COLOR}>[OVERRIDES]</color>", () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> USE_DISPLAY_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_DISPLAY_COLOR_OVERRIDE", "Use display node color override:", () => false);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<BaseX.color> DISPLAY_COLOR_OVERRIDE = new ModConfigurationKey<BaseX.color>("DISPLAY_COLOR_OVERRIDE", "Display node color override:", () => new BaseX.color(0f, 0f, 0f, 0.8f));
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> USE_INPUT_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_INPUT_COLOR_OVERRIDE", "Use input node color override:", () => false);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<BaseX.color> INPUT_COLOR_OVERRIDE = new ModConfigurationKey<BaseX.color>("INPUT_COLOR_OVERRIDE", "Input node color override:", () => new BaseX.color(1f, 1f, 1f, 0.8f));
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_5", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_1", $"<color={HEADER_TEXT_COLOR}>[EXTRA]</color>", () => new dummy());
@@ -122,6 +134,10 @@ namespace ColorMyLogixNodes
 		private static ModConfigurationKey<bool> ALLOW_NEGATIVE_AND_EMISSIVE_COLORS = new ModConfigurationKey<bool>("ALLOW_NEGATIVE_AND_EMISSIVE_COLORS", "Allow negative and emissive colors:", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float> PERCEPTUAL_LIGHTNESS_EXPONENT = new ModConfigurationKey<float>("PERCEPTUAL_LIGHTNESS_EXPONENT", "Exponent for perceptual lightness calculation (affects automatic text color, best ~0.6 to ~0.8):", () => 0.5f, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> COLOR_RELAY_NODES = new ModConfigurationKey<bool>("COLOR_RELAY_NODES", "Apply colors to relay nodes:", () => false, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> OVERRIDE_DYNAMIC_VARIABLE_INPUT = new ModConfigurationKey<bool>("OVERRIDE_DYNAMIC_VARIABLE_INPUT", "Include DynamicVariableInput nodes in Input node color override:", () => true, internalAccessOnly: true);
 
 		private enum ColorModelEnum
 		{
@@ -155,7 +171,10 @@ namespace ColorMyLogixNodes
 		private static System.Random rngTimeSeeded = new System.Random();
 
 		private const string COLOR_SET_TAG = "ColorMyLogiX.ColorSet";
-		private const string DELEGATE_ADDED_TAG = "ColorMyLogiX.DelegateAdded";
+		private const string DELEGATE_ADDED_TAG = "ColorMyLogiX.EventSubscribed";
+
+		//private static HashSet<WeakReference<LogixNode>> nodeKeys = new();
+		//private static ConditionalWeakTable<LogixNode, ISyncRef> nodeMap = new();
 
 		public override void OnEngineInit()
 		{
@@ -458,7 +477,7 @@ namespace ColorMyLogixNodes
 			float sat;
 			float val_lightness;
 
-            hue = GetColorChannelValue(0, rand, Config.GetValue(COLOR_MODEL));
+			hue = GetColorChannelValue(0, rand, Config.GetValue(COLOR_MODEL));
 			sat = GetColorChannelValue(1, rand, Config.GetValue(COLOR_MODEL));
 			val_lightness = GetColorChannelValue(2, rand, Config.GetValue(COLOR_MODEL));
 
@@ -598,35 +617,54 @@ namespace ColorMyLogixNodes
 				if (Config.GetValue(MOD_ENABLED) == true && __instance.ActiveVisual != null && __instance.ActiveVisual.ReferenceID.User == __instance.LocalUser.AllocationID)
 				{
 					string targetField = null;
-					if (Config.GetValue(COLOR_NULL_REFERENCE_NODES) == true && __instance.Name.Contains("ReferenceNode"))
+					if (Config.GetValue(COLOR_NULL_REFERENCE_NODES) == true && __instance.Name.StartsWith("ReferenceNode"))
 					{
 						targetField = "RefTarget";
 					}
-					else if (Config.GetValue(COLOR_NULL_DRIVER_NODES) == true && __instance.Name.Contains("DriverNode"))
+					else if (Config.GetValue(COLOR_NULL_DRIVER_NODES) == true && __instance.Name.StartsWith("DriverNode"))
 					{
 						targetField = "DriveTarget";
 					}
-					if (targetField != null && __instance.Slot.Tag != DELEGATE_ADDED_TAG)
+					if (targetField != null)
 					{
-						__instance.RunInUpdates(0, () =>
+						var targetSlot = __instance.Slot.FindChild((Slot c) => c.Name == __instance.LocalUser.ReferenceID.ToString() && c.Tag == DELEGATE_ADDED_TAG);
+						if (targetSlot == null)
 						{
-							ISyncRef syncRef = __instance.TryGetField(targetField) as ISyncRef;
-
-							syncRef.Changed += (iChangeable) =>
+							__instance.RunInUpdates(0, () =>
 							{
+								var targetSlot = __instance.Slot.FindChild((Slot c) => c.Name == __instance.LocalUser.ReferenceID.ToString() && c.Tag == DELEGATE_ADDED_TAG);
+								if (targetSlot != null) return;
+
+								ISyncRef syncRef = __instance.TryGetField(targetField) as ISyncRef;
+
+								Debug("Subscribing to this node's Changed event.");
+
+								syncRef.Changed += (iChangeable) =>
+								{
+									UpdateRefOrDriverNodeColor(__instance, targetField);
+								};
+
 								UpdateRefOrDriverNodeColor(__instance, targetField);
-							};
 
+								//TrySetSlotTag(__instance.Slot, DELEGATE_ADDED_TAG);
+								
+								//nodeKeys.Add(new WeakReference<LogixNode>(__instance));
+								//var newComment = __instance.Slot.AttachComponent<Comment>();
+								//newComment.Text.Value = DELEGATE_ADDED_TAG;
+								//newComment.Persistent = false;
+								var newSlot = __instance.Slot.AddSlot(__instance.LocalUser.ReferenceID.ToString());
+								newSlot.PersistentSelf = false;
+								newSlot.Tag = DELEGATE_ADDED_TAG;
+								var destroyOnUserLeave = newSlot.AttachComponent<DestroyOnUserLeave>();
+								destroyOnUserLeave.TargetUser.User.Value = __instance.LocalUser.ReferenceID;
+								destroyOnUserLeave.Persistent = false;
+							});
+						}
+						else
+						{
+							Debug("Node already subscribed. Updating node color.");
 							UpdateRefOrDriverNodeColor(__instance, targetField);
-
-							TrySetSlotTag(__instance.Slot, DELEGATE_ADDED_TAG);
-							Debug("Setting slot tag");
-						});
-					}
-					else if (targetField != null)
-					{
-						Debug("Delegate added tag found and targetField not null. Updating node color.");
-						UpdateRefOrDriverNodeColor(__instance, targetField);
+						}
 					}
 				}
 			}
@@ -643,8 +681,9 @@ namespace ColorMyLogixNodes
 				if (Config.GetValue(MOD_ENABLED) == true && root != null && root.ReferenceID.User == root.LocalUser.AllocationID)
 				{
 					// don't apply custom color to cast nodes, because it makes it confusing to read the data types
-					if (__instance.Name.Contains("CastClass")) return;
-					if (__instance.Name.Contains("Cast_")) return;
+					if (__instance.Name.StartsWith("CastClass")) return;
+					if (__instance.Name.StartsWith("Cast_")) return;
+					if (!Config.GetValue(COLOR_RELAY_NODES) && __instance.Name.StartsWith("RelayNode")) return;
 
 					if (root.Tag != COLOR_SET_TAG)
 					{
@@ -664,63 +703,74 @@ namespace ColorMyLogixNodes
 									BaseX.color colorToSet = Config.GetValue(NODE_COLOR);
 									rng = null;
 
-									//float3 ranges = Config.GetValue(RANDOM_RANGES_AROUND_STATIC_VALUES);
-									//Msg($"ranges: {ranges[0].ToString()} {ranges[1].ToString()} {ranges[2].ToString()}");
-
-									string nodeCategoryString;
-									//Msg("node color mode: " + Config.GetValue(NODE_COLOR_MODE).ToString());
-									switch (Config.GetValue(NODE_COLOR_MODE))
+									if (Config.GetValue(USE_DISPLAY_COLOR_OVERRIDE) && __instance.Name.StartsWith("Display_"))
 									{
-										case NodeColorModeEnum.NodeName:
-											rng = new System.Random(LogixHelper.GetNodeName(__instance.GetType()).GetHashCode() + Config.GetValue(RANDOM_SEED));
-											break;
-										case NodeColorModeEnum.NodeCategory:
-											nodeCategoryString = GetNodeCategoryString(__instance.GetType());
-											rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
-											break;
-										case NodeColorModeEnum.TopmostNodeCategory:
-											nodeCategoryString = GetNodeCategoryString(__instance.GetType(), onlyTopmost: true);
-											rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
-											break;
-										case NodeColorModeEnum.FullTypeName:
-											rng = new System.Random(__instance.GetType().FullName.GetHashCode() + Config.GetValue(RANDOM_SEED));
-											break;
-										case NodeColorModeEnum.RefID:
-											rng = new System.Random(root.Parent.ReferenceID.GetHashCode() + Config.GetValue(RANDOM_SEED));
-											//Msg($"RefID Position: {root.Parent.ReferenceID.Position.ToString()}");
-											break;
-										default:
-											break;
+										colorToSet = Config.GetValue(DISPLAY_COLOR_OVERRIDE);
 									}
-
-									if (Config.GetValue(ENABLE_NON_RANDOM_REFID))
+									else if (Config.GetValue(USE_INPUT_COLOR_OVERRIDE) && (__instance.Name.EndsWith("Input") || (Config.GetValue(OVERRIDE_DYNAMIC_VARIABLE_INPUT) && __instance.Name.StartsWith("DynamicVariableInput"))))
 									{
-										int refidModDivisor = Config.GetValue(REFID_MOD_DIVISOR);
-
-										// force it to 1 to avoid dividing by 0
-										ulong divisor = (refidModDivisor > 0) ? (ulong)refidModDivisor : 1;
-
-										if (Config.GetValue(USE_SYSTEM_TIME_RNG))
-										{
-											colorToSet = GetColorFromUlong(root.Parent.ReferenceID.Position, divisor, rngTimeSeeded);
-										}
-										else
-										{
-											colorToSet = GetColorFromUlong(root.Parent.ReferenceID.Position, divisor, rng);
-										}
-
-										rng = null;
+										colorToSet = Config.GetValue(INPUT_COLOR_OVERRIDE);
 									}
-
-									if (rng != null)
+									else
 									{
-										if (Config.GetValue(USE_SYSTEM_TIME_RNG))
+										//float3 ranges = Config.GetValue(RANDOM_RANGES_AROUND_STATIC_VALUES);
+										//Msg($"ranges: {ranges[0].ToString()} {ranges[1].ToString()} {ranges[2].ToString()}");
+
+										string nodeCategoryString;
+										//Msg("node color mode: " + Config.GetValue(NODE_COLOR_MODE).ToString());
+										switch (Config.GetValue(NODE_COLOR_MODE))
 										{
-											colorToSet = GetColorWithRNG(rngTimeSeeded);
+											case NodeColorModeEnum.NodeName:
+												rng = new System.Random(LogixHelper.GetNodeName(__instance.GetType()).GetHashCode() + Config.GetValue(RANDOM_SEED));
+												break;
+											case NodeColorModeEnum.NodeCategory:
+												nodeCategoryString = GetNodeCategoryString(__instance.GetType());
+												rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
+												break;
+											case NodeColorModeEnum.TopmostNodeCategory:
+												nodeCategoryString = GetNodeCategoryString(__instance.GetType(), onlyTopmost: true);
+												rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
+												break;
+											case NodeColorModeEnum.FullTypeName:
+												rng = new System.Random(__instance.GetType().FullName.GetHashCode() + Config.GetValue(RANDOM_SEED));
+												break;
+											case NodeColorModeEnum.RefID:
+												rng = new System.Random(root.Parent.ReferenceID.GetHashCode() + Config.GetValue(RANDOM_SEED));
+												//Msg($"RefID Position: {root.Parent.ReferenceID.Position.ToString()}");
+												break;
+											default:
+												break;
 										}
-										else
+
+										if (Config.GetValue(ENABLE_NON_RANDOM_REFID))
 										{
-											colorToSet = GetColorWithRNG(rng);
+											int refidModDivisor = Config.GetValue(REFID_MOD_DIVISOR);
+
+											// force it to 1 to avoid dividing by 0
+											ulong divisor = (refidModDivisor > 0) ? (ulong)refidModDivisor : 1;
+
+											if (Config.GetValue(USE_SYSTEM_TIME_RNG))
+											{
+												colorToSet = GetColorFromUlong(root.Parent.ReferenceID.Position, divisor, rngTimeSeeded);
+											}
+											else
+											{
+												colorToSet = GetColorFromUlong(root.Parent.ReferenceID.Position, divisor, rng);
+											}
+
+											rng = null;
+										}
+
+										if (rng != null)
+										{
+											if (Config.GetValue(USE_SYSTEM_TIME_RNG))
+											{
+												colorToSet = GetColorWithRNG(rngTimeSeeded);
+											}
+											else
+											{
+												colorToSet = GetColorWithRNG(rng);
+											}
 										}
 									}
 
@@ -738,6 +788,9 @@ namespace ColorMyLogixNodes
 										ClampColor(ref colorToSet);
 									}
 									//Msg($"after clamp {colorToSet.r.ToString()} {colorToSet.g.ToString()} {colorToSet.b.ToString()}");
+
+									// ensure the alpha is always 0.8 (default alpha)
+									colorToSet = colorToSet.SetA(0.8f);
 
 									TrySetImageTint(image, colorToSet);
 
