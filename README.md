@@ -4,6 +4,8 @@
 
 A [NeosModLoader](https://github.com/zkxs/NeosModLoader) mod for [Neos VR](https://neos.com/) that allows you to color your LogiX nodes. This makes the LogiX experience *much* more colorful.
 
+Also works with [LogixVisualCustomizer](https://github.com/Banane9/NeosLogixVisualCustomizer).
+
 ## Installation
 1. Install [NeosModLoader](https://github.com/zkxs/NeosModLoader).
 1. Place [ColorMyLogiX.dll](https://github.com/Nytra/NeosColorMyLogiX/releases/latest/download/ColorMyLogiX.dll) into your `nml_mods` folder. This folder should be at `C:\Program Files (x86)\Steam\steamapps\common\NeosVR\nml_mods` for a default install. You can create it if it's missing, or if you launch the game once with NeosModLoader installed it will create the folder for you.
@@ -30,12 +32,16 @@ The Seed option in the dynamic section can be used to get a completely different
 
 The Random Max and Random Min options will set the bounds for randomness in the channels of the Selected Color Model. For example, if your Selected Color Model is HSV, the options will control randomness for Hue, Saturation and Value respectively. If you set the max and min for Saturation to zero, you will get grayscale nodes, and the Value channel will control how light or dark they are.
 
+For text, the option for automatic text coloring will make the text color either black or white depending on the perceptual lightness of the node's background color. You can also use a static text color that doesn't change if you want.
+
 You can use the output RGB multiplier to suppress or amplify the color channels of red, green or blue. If you don't want any red in your nodes, set the multiplier for red to zero. Or amplify it, if you like.
 
 Hue-shift mode will take the RefID of the node and convert it directly into a value for Hue. So as the RefID values increase in the world you will get Hue values that constantly shift alongside it.
 
 There are more advanced options in the internal access config. You can get to these by going to the config page for NeosModSettings in Neos and toggle on the option that lets you see internal access config keys.
 
+![20230410153906_1](https://user-images.githubusercontent.com/14206961/231432280-326c448d-84c1-4874-95f4-23c710b939e5.jpg)
+![20230412111720_1](https://user-images.githubusercontent.com/14206961/231432333-337ac6dd-23f1-4358-aacb-b54569e68d2d.jpg)
 ![20230225035345_1](https://user-images.githubusercontent.com/14206961/230007717-d8d3ffbf-9e50-48d0-a5f4-0c91dc91d67f.jpg)
 ![20230128145825_1](https://user-images.githubusercontent.com/14206961/230704434-b7b8f450-c0f1-4865-8b9f-6fdfed30abe2.jpg)
 ![20230407033902_1](https://user-images.githubusercontent.com/14206961/230702924-0649d190-b838-4edd-bfab-fd218fa5ac22.jpg)
