@@ -49,7 +49,7 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> USE_STATIC_COLOR = new ModConfigurationKey<bool>("USE_STATIC_COLOR", "Use Static Node Color (Disables the dynamic section):", () => false);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<BaseX.color> NODE_COLOR = new ModConfigurationKey<BaseX.color>("NODE_COLOR", "Static Node Color:", () => new BaseX.color(0.5f, 1.0f, 1.0f, 0.8f));
+		private static ModConfigurationKey<BaseX.color> NODE_COLOR = new ModConfigurationKey<BaseX.color>("NODE_COLOR", "Static Node Color:", () => new BaseX.color(1.0f, 1.0f, 1.0f, 0.8f));
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> USE_STATIC_RANGES = new ModConfigurationKey<bool>("USE_STATIC_RANGES", "Use Random Ranges around Static Node Color:", () => false);
 		[AutoRegisterConfigKey]
@@ -77,21 +77,31 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_2_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_2", $"<color={DETAIL_TEXT_COLOR}><i>Maximum and minimum bounds for randomness in the channels of the Selected Color Model</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> USE_NODE_ALPHA = new ModConfigurationKey<bool>("USE_NODE_ALPHA", "Use node alpha:", () => true, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<float> NODE_ALPHA = new ModConfigurationKey<float>("NODE_ALPHA", "Node alpha [0 to 1] (Default 0.8):", () => 0.8f);
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_2_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_3", $"<color={DETAIL_TEXT_COLOR}><i>The randomness in this section is affected by the Selected Node Factor plus the Seed</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_6 = new ModConfigurationKey<dummy>("DUMMY_SEP_6", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_6_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_6_1", $"<color={HEADER_TEXT_COLOR}>[OVERRIDES]</color>", () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> USE_DISPLAY_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_DISPLAY_COLOR_OVERRIDE", "Use display node color override:", () => false);
+		private static ModConfigurationKey<bool> USE_DISPLAY_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_DISPLAY_COLOR_OVERRIDE", "Override display node color:", () => false);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<BaseX.color> DISPLAY_COLOR_OVERRIDE = new ModConfigurationKey<BaseX.color>("DISPLAY_COLOR_OVERRIDE", "Display node color override:", () => new BaseX.color(0.25f, 0.25f, 0.25f, 0.8f));
+		private static ModConfigurationKey<BaseX.color> DISPLAY_COLOR_OVERRIDE = new ModConfigurationKey<BaseX.color>("DISPLAY_COLOR_OVERRIDE", "Display node color:", () => new BaseX.color(0.25f, 0.25f, 0.25f, 0.8f));
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> USE_INPUT_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_INPUT_COLOR_OVERRIDE", "Use input node color override:", () => false);
+		private static ModConfigurationKey<dummy> DUMMY_SEP_7 = new ModConfigurationKey<dummy>("DUMMY_SEP_7", $"<color={DETAIL_TEXT_COLOR}><i>///</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<BaseX.color> INPUT_COLOR_OVERRIDE = new ModConfigurationKey<BaseX.color>("INPUT_COLOR_OVERRIDE", "Input node color override:", () => new BaseX.color(0.25f, 0.25f, 0.25f, 0.8f));
+		private static ModConfigurationKey<bool> USE_INPUT_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_INPUT_COLOR_OVERRIDE", "Override input node color:", () => false);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> OVERRIDE_DYNAMIC_VARIABLE_INPUT = new ModConfigurationKey<bool>("OVERRIDE_DYNAMIC_VARIABLE_INPUT", "Include DynamicVariableInput nodes in Input node color override:", () => true);
+		private static ModConfigurationKey<InputNodeOverrideEnum> INPUT_NODE_OVERRIDE_TYPE = new ModConfigurationKey<InputNodeOverrideEnum>("INPUT_NODE_OVERRIDE_TYPE", "Input Node Type:", () => InputNodeOverrideEnum.OnlyPrimitives);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<BaseX.color> INPUT_COLOR_OVERRIDE = new ModConfigurationKey<BaseX.color>("INPUT_COLOR_OVERRIDE", "Input node color:", () => new BaseX.color(0.25f, 0.25f, 0.25f, 0.8f));
+		//[AutoRegisterConfigKey]
+		//private static ModConfigurationKey<bool> OVERRIDE_ENUM_INPUT = new ModConfigurationKey<bool>("OVERRIDE_ENUM_INPUT", "Include EnumInput nodes:", () => true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> OVERRIDE_DYNAMIC_VARIABLE_INPUT = new ModConfigurationKey<bool>("OVERRIDE_DYNAMIC_VARIABLE_INPUT", "Include DynamicVariableInput nodes:", () => true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_4", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
@@ -124,10 +134,6 @@ namespace ColorMyLogixNodes
 		//private static ModConfigurationKey<dummy> DUMMY_SEP_4_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_4_2", $"<color={DETAIL_TEXT_COLOR}><i>Channel Shift will make the channel values go from zero to one over time as the selected waveform</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<BaseX.color> NODE_ERROR_COLOR = new ModConfigurationKey<BaseX.color>("NODE_ERROR_COLOR", "Node Error Color:", () => new BaseX.color(3.0f, 0.5f, 0.5f, 0.8f));
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> USE_NODE_ALPHA = new ModConfigurationKey<bool>("USE_NODE_ALPHA", "Use node alpha (For dynamic section):", () => false);
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<float> NODE_ALPHA = new ModConfigurationKey<float>("NODE_ALPHA", "Node alpha [0 to 1]:", () => 0.8f);
 
 		// INTERNAL ACCESS CONFIG KEYS
 		[AutoRegisterConfigKey]
@@ -165,6 +171,13 @@ namespace ColorMyLogixNodes
 		{
 			NodeFactor,
 			SystemTime
+		}
+
+		private enum InputNodeOverrideEnum
+		{
+			OnlyPrimitives,
+			PrimitivesAndEnumInputs,
+			WholeInputCategory
 		}
 
 		//private enum ChannelShiftWaveformEnum
@@ -636,6 +649,20 @@ namespace ColorMyLogixNodes
 			});
 		}
 
+		private static bool ShouldColorInputNode(LogixNode node)
+		{
+			InputNodeOverrideEnum inputNodeType = Config.GetValue(INPUT_NODE_OVERRIDE_TYPE);
+
+			// Primitive input
+			return (inputNodeType == InputNodeOverrideEnum.OnlyPrimitives && (node.Name.EndsWith("Input"))) ||
+				// Primitive and enum
+				(inputNodeType == InputNodeOverrideEnum.PrimitivesAndEnumInputs && (node.Name.EndsWith("Input")) || (node.Name.StartsWith("EnumInput"))) ||
+				// Whole input category
+				(inputNodeType == InputNodeOverrideEnum.WholeInputCategory && (GetNodeCategoryString(node.GetType()) == "LogiX/Input" || GetNodeCategoryString(node.GetType()) == "LogiX/Input/Uncommon")) ||
+				// Dynamic variable input
+				(Config.GetValue(OVERRIDE_DYNAMIC_VARIABLE_INPUT) && node.Name.StartsWith("DynamicVariableInput"));
+		}
+
 		[HarmonyPatch(typeof(LogixNode))]
 		[HarmonyPatch("GenerateVisual")]
 		class Patch_LogixNode_GenerateVisual
@@ -751,7 +778,11 @@ namespace ColorMyLogixNodes
 										colorToSet = Config.GetValue(DISPLAY_COLOR_OVERRIDE);
 									}
 									//else if (Config.GetValue(USE_INPUT_COLOR_OVERRIDE) && (__instance.Name.EndsWith("Input") || (Config.GetValue(OVERRIDE_DYNAMIC_VARIABLE_INPUT) && __instance.Name.StartsWith("DynamicVariableInput"))))
-									else if (Config.GetValue(USE_INPUT_COLOR_OVERRIDE) && (GetNodeCategoryString(__instance.GetType()) == "LogiX/Input" || (Config.GetValue(OVERRIDE_DYNAMIC_VARIABLE_INPUT) && __instance.Name.StartsWith("DynamicVariableInput"))))
+									//else if (Config.GetValue(USE_INPUT_COLOR_OVERRIDE) && (GetNodeCategoryString(__instance.GetType()) == "LogiX/Input" || (Config.GetValue(OVERRIDE_DYNAMIC_VARIABLE_INPUT) && __instance.Name.StartsWith("DynamicVariableInput"))))
+									//{
+									//	colorToSet = Config.GetValue(INPUT_COLOR_OVERRIDE);
+									//}
+									else if (Config.GetValue(USE_INPUT_COLOR_OVERRIDE) && ShouldColorInputNode(__instance))
 									{
 										colorToSet = Config.GetValue(INPUT_COLOR_OVERRIDE);
 									}
