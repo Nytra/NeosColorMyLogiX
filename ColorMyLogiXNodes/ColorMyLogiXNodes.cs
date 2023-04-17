@@ -87,13 +87,13 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_6_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_6_1", $"<color={HEADER_TEXT_COLOR}>[OVERRIDES]</color>", () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> USE_DISPLAY_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_DISPLAY_COLOR_OVERRIDE", "Override display node color:", () => false);
+		private static ModConfigurationKey<bool> USE_DISPLAY_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_DISPLAY_COLOR_OVERRIDE", "Override display node color:", () => true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<BaseX.color> DISPLAY_COLOR_OVERRIDE = new ModConfigurationKey<BaseX.color>("DISPLAY_COLOR_OVERRIDE", "Display node color:", () => new BaseX.color(0.25f, 0.25f, 0.25f, 0.8f));
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_7 = new ModConfigurationKey<dummy>("DUMMY_SEP_7", $"<color={DETAIL_TEXT_COLOR}><i>///</i></color>", () => new dummy());
+		private static ModConfigurationKey<dummy> DUMMY_SEP_7 = new ModConfigurationKey<dummy>("DUMMY_SEP_7", $"<color={DETAIL_TEXT_COLOR}><i>~/~</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> USE_INPUT_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_INPUT_COLOR_OVERRIDE", "Override input node color:", () => false);
+		private static ModConfigurationKey<bool> USE_INPUT_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_INPUT_COLOR_OVERRIDE", "Override input node color:", () => true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<InputNodeOverrideEnum> INPUT_NODE_OVERRIDE_TYPE = new ModConfigurationKey<InputNodeOverrideEnum>("INPUT_NODE_OVERRIDE_TYPE", "Input Node Type:", () => InputNodeOverrideEnum.OnlyPrimitives);
 		[AutoRegisterConfigKey]
@@ -101,7 +101,7 @@ namespace ColorMyLogixNodes
 		//[AutoRegisterConfigKey]
 		//private static ModConfigurationKey<bool> OVERRIDE_ENUM_INPUT = new ModConfigurationKey<bool>("OVERRIDE_ENUM_INPUT", "Include EnumInput nodes:", () => true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> OVERRIDE_DYNAMIC_VARIABLE_INPUT = new ModConfigurationKey<bool>("OVERRIDE_DYNAMIC_VARIABLE_INPUT", "Include DynamicVariableInput nodes:", () => true);
+		private static ModConfigurationKey<bool> OVERRIDE_DYNAMIC_VARIABLE_INPUT = new ModConfigurationKey<bool>("OVERRIDE_DYNAMIC_VARIABLE_INPUT", "Include DynamicVariableInput nodes:", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_4", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
@@ -654,7 +654,7 @@ namespace ColorMyLogixNodes
 			InputNodeOverrideEnum inputNodeType = Config.GetValue(INPUT_NODE_OVERRIDE_TYPE);
 
 			// Primitive input
-			return (inputNodeType == InputNodeOverrideEnum.OnlyPrimitives && (node.Name.EndsWith("Input"))) ||
+			return (inputNodeType == InputNodeOverrideEnum.OnlyPrimitives && (node.Name.EndsWith("Input") && !node.Name.StartsWith("EnumInput"))) ||
 				// Primitive and enum
 				(inputNodeType == InputNodeOverrideEnum.PrimitivesAndEnumInputs && (node.Name.EndsWith("Input")) || (node.Name.StartsWith("EnumInput"))) ||
 				// Whole input category
