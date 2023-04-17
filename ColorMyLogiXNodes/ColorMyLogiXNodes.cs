@@ -77,11 +77,21 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_2_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_2", $"<color={DETAIL_TEXT_COLOR}><i>Maximum and minimum bounds for randomness in the channels of the Selected Color Model</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> USE_NODE_ALPHA = new ModConfigurationKey<bool>("USE_NODE_ALPHA", "Use node alpha value:", () => false, internalAccessOnly: true);
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<float> NODE_ALPHA = new ModConfigurationKey<float>("NODE_ALPHA", "Node alpha value:", () => 0.8f, internalAccessOnly: true);
-		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_2_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_3", $"<color={DETAIL_TEXT_COLOR}><i>The randomness in this section is affected by the Selected Node Factor plus the Seed</i></color>", () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_6 = new ModConfigurationKey<dummy>("DUMMY_SEP_6", SEP_STRING, () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_6_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_6_1", $"<color={HEADER_TEXT_COLOR}>[OVERRIDES]</color>", () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> USE_DISPLAY_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_DISPLAY_COLOR_OVERRIDE", "Use display node color override:", () => false);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<BaseX.color> DISPLAY_COLOR_OVERRIDE = new ModConfigurationKey<BaseX.color>("DISPLAY_COLOR_OVERRIDE", "Display node color override:", () => new BaseX.color(0.25f, 0.25f, 0.25f, 0.8f));
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> USE_INPUT_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_INPUT_COLOR_OVERRIDE", "Use input node color override:", () => false);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<BaseX.color> INPUT_COLOR_OVERRIDE = new ModConfigurationKey<BaseX.color>("INPUT_COLOR_OVERRIDE", "Input node color override:", () => new BaseX.color(0.25f, 0.25f, 0.25f, 0.8f));
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> OVERRIDE_DYNAMIC_VARIABLE_INPUT = new ModConfigurationKey<bool>("OVERRIDE_DYNAMIC_VARIABLE_INPUT", "Include DynamicVariableInput nodes in Input node color override:", () => true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_4", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
@@ -94,20 +104,6 @@ namespace ColorMyLogixNodes
 		private static ModConfigurationKey<bool> USE_STATIC_TEXT_COLOR = new ModConfigurationKey<bool>("USE_STATIC_TEXT_COLOR", "Use Static Text Color (Disables automatic text coloring):", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<BaseX.color> STATIC_TEXT_COLOR = new ModConfigurationKey<BaseX.color>("STATIC_TEXT_COLOR", "Static Text Color:", () => new BaseX.color(0f, 0f, 0f, 1f));
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_6 = new ModConfigurationKey<dummy>("DUMMY_SEP_6", SEP_STRING, () => new dummy());
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_6_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_6_1", $"<color={HEADER_TEXT_COLOR}>[OVERRIDES]</color>", () => new dummy());
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> USE_DISPLAY_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_DISPLAY_COLOR_OVERRIDE", "Use display node color override:", () => false);
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<BaseX.color> DISPLAY_COLOR_OVERRIDE = new ModConfigurationKey<BaseX.color>("DISPLAY_COLOR_OVERRIDE", "Display node color override:", () => new BaseX.color(0f, 0f, 0f, 0.8f));
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> USE_INPUT_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_INPUT_COLOR_OVERRIDE", "Use input node color override:", () => false, internalAccessOnly: true);
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<BaseX.color> INPUT_COLOR_OVERRIDE = new ModConfigurationKey<BaseX.color>("INPUT_COLOR_OVERRIDE", "Input node color override:", () => new BaseX.color(1f, 1f, 1f, 0.8f), internalAccessOnly: true);
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> OVERRIDE_DYNAMIC_VARIABLE_INPUT = new ModConfigurationKey<bool>("OVERRIDE_DYNAMIC_VARIABLE_INPUT", "Include DynamicVariableInput nodes in Input node color override:", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_5", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
@@ -128,6 +124,10 @@ namespace ColorMyLogixNodes
 		//private static ModConfigurationKey<dummy> DUMMY_SEP_4_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_4_2", $"<color={DETAIL_TEXT_COLOR}><i>Channel Shift will make the channel values go from zero to one over time as the selected waveform</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<BaseX.color> NODE_ERROR_COLOR = new ModConfigurationKey<BaseX.color>("NODE_ERROR_COLOR", "Node Error Color:", () => new BaseX.color(3.0f, 0.5f, 0.5f, 0.8f));
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> USE_NODE_ALPHA = new ModConfigurationKey<bool>("USE_NODE_ALPHA", "Use node alpha (For dynamic section):", () => false);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<float> NODE_ALPHA = new ModConfigurationKey<float>("NODE_ALPHA", "Node alpha [0 to 1]:", () => 0.8f);
 
 		// INTERNAL ACCESS CONFIG KEYS
 		[AutoRegisterConfigKey]
@@ -141,9 +141,9 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ALLOW_NEGATIVE_AND_EMISSIVE_COLORS = new ModConfigurationKey<bool>("ALLOW_NEGATIVE_AND_EMISSIVE_COLORS", "Allow negative and emissive colors:", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> COLOR_RELAY_NODES = new ModConfigurationKey<bool>("COLOR_RELAY_NODES", "Color relay nodes:", () => false, internalAccessOnly: true);
-		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> MAKE_CONNECT_POINTS_FULL_ALPHA = new ModConfigurationKey<bool>("MAKE_CONNECT_POINTS_FULL_ALPHA", "Make connect points on nodes have full alpha:", () => true, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> COLOR_RELAY_NODES = new ModConfigurationKey<bool>("COLOR_RELAY_NODES", "Apply colors to Relay Nodes:", () => false, internalAccessOnly: true);
 
 		private enum ColorModelEnum
 		{
@@ -657,12 +657,15 @@ namespace ColorMyLogixNodes
 					if (targetField != null)
 					{
 						var targetSlot = __instance.Slot.FindChild((Slot c) => c.Name == __instance.LocalUser.ReferenceID.ToString() && c.Tag == DELEGATE_ADDED_TAG);
+						//var targetComp = __instance.Slot.GetComponent<Comment>((Comment c) => c.ReferenceID.User == __instance.LocalUser.AllocationID && c.Text.Value == DELEGATE_ADDED_TAG);
 						if (targetSlot == null)
 						{
 							__instance.RunInUpdates(0, () =>
 							{
 								var targetSlot = __instance.Slot.FindChild((Slot c) => c.Name == __instance.LocalUser.ReferenceID.ToString() && c.Tag == DELEGATE_ADDED_TAG);
 								if (targetSlot != null) return;
+								//var targetComp = __instance.Slot.GetComponent<Comment>((Comment c) => c.ReferenceID.User == __instance.LocalUser.AllocationID && c.Text.Value == DELEGATE_ADDED_TAG);
+								//if (targetComp != null) return;
 
 								ISyncRef syncRef = __instance.TryGetField(targetField) as ISyncRef;
 
@@ -678,9 +681,20 @@ namespace ColorMyLogixNodes
 								//TrySetSlotTag(__instance.Slot, DELEGATE_ADDED_TAG);
 								
 								//nodeKeys.Add(new WeakReference<LogixNode>(__instance));
+
 								//var newComment = __instance.Slot.AttachComponent<Comment>();
 								//newComment.Text.Value = DELEGATE_ADDED_TAG;
 								//newComment.Persistent = false;
+
+								//__instance.World.UserLeft += (user) =>
+								//{
+									//if (user == __instance.LocalUser)
+									//{
+										//newComment.Destroy();
+									//}
+								//};
+
+								// could maybe do this with a comment and subscribe to World.UserLeft to destroy it?
 								var newSlot = __instance.Slot.AddSlot(__instance.LocalUser.ReferenceID.ToString());
 								newSlot.PersistentSelf = false;
 								newSlot.Tag = DELEGATE_ADDED_TAG;
