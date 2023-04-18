@@ -8,6 +8,8 @@ using NeosModLoader;
 using System;
 using System.Reflection;
 using BaseX;
+using System.Collections.Generic;
+using System.Linq;
 
 #if DEBUG
 
@@ -51,6 +53,8 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<BaseX.color> NODE_COLOR = new ModConfigurationKey<BaseX.color>("NODE_COLOR", "Static Node Color:", () => new BaseX.color(1.0f, 1.0f, 1.0f, 0.8f));
 		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_7_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_1", SEP_STRING, () => new dummy());
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> USE_STATIC_RANGES = new ModConfigurationKey<bool>("USE_STATIC_RANGES", "Use Random Ranges around Static Node Color:", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float3> RANDOM_RANGES_AROUND_STATIC_VALUES = new ModConfigurationKey<float3>("RANDOM_RANGES_AROUND_STATIC_VALUES", "Random Ranges around Static Node Color [0 to 1]:", () => new float3(0.1f, 0.1f, 0.1f));
@@ -69,7 +73,11 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ALTERNATE_CATEGORY_STRING = new ModConfigurationKey<bool>("ALTERNATE_CATEGORY_STRING", "Use alternate node category string (only uses the part after the final '/'):", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_7_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_2", SEP_STRING, () => new dummy());
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<int> RANDOM_SEED = new ModConfigurationKey<int>("RANDOM_SEED", "Seed:", () => 0);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_7_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_3", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float3> COLOR_CHANNELS_MAX = new ModConfigurationKey<float3>("COLOR_CHANNELS_MAX", "Random Max [0 to 1]:", () => new float3(1f, 0.5f, 1f));
 		[AutoRegisterConfigKey]
@@ -91,29 +99,31 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<BaseX.color> DISPLAY_COLOR_OVERRIDE = new ModConfigurationKey<BaseX.color>("DISPLAY_COLOR_OVERRIDE", "Display node color:", () => new BaseX.color(0.25f, 0.25f, 0.25f, 0.8f));
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_7 = new ModConfigurationKey<dummy>("DUMMY_SEP_7", $"<color={DETAIL_TEXT_COLOR}><i>~/~</i></color>", () => new dummy());
+		private static ModConfigurationKey<dummy> DUMMY_SEP_7 = new ModConfigurationKey<dummy>("DUMMY_SEP_7", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> USE_INPUT_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_INPUT_COLOR_OVERRIDE", "Override input node color:", () => true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<InputNodeOverrideEnum> INPUT_NODE_OVERRIDE_TYPE = new ModConfigurationKey<InputNodeOverrideEnum>("INPUT_NODE_OVERRIDE_TYPE", "Input Node Type:", () => InputNodeOverrideEnum.OnlyPrimitives);
+		private static ModConfigurationKey<InputNodeOverrideEnum> INPUT_NODE_OVERRIDE_TYPE = new ModConfigurationKey<InputNodeOverrideEnum>("INPUT_NODE_OVERRIDE_TYPE", "Input Node Type:", () => InputNodeOverrideEnum.PrimitivesAndEnums);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<BaseX.color> INPUT_COLOR_OVERRIDE = new ModConfigurationKey<BaseX.color>("INPUT_COLOR_OVERRIDE", "Input node color:", () => new BaseX.color(0.25f, 0.25f, 0.25f, 0.8f));
 		//[AutoRegisterConfigKey]
 		//private static ModConfigurationKey<bool> OVERRIDE_ENUM_INPUT = new ModConfigurationKey<bool>("OVERRIDE_ENUM_INPUT", "Include EnumInput nodes:", () => true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> OVERRIDE_DYNAMIC_VARIABLE_INPUT = new ModConfigurationKey<bool>("OVERRIDE_DYNAMIC_VARIABLE_INPUT", "Include DynamicVariableInput nodes:", () => false);
+		private static ModConfigurationKey<bool> OVERRIDE_DYNAMIC_VARIABLE_INPUT = new ModConfigurationKey<bool>("OVERRIDE_DYNAMIC_VARIABLE_INPUT", "Include DynamicVariableInput nodes:", () => true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_4", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_4_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_4_1", $"<color={HEADER_TEXT_COLOR}>[TEXT]</color>", () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> ENABLE_TEXT_CONTRAST = new ModConfigurationKey<bool>("ENABLE_TEXT_CONTRAST", "Automatically change the color of text to contrast better with the node background:", () => true);
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<float> PERCEPTUAL_LIGHTNESS_EXPONENT = new ModConfigurationKey<float>("PERCEPTUAL_LIGHTNESS_EXPONENT", "Exponent for perceptual lightness calculation (affects automatic text color, best ~0.6 to ~0.8):", () => 0.5f, internalAccessOnly: true);
+		private static ModConfigurationKey<dummy> DUMMY_SEP_7_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_4", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> USE_STATIC_TEXT_COLOR = new ModConfigurationKey<bool>("USE_STATIC_TEXT_COLOR", "Use Static Text Color (Disables automatic text coloring):", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<BaseX.color> STATIC_TEXT_COLOR = new ModConfigurationKey<BaseX.color>("STATIC_TEXT_COLOR", "Static Text Color:", () => new BaseX.color(0f, 0f, 0f, 1f));
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> ENABLE_TEXT_CONTRAST = new ModConfigurationKey<bool>("ENABLE_TEXT_CONTRAST", "Automatically change the color of text to contrast better with the node background:", () => true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<float> PERCEPTUAL_LIGHTNESS_EXPONENT = new ModConfigurationKey<float>("PERCEPTUAL_LIGHTNESS_EXPONENT", "Exponent for perceptual lightness calculation (affects automatic text color, best ~0.6 to ~0.8):", () => 0.5f, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_5", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
@@ -123,7 +133,11 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float3> RGB_CHANNEL_MULTIPLIER = new ModConfigurationKey<float3>("RGB_CHANNEL_MULTIPLIER", "Output RGB Channel Multiplier:", () => new float3(1f, 1f, 1f));
 		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_7_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_5", SEP_STRING, () => new dummy());
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ENABLE_NON_RANDOM_REFID = new ModConfigurationKey<bool>("ENABLE_NON_RANDOM_REFID", "Enable Hue-shift Mode (HSV and HSL only):", () => false);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_7_6 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_6", SEP_STRING, () => new dummy());
 		//[AutoRegisterConfigKey]
 		//private static ModConfigurationKey<int3> NON_RANDOM_REFID_CHANNELS = new ModConfigurationKey<int3>("NON_RANDOM_REFID_CHANNELS", "Which channels to shift [1 to enable, 0 to disable]:", () => new int3(1, 0, 0));
 		//[AutoRegisterConfigKey]
@@ -134,6 +148,10 @@ namespace ColorMyLogixNodes
 		//private static ModConfigurationKey<dummy> DUMMY_SEP_4_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_4_2", $"<color={DETAIL_TEXT_COLOR}><i>Channel Shift will make the channel values go from zero to one over time as the selected waveform</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<BaseX.color> NODE_ERROR_COLOR = new ModConfigurationKey<BaseX.color>("NODE_ERROR_COLOR", "Node Error Color:", () => new BaseX.color(3.0f, 0.5f, 0.5f, 0.8f));
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_7_7 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_7", SEP_STRING, () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> UPDATE_NODES_ON_CONFIG_CHANGED = new ModConfigurationKey<bool>("UPDATE_NODES_ON_CONFIG_CHANGED", "Refresh node visuals when the config changes (Warning! Can be slow if you have a lot of nodes!):", () => false);
 
 		// INTERNAL ACCESS CONFIG KEYS
 		[AutoRegisterConfigKey]
@@ -175,9 +193,9 @@ namespace ColorMyLogixNodes
 
 		private enum InputNodeOverrideEnum
 		{
-			OnlyPrimitives,
-			PrimitivesAndEnumInputs,
-			WholeInputCategory
+			Primitives,
+			PrimitivesAndEnums,
+			Everything
 		}
 
 		//private enum ChannelShiftWaveformEnum
@@ -201,6 +219,40 @@ namespace ColorMyLogixNodes
 			Config = GetConfiguration()!;
 			Config.Save(true);
 			harmony.PatchAll();
+
+			Config.OnThisConfigurationChanged += (config) =>
+			{
+				if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED)) {
+					//HashSet<ulong> nodeChainSet = new();
+					// could be optimized by only refreshing nodes that are part of independent chains because GenerateVisual also affects other connected nodes
+					foreach (LogixNode n in Engine.Current.WorldManager.FocusedWorld.RootSlot.GetComponentsInChildren<LogixNode>((LogixNode node) => !node.IsRemoved && node.ActiveVisual != null && node.ActiveVisual.ReferenceID.User == Engine.Current.WorldManager.FocusedWorld.LocalUser.AllocationID))
+					{
+						//List<LogixNode> reachableNodes = n.EnumerateAllReachableNodes().ToList();
+						//ulong refIdSum = n.ReferenceID.Position;
+						//foreach (LogixNode reachableNode in reachableNodes)
+						//{
+						//refIdSum += reachableNode.ReferenceID.Position;
+						//}
+						//reachableNodes.Sort((x, y) => x.ReferenceID.Position.CompareTo(y.ReferenceID.Position));
+						//LogixNode firstNode = reachableNodes.Count > 0 ? reachableNodes[0] : n;
+						//if (!nodeChainSet.Contains(refIdSum))
+						//{
+						//nodeChainSet.Add(refIdSum);
+						//n.RunSynchronously(() =>
+						//{
+						//n.RemoveAllLogixBoxes();
+						//n.GenerateVisual();
+						//});
+						//}
+						//reachableNodes.Clear();
+						n.RunSynchronously(() =>
+						{
+							n.RefreshLogixBox();
+						});
+					}
+					//nodeChainSet.Clear();
+				}
+			};
 		}
 
 		private static void TrySetSlotTag(Slot s, string tag)
@@ -654,11 +706,11 @@ namespace ColorMyLogixNodes
 			InputNodeOverrideEnum inputNodeType = Config.GetValue(INPUT_NODE_OVERRIDE_TYPE);
 
 			// Primitive input
-			return (inputNodeType == InputNodeOverrideEnum.OnlyPrimitives && (node.Name.EndsWith("Input"))) ||
+			return (inputNodeType == InputNodeOverrideEnum.Primitives && (node.Name.EndsWith("Input"))) ||
 				// Primitive and enum
-				(inputNodeType == InputNodeOverrideEnum.PrimitivesAndEnumInputs && (node.Name.EndsWith("Input") || node.Name.StartsWith("EnumInput"))) ||
+				(inputNodeType == InputNodeOverrideEnum.PrimitivesAndEnums && (node.Name.EndsWith("Input") || node.Name.StartsWith("EnumInput"))) ||
 				// Whole input category
-				(inputNodeType == InputNodeOverrideEnum.WholeInputCategory && (GetNodeCategoryString(node.GetType()) == "LogiX/Input" || GetNodeCategoryString(node.GetType()) == "LogiX/Input/Uncommon")) ||
+				(inputNodeType == InputNodeOverrideEnum.Everything && (GetNodeCategoryString(node.GetType()) == "LogiX/Input" || GetNodeCategoryString(node.GetType()) == "LogiX/Input/Uncommon")) ||
 				// Dynamic variable input
 				(Config.GetValue(OVERRIDE_DYNAMIC_VARIABLE_INPUT) && node.Name.StartsWith("DynamicVariableInput"));
 		}
