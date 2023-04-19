@@ -228,6 +228,13 @@ namespace ColorMyLogixNodes
 			Config.Save(true);
 			harmony.PatchAll();
 
+			//Engine.Current.WorldManager.WorldFocused += (world) =>
+			//{
+			//	dataRootSlot = null;
+			//	refDriverNodeDataSlot = null;
+			//	regularNodeDataSlot = null;
+			//};
+
 			Config.OnThisConfigurationChanged += (config) =>
 			{
 				if (Config.GetValue(MOD_ENABLED) && Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED)) {
@@ -906,13 +913,13 @@ namespace ColorMyLogixNodes
 					}
 					if (targetField != null)
 					{
-						if (dataRootSlot == null)
+						if (dataRootSlot == null || dataRootSlot.World != Engine.Current.WorldManager.FocusedWorld)
 						{
 							dataRootSlot = __instance.World.AssetsSlot.FindOrAdd(DATA_ROOT_SLOT_NAME, false);
 							dataRootSlot.GetComponentOrAttach<AssetOptimizationBlock>();
 						}
 
-						if (refDriverNodeDataSlot == null)
+						if (refDriverNodeDataSlot == null || refDriverNodeDataSlot.World != Engine.Current.WorldManager.FocusedWorld)
 						{
 							refDriverNodeDataSlot = dataRootSlot.FindOrAdd(REF_DRIVER_NODE_DATA_SLOT_NAME, false);
 							refDriverNodeDataSlot.GetComponentOrAttach<AssetOptimizationBlock>();
@@ -980,13 +987,13 @@ namespace ColorMyLogixNodes
 
 					if (root.Tag != COLOR_SET_TAG)
 					{
-						if (dataRootSlot == null)
+						if (dataRootSlot == null || dataRootSlot.World != Engine.Current.WorldManager.FocusedWorld)
 						{
 							dataRootSlot = __instance.World.AssetsSlot.FindOrAdd(DATA_ROOT_SLOT_NAME, false);
 							dataRootSlot.GetComponentOrAttach<AssetOptimizationBlock>();
 						}
 
-						if (regularNodeDataSlot == null)
+						if (regularNodeDataSlot == null || regularNodeDataSlot.World != Engine.Current.WorldManager.FocusedWorld)
 						{
 							regularNodeDataSlot = dataRootSlot.FindOrAdd(REGULAR_NODE_DATA_SLOT_NAME, false);
 							regularNodeDataSlot.GetComponentOrAttach<AssetOptimizationBlock>();
