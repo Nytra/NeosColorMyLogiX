@@ -147,24 +147,24 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<BaseX.color> NODE_ERROR_COLOR = new ModConfigurationKey<BaseX.color>("NODE_ERROR_COLOR", "Node Error Color:", () => new BaseX.color(3.0f, 0.5f, 0.5f, 0.8f));
 
-        // MORE INTERNAL ACCESS CONFIG KEYS
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<dummy> DUMMY_SEP_7_7 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_7", SEP_STRING, () => new dummy());
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<bool> UPDATE_NODES_ON_CONFIG_CHANGED = new ModConfigurationKey<bool>("UPDATE_NODES_ON_CONFIG_CHANGED", "Auto-refresh the colors of regular nodes in the data slot when your mod config changes:", () => true, internalAccessOnly: true);
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<bool> ADD_REGULAR_NODES_TO_DATA_SLOT = new ModConfigurationKey<bool>("ADD_REGULAR_NODES_TO_DATA_SLOT", "Add regular nodes to the data slot (Required for auto-refresh to work):", () => true, internalAccessOnly: true);
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<bool> ADD_REF_DRIVER_NODES_TO_DATA_SLOT = new ModConfigurationKey<bool>("ADD_REF_DRIVER_NODES_TO_DATA_SLOT", "Add ref and driver nodes to the data slot (Makes them change color when their references change):", () => true, internalAccessOnly: true);
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<dummy> DUMMY_SEP_8 = new ModConfigurationKey<dummy>("DUMMY_SEP_8", SEP_STRING, () => new dummy());
-        [AutoRegisterConfigKey]
+		// MORE INTERNAL ACCESS CONFIG KEYS
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_7_7 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_7", SEP_STRING, () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> UPDATE_NODES_ON_CONFIG_CHANGED = new ModConfigurationKey<bool>("UPDATE_NODES_ON_CONFIG_CHANGED", "Auto-refresh the colors of regular nodes in the data slot when your mod config changes:", () => true, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> ADD_REGULAR_NODES_TO_DATA_SLOT = new ModConfigurationKey<bool>("ADD_REGULAR_NODES_TO_DATA_SLOT", "Add regular nodes to the data slot (Required for auto-refresh to work):", () => true, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> ADD_REF_DRIVER_NODES_TO_DATA_SLOT = new ModConfigurationKey<bool>("ADD_REF_DRIVER_NODES_TO_DATA_SLOT", "Add ref and driver nodes to the data slot (Makes them change color when their references change):", () => true, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_8 = new ModConfigurationKey<dummy>("DUMMY_SEP_8", SEP_STRING, () => new dummy());
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> COLOR_NULL_REFERENCE_NODES = new ModConfigurationKey<bool>("COLOR_NULL_REFERENCE_NODES", "Should Null Reference Nodes use Node Error Color:", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> COLOR_NULL_DRIVER_NODES = new ModConfigurationKey<bool>("COLOR_NULL_DRIVER_NODES", "Should Null Driver Nodes use Node Error Color:", () => true, internalAccessOnly: true);
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<dummy> DUMMY_SEP_8_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_8_1", SEP_STRING, () => new dummy());
-        [AutoRegisterConfigKey]
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_8_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_8_1", SEP_STRING, () => new dummy());
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<int> REFID_MOD_DIVISOR = new ModConfigurationKey<int>("REFID_MOD_DIVISOR", "RefID divisor for Channel Shift (Smaller value = faster shifting, minimum 1):", () => 100000, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> USE_SYSTEM_TIME_RNG = new ModConfigurationKey<bool>("USE_SYSTEM_TIME_RNG", "Always use randomness seeded by system time (Complete randomness, not suitable for normal use):", () => false, internalAccessOnly: true);
@@ -266,16 +266,7 @@ namespace ColorMyLogixNodes
 										{
 											if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 											{
-												// set node label's text color
-												// need to wait 3 updates because who knows why...
-												node.RunInUpdates(3, () =>
-												{
-													foreach (Text text in GetTextListForNode(node))
-													{
-														//TrySetTextColor(text, GetTextColor(c));
-														colorField.Value = GetTextColor(c);
-													}
-												});
+												colorField.Value = GetTextColor(c);
 											}
 										}
 									});
@@ -333,33 +324,33 @@ namespace ColorMyLogixNodes
 							{
 								if (Config.GetValue(ADD_REF_DRIVER_NODES_TO_DATA_SLOT))
 								{
-                                    var targetSlot = refDriverNodeDataSlot.FindChild((Slot c) => c.Name == __instance.ReferenceID.ToString() && c.Tag == __instance.LocalUser.ReferenceID.ToString());
+									var targetSlot = refDriverNodeDataSlot.FindChild((Slot c) => c.Name == __instance.ReferenceID.ToString() && c.Tag == __instance.LocalUser.ReferenceID.ToString());
 
-                                    if (targetSlot != null) return;
+									if (targetSlot != null) return;
 
-                                    ISyncRef syncRef = __instance.TryGetField(targetField) as ISyncRef;
+									ISyncRef syncRef = __instance.TryGetField(targetField) as ISyncRef;
 
-                                    Debug("Subscribing to this node's Changed event.");
+									Debug("Subscribing to this node's Changed event.");
 
-                                    syncRef.Changed += (iChangeable) =>
-                                    {
-                                        UpdateRefOrDriverNodeColor(__instance, targetField);
-                                    };
+									syncRef.Changed += (iChangeable) =>
+									{
+										UpdateRefOrDriverNodeColor(__instance, targetField);
+									};
 
-                                    UpdateRefOrDriverNodeColor(__instance, targetField);
+									UpdateRefOrDriverNodeColor(__instance, targetField);
 
-                                    var newSlot = refDriverNodeDataSlot.AddSlot(__instance.ReferenceID.ToString());
-                                    newSlot.PersistentSelf = false;
-                                    newSlot.Tag = __instance.LocalUser.ReferenceID.ToString();
+									var newSlot = refDriverNodeDataSlot.AddSlot(__instance.ReferenceID.ToString());
+									newSlot.PersistentSelf = false;
+									newSlot.Tag = __instance.LocalUser.ReferenceID.ToString();
 
-                                    var destroyOnUserLeave = newSlot.AttachComponent<DestroyOnUserLeave>();
-                                    destroyOnUserLeave.TargetUser.User.Value = __instance.LocalUser.ReferenceID;
-                                    destroyOnUserLeave.Persistent = false;
+									var destroyOnUserLeave = newSlot.AttachComponent<DestroyOnUserLeave>();
+									destroyOnUserLeave.TargetUser.User.Value = __instance.LocalUser.ReferenceID;
+									destroyOnUserLeave.Persistent = false;
 
-                                    var destroyProxy = __instance.Slot.AttachComponent<DestroyProxy>();
-                                    destroyProxy.Persistent = false;
-                                    destroyProxy.DestroyTarget.Value = newSlot.ReferenceID;
-                                }
+									var destroyProxy = __instance.Slot.AttachComponent<DestroyProxy>();
+									destroyProxy.Persistent = false;
+									destroyProxy.DestroyTarget.Value = newSlot.ReferenceID;
+								}
 								else
 								{
 									UpdateRefOrDriverNodeColor(__instance, targetField);
@@ -410,28 +401,28 @@ namespace ColorMyLogixNodes
 
 							if (Config.GetValue(ADD_REGULAR_NODES_TO_DATA_SLOT))
 							{
-                                nodeDataSlot = regularNodeDataSlot.FindOrAdd(__instance.ReferenceID.ToString(), false);
-                                TrySetSlotTag(nodeDataSlot, __instance.LocalUser.ReferenceID.ToString());
+								nodeDataSlot = regularNodeDataSlot.FindOrAdd(__instance.ReferenceID.ToString(), false);
+								TrySetSlotTag(nodeDataSlot, __instance.LocalUser.ReferenceID.ToString());
 
-                                var nodeRefField = nodeDataSlot.GetComponentOrAttach<ReferenceField<LogixNode>>();
-                                nodeRefField.Reference.Value = __instance.ReferenceID;
+								var nodeRefField = nodeDataSlot.GetComponentOrAttach<ReferenceField<LogixNode>>();
+								nodeRefField.Reference.Value = __instance.ReferenceID;
 
-                                var destroyProxy = __instance.ActiveVisual.GetComponentOrAttach<DestroyProxy>();
-                                destroyProxy.DestroyTarget.Value = nodeDataSlot.ReferenceID;
-                                destroyProxy.Persistent = false;
-                            }
+								var destroyProxy = __instance.ActiveVisual.GetComponentOrAttach<DestroyProxy>();
+								destroyProxy.DestroyTarget.Value = nodeDataSlot.ReferenceID;
+								destroyProxy.Persistent = false;
+							}
 
 							var backgroundImage = GetBackgroundImageForNode(__instance);
 							if (backgroundImage != null)
 							{
-                                if (Config.GetValue(ADD_REGULAR_NODES_TO_DATA_SLOT))
-                                {
-                                    var bgImageRefField = nodeDataSlot.GetComponentOrAttach<ReferenceField<IField<color>>>();
-                                    bgImageRefField.Reference.Value = backgroundImage.TryGetField<color>("Tint").ReferenceID;
-                                    bgImageRefField.UpdateOrder = 0;
-                                }
+								if (Config.GetValue(ADD_REGULAR_NODES_TO_DATA_SLOT))
+								{
+									var bgImageRefField = nodeDataSlot.GetComponentOrAttach<ReferenceField<IField<color>>>();
+									bgImageRefField.Reference.Value = backgroundImage.TryGetField<color>("Tint").ReferenceID;
+									bgImageRefField.UpdateOrder = 0;
+								}
 
-                                if (root.Tag == "Disabled")
+								if (root.Tag == "Disabled")
 								{
 									TrySetImageTint(backgroundImage, Config.GetValue(NODE_ERROR_COLOR));
 								}
@@ -439,9 +430,9 @@ namespace ColorMyLogixNodes
 								{
 									color colorToSet;
 
-                                    colorToSet = ComputeColorForLogixNode(__instance);
+									colorToSet = ComputeColorForLogixNode(__instance);
 
-                                    TrySetImageTint(backgroundImage, colorToSet);
+									TrySetImageTint(backgroundImage, colorToSet);
 
 									if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA))
 									{
@@ -462,12 +453,12 @@ namespace ColorMyLogixNodes
 											{
 												TrySetTextColor(text, GetTextColor(colorToSet));
 
-                                                if (Config.GetValue(ADD_REGULAR_NODES_TO_DATA_SLOT))
-                                                {
-                                                    var textColorRefField = nodeDataSlot.AttachComponent<ReferenceField<IField<color>>>();
-                                                    textColorRefField.Reference.Value = text.TryGetField<color>("Color").ReferenceID;
-                                                    textColorRefField.UpdateOrder = 1;
-                                                }
+												if (Config.GetValue(ADD_REGULAR_NODES_TO_DATA_SLOT))
+												{
+													var textColorRefField = nodeDataSlot.AttachComponent<ReferenceField<IField<color>>>();
+													textColorRefField.Reference.Value = text.TryGetField<color>("Color").ReferenceID;
+													textColorRefField.UpdateOrder = 1;
+												}
 											}
 										});
 									}

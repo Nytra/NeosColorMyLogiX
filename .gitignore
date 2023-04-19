@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+ColorMyLogiXNodes/ColorMyLogiXNodes.csproj.bak
+.gitignore.bak
+
 # User-specific files
 *.rsuser
 *.suo
