@@ -232,66 +232,79 @@ namespace ColorMyLogixNodes
 			{
 				if (Config.GetValue(MOD_ENABLED) && Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED)) {
 
-					if (regularNodeDataSlot != null)
+					if (dataRootSlot == null || regularNodeDataSlot == null) return;
+
+					if (dataRootSlot.World != Engine.Current.WorldManager.FocusedWorld)
 					{
-						foreach (Slot slot in regularNodeDataSlot.Children)
+						//dataRootSlot = Engine.Current.WorldManager.FocusedWorld.AssetsSlot.FindOrAdd(DATA_ROOT_SLOT_NAME, false);
+						dataRootSlot = Engine.Current.WorldManager.FocusedWorld.AssetsSlot.FindChild((Slot s) => s.Name == DATA_ROOT_SLOT_NAME);
+					}
+
+					if (regularNodeDataSlot.World != Engine.Current.WorldManager.FocusedWorld)
+					{
+						//regularNodeDataSlot = dataRootSlot.FindOrAdd(REGULAR_NODE_DATA_SLOT_NAME, false);
+						regularNodeDataSlot = Engine.Current.WorldManager.FocusedWorld.AssetsSlot.FindChild((Slot s) => s.Name == REGULAR_NODE_DATA_SLOT_NAME);
+					}
+
+					if (dataRootSlot == null || regularNodeDataSlot == null) return;
+
+					foreach (Slot slot in regularNodeDataSlot.Children)
+					{
+						if (slot.Tag != slot.LocalUser.ReferenceID.ToString()) return;
+
+						LogixNode node = slot.GetComponent<ReferenceField<LogixNode>>().Reference;
+						if (node != null)
 						{
-							if (slot.Tag != slot.LocalUser.ReferenceID.ToString()) return;
-
-							LogixNode node = slot.GetComponent<ReferenceField<LogixNode>>().Reference;
-							if (node != null)
+							foreach (var refField in slot.GetComponents<ReferenceField<IField<color>>>())
 							{
-								foreach (var refField in slot.GetComponents<ReferenceField<IField<color>>>())
+								if (refField.Reference == null) continue;
+								if (refField.Reference.RawTarget == null) continue;
+								node.RunInUpdates(0, () =>
 								{
-									if (refField.Reference == null) continue;
-									if (refField.Reference.RawTarget == null) continue;
-									node.RunInUpdates(0, () =>
+									color c = ComputeColorForLogixNode(node);
+									IField<color> colorField = refField.Reference.RawTarget;
+
+									// background
+									if (refField.UpdateOrder == 0)
 									{
-										color c = ComputeColorForLogixNode(node);
-										IField<color> colorField = refField.Reference.RawTarget;
-
-										// background
-										if (refField.UpdateOrder == 0)
+										if (node.ActiveVisual != null && node.ActiveVisual.Tag == "Disabled")
 										{
-											if (node.ActiveVisual != null && node.ActiveVisual.Tag == "Disabled")
-											{
-												colorField.Value = Config.GetValue(NODE_ERROR_COLOR);
-											}
-											else
-											{
-												colorField.Value = c;
-											}
+											colorField.Value = Config.GetValue(NODE_ERROR_COLOR);
 										}
-										// connect point (unused)
-										else if (refField.UpdateOrder == 1)
+										else
 										{
-											if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA))
-											{
-												colorField.Value = colorField.Value.SetA(1f);
-											}
-											else
-											{
-												colorField.Value = colorField.Value.SetA(0.8f);
-											}
+											colorField.Value = c;
 										}
-										// text
-										else if (refField.UpdateOrder == 2)
+									}
+									// connect point (unused)
+									else if (refField.UpdateOrder == 1)
+									{
+										if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA))
 										{
-											if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
-											{
-												colorField.Value = GetTextColor(c);
-											}
+											colorField.Value = colorField.Value.SetA(1f);
 										}
-									});
-								}
-							}
-							else
-							{
-								slot.RunInUpdates(0, () =>
-								{
-									slot.Destroy();
+										else
+										{
+											colorField.Value = colorField.Value.SetA(0.8f);
+										}
+									}
+									// text
+									else if (refField.UpdateOrder == 2)
+									{
+										if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
+										{
+											colorField.Value = GetTextColor(c);
+										}
+									}
 								});
 							}
+						}
+						else
+						{
+							slot.RunInUpdates(0, () =>
+							{
+								slot.Destroy();
+							});
 						}
 					}
 				}
