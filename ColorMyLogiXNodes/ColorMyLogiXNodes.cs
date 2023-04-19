@@ -5,10 +5,9 @@ using FrooxEngine.LogiX;
 using FrooxEngine.UIX;
 using HarmonyLib;
 using NeosModLoader;
-using System;
-using System.Reflection;
 using BaseX;
-using System.Collections.Generic;
+using static NeosAssets.Graphics.LogiX;
+using FrooxEngine.LogiX.Operators;
 
 #if DEBUG
 
@@ -16,7 +15,7 @@ using System.Collections.Generic;
 
 namespace ColorMyLogixNodes
 {
-	public class ColorMyLogixNodes : NeosMod
+	public partial class ColorMyLogixNodes : NeosMod
 	{
 		public override string Name => "ColorMyLogiX";
 		public override string Author => "Nytra";
@@ -107,8 +106,6 @@ namespace ColorMyLogixNodes
 		private static ModConfigurationKey<InputNodeOverrideEnum> INPUT_NODE_OVERRIDE_TYPE = new ModConfigurationKey<InputNodeOverrideEnum>("INPUT_NODE_OVERRIDE_TYPE", "Input Node Type:", () => InputNodeOverrideEnum.PrimitivesAndEnums);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<BaseX.color> INPUT_COLOR_OVERRIDE = new ModConfigurationKey<BaseX.color>("INPUT_COLOR_OVERRIDE", "Input node color:", () => new BaseX.color(0.25f, 0.25f, 0.25f, 0.8f));
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<bool> OVERRIDE_ENUM_INPUT = new ModConfigurationKey<bool>("OVERRIDE_ENUM_INPUT", "Include EnumInput nodes:", () => true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> OVERRIDE_DYNAMIC_VARIABLE_INPUT = new ModConfigurationKey<bool>("OVERRIDE_DYNAMIC_VARIABLE_INPUT", "Include DynamicVariableInput nodes:", () => true);
 		[AutoRegisterConfigKey]
@@ -149,17 +146,25 @@ namespace ColorMyLogixNodes
 		//private static ModConfigurationKey<dummy> DUMMY_SEP_4_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_4_2", $"<color={DETAIL_TEXT_COLOR}><i>Channel Shift will make the channel values go from zero to one over time as the selected waveform</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<BaseX.color> NODE_ERROR_COLOR = new ModConfigurationKey<BaseX.color>("NODE_ERROR_COLOR", "Node Error Color:", () => new BaseX.color(3.0f, 0.5f, 0.5f, 0.8f));
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_7_7 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_7", SEP_STRING, () => new dummy());
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> UPDATE_NODES_ON_CONFIG_CHANGED = new ModConfigurationKey<bool>("UPDATE_NODES_ON_CONFIG_CHANGED", "Refresh your node visuals when the config changes:", () => true, internalAccessOnly: true);
 
-		// INTERNAL ACCESS CONFIG KEYS
-		[AutoRegisterConfigKey]
+        // MORE INTERNAL ACCESS CONFIG KEYS
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<dummy> DUMMY_SEP_7_7 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_7", SEP_STRING, () => new dummy());
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<bool> UPDATE_NODES_ON_CONFIG_CHANGED = new ModConfigurationKey<bool>("UPDATE_NODES_ON_CONFIG_CHANGED", "Auto-refresh the colors of regular nodes in the data slot when your mod config changes:", () => true, internalAccessOnly: true);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<bool> ADD_REGULAR_NODES_TO_DATA_SLOT = new ModConfigurationKey<bool>("ADD_REGULAR_NODES_TO_DATA_SLOT", "Add regular nodes to the data slot (Required for auto-refresh to work):", () => true, internalAccessOnly: true);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<bool> ADD_REF_DRIVER_NODES_TO_DATA_SLOT = new ModConfigurationKey<bool>("ADD_REF_DRIVER_NODES_TO_DATA_SLOT", "Add ref and driver nodes to the data slot (Makes them change color when their references change):", () => true, internalAccessOnly: true);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<dummy> DUMMY_SEP_8 = new ModConfigurationKey<dummy>("DUMMY_SEP_8", SEP_STRING, () => new dummy());
+        [AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> COLOR_NULL_REFERENCE_NODES = new ModConfigurationKey<bool>("COLOR_NULL_REFERENCE_NODES", "Should Null Reference Nodes use Node Error Color:", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> COLOR_NULL_DRIVER_NODES = new ModConfigurationKey<bool>("COLOR_NULL_DRIVER_NODES", "Should Null Driver Nodes use Node Error Color:", () => true, internalAccessOnly: true);
-		[AutoRegisterConfigKey]
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<dummy> DUMMY_SEP_8_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_8_1", SEP_STRING, () => new dummy());
+        [AutoRegisterConfigKey]
 		private static ModConfigurationKey<int> REFID_MOD_DIVISOR = new ModConfigurationKey<int>("REFID_MOD_DIVISOR", "RefID divisor for Channel Shift (Smaller value = faster shifting, minimum 1):", () => 100000, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> USE_SYSTEM_TIME_RNG = new ModConfigurationKey<bool>("USE_SYSTEM_TIME_RNG", "Always use randomness seeded by system time (Complete randomness, not suitable for normal use):", () => false, internalAccessOnly: true);
@@ -218,9 +223,6 @@ namespace ColorMyLogixNodes
 		private static Slot refDriverNodeDataSlot = null;
 		private static Slot regularNodeDataSlot = null;
 
-		//private static HashSet<WeakReference<LogixNode>> nodeKeys = new();
-		//private static ConditionalWeakTable<LogixNode, ISyncRef> nodeMap = new();
-
 		public override void OnEngineInit()
 		{
 			Harmony harmony = new Harmony($"owo.{Author}.{Name}");
@@ -228,51 +230,16 @@ namespace ColorMyLogixNodes
 			Config.Save(true);
 			harmony.PatchAll();
 
-			//Engine.Current.WorldManager.WorldFocused += (world) =>
-			//{
-			//	dataRootSlot = null;
-			//	refDriverNodeDataSlot = null;
-			//	regularNodeDataSlot = null;
-			//};
-
 			Config.OnThisConfigurationChanged += (config) =>
 			{
 				if (Config.GetValue(MOD_ENABLED) && Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED)) {
-					//HashSet<ulong> nodeChainSet = new();
-					// could be optimized by only refreshing nodes that are part of independent chains because GenerateVisual also affects other connected nodes
-					// maybe append the UserID or UserName to the Visual tag so that we never change the color of nodes that were not specifically generated by the LocalUser
-					//foreach (LogixNode n in Engine.Current.WorldManager.FocusedWorld.RootSlot.GetComponentsInChildren<LogixNode>((LogixNode node) => !node.IsRemoved && node.ActiveVisual != null && node.ActiveVisual.ReferenceID.User == Engine.Current.WorldManager.FocusedWorld.LocalUser.AllocationID && node.ActiveVisual.Tag == COLOR_SET_TAG))
-					//{
-						//List<LogixNode> reachableNodes = n.EnumerateAllReachableNodes().ToList();
-						//ulong refIdSum = n.ReferenceID.Position;
-						//foreach (LogixNode reachableNode in reachableNodes)
-						//{
-						//refIdSum += reachableNode.ReferenceID.Position;
-						//}
-						//reachableNodes.Sort((x, y) => x.ReferenceID.Position.CompareTo(y.ReferenceID.Position));
-						//LogixNode firstNode = reachableNodes.Count > 0 ? reachableNodes[0] : n;
-						//if (!nodeChainSet.Contains(refIdSum))
-						//{
-						//nodeChainSet.Add(refIdSum);
-						//n.RunSynchronously(() =>
-						//{
-						//n.RemoveAllLogixBoxes();
-						//n.GenerateVisual();
-						//});
-						//}
-						//reachableNodes.Clear();
-
-						//n.RunSynchronously(() =>
-						//{
-							//n.RefreshLogixBox();
-						//});
-					//}
-					//nodeChainSet.Clear();
 
 					if (regularNodeDataSlot != null)
 					{
 						foreach (Slot slot in regularNodeDataSlot.Children)
 						{
+							if (slot.Tag != slot.LocalUser.ReferenceID.ToString()) return;
+
 							LogixNode node = slot.GetComponent<ReferenceField<LogixNode>>().Reference;
 							if (node != null)
 							{
@@ -327,572 +294,6 @@ namespace ColorMyLogixNodes
 			};
 		}
 
-		private static void TrySetSlotTag(Slot s, string tag)
-		{
-			try
-			{
-				s.Tag = tag;
-			}
-			catch (Exception e)
-			{
-				Error($"Error occurred while trying to set Slot Tag.\nError message: {e.Message}");
-			}
-		}
-
-		private static void TrySetImageTint(Image image, BaseX.color color)
-		{
-			try
-			{
-				if (image.Tint.IsDriven)
-				{
-					image.Tint.ReleaseLink(image.Tint.ActiveLink);
-				}
-				image.Tint.Value = color;
-			}
-			catch (Exception e)
-			{
-				Error($"Error occurred while trying to set Image Tint Value.\nError message: {e.Message}");
-			}
-		}
-
-		private static void TrySetTextColor(Text text, BaseX.color color)
-		{
-			try
-			{
-				if (text.Color.IsDriven)
-				{
-					text.Color.ReleaseLink(text.Color.ActiveLink);
-				}
-				text.Color.Value = color;
-			}
-			catch (Exception e)
-			{
-				Error($"Error occurred while trying to set Text Color Value.\nError message: {e.Message}");
-			}
-		}
-
-		private static string GetNodeCategoryString(Type logixType, bool onlyTopmost = false)
-		{
-			Category customAttribute = logixType.GetCustomAttribute<Category>();
-			if (customAttribute == null)
-			{
-				return "";
-			}
-			else
-			{
-				string[] categoryPaths = customAttribute.Paths;
-				if (categoryPaths.Length > 0)
-				{
-					if (onlyTopmost)
-					{
-						string[] parts = categoryPaths[0].Split('/');
-						if (parts.Length > 1)
-						{
-							if (Config.GetValue(ALTERNATE_CATEGORY_STRING))
-							{
-								return parts[1];
-							}
-							else
-							{
-								return parts[0] + "/" + parts[1];
-							}
-						}
-						else
-						{
-							return parts[0];
-						}
-					}
-					else
-					{
-						if (Config.GetValue(ALTERNATE_CATEGORY_STRING))
-						{
-							string[] parts = categoryPaths[0].Split('/');
-							return parts[parts.Length - 1];
-						}
-						else
-						{
-							return categoryPaths[0];
-						}
-					}
-				}
-				else
-				{
-					return "";
-				}
-			}
-		}
-
-		private static float GetStaticColorChannelValue(int index, ColorModelEnum model, Random rand)
-		{
-			float val = 0;
-			int coinflip;
-			switch (model)
-			{
-				case ColorModelEnum.HSV:
-					ColorHSV colorHSV = new ColorHSV(Config.GetValue(NODE_COLOR));
-					switch (index)
-					{
-						case 0:
-							val = colorHSV.h;
-							break;
-						case 1:
-							val = colorHSV.s;
-							break;
-						case 2:
-							val = colorHSV.v;
-							break;
-						default:
-							break;
-					}
-					break;
-				case ColorModelEnum.HSL:
-					ColorHSL colorHSL = new ColorHSL(Config.GetValue(NODE_COLOR));
-					switch (index)
-					{
-						case 0:
-							val = colorHSL.h;
-							break;
-						case 1:
-							val = colorHSL.s;
-							break;
-						case 2:
-							val = colorHSL.l;
-							break;
-						default:
-							break;
-					}
-					break;
-				case ColorModelEnum.RGB:
-					color colorRGB = new color(Config.GetValue(NODE_COLOR));
-					switch (index)
-					{
-						case 0:
-							val = colorRGB.r;
-							break;
-						case 1:
-							val = colorRGB.g;
-							break;
-						case 2:
-							val = colorRGB.b;
-							break;
-						default:
-							break;
-					}
-					break;
-				default:
-					break;
-			}
-			if (Config.GetValue(USE_STATIC_RANGES))
-			{
-				float range = Config.GetValue(RANDOM_RANGES_AROUND_STATIC_VALUES)[index];
-				if (range >= 0)
-				{
-					switch (Config.GetValue(STATIC_RANGE_MODE))
-					{
-						case StaticRangeModeEnum.NodeFactor:
-							coinflip = rand.Next(2) == 0 ? -1 : 1;
-							val += (float)rand.NextDouble() * range * (float)coinflip / 2f;
-							break;
-						case StaticRangeModeEnum.SystemTime:
-							coinflip = rngTimeSeeded.Next(2) == 0 ? -1 : 1;
-							val += (float)rngTimeSeeded.NextDouble() * range * (float)coinflip / 2f;
-							break;
-						default:
-							break;
-					}
-				}
-				else
-				{
-					val = GetRandomColorChannelValue(index, rand);
-				}
-			}
-			return val;
-		}
-
-		private static float GetRandomColorChannelValue(int index, Random rand)
-		{
-			float3 mins = Config.GetValue(COLOR_CHANNELS_MIN);
-			float3 maxs = Config.GetValue(COLOR_CHANNELS_MAX);
-			float3 random_strength = MathX.Abs(maxs - mins);
-			float3 random_offset = mins;
-			return (float)rand.NextDouble() * random_strength[index] + random_offset[index];
-		}
-
-		private static float GetColorChannelValue(int index, Random rand, ColorModelEnum model)
-		{
-			float val;
-			if (Config.GetValue(USE_STATIC_COLOR))
-			{
-				val = GetStaticColorChannelValue(index, model, rand);
-			}
-			else
-			{
-				val = GetRandomColorChannelValue(index, rand);
-			}
-			return val;
-		}
-
-		private static BaseX.color GetColorFromUlong(ulong val, ulong divisor, Random rand)
-		{
-			float hue = 0f;
-			float sat = 0f;
-			float val_lightness = 0f;
-			float alpha = 0.8f;
-			if (Config.GetValue(USE_NODE_ALPHA))
-			{
-				alpha = Config.GetValue(NODE_ALPHA);
-			}
-
-			//float shift = 0f;
-			float strength = (val % divisor) / (float)divisor;
-
-			if (Config.GetValue(COLOR_MODEL) == ColorModelEnum.RGB)
-			{
-				hue = GetColorChannelValue(0, rand, Config.GetValue(COLOR_MODEL));
-			}
-			else
-			{
-				hue = strength;
-			}
-
-			//switch (Config.GetValue(NON_RANDOM_REFID_WAVEFORM))
-			//{
-			//	case ChannelShiftWaveformEnum.Sawtooth:
-			//		shift = strength;
-			//		break;
-			//	case ChannelShiftWaveformEnum.Sine:
-			//		shift = MathX.Sin(strength * 2f * (float)Math.PI);
-			//		break;
-			//	default:
-			//		break;
-			//}
-
-			//int3 shiftChannels = Config.GetValue(NON_RANDOM_REFID_CHANNELS);
-			//float3 shiftOffsets = Config.GetValue(NON_RANDOM_REFID_OFFSETS);
-
-			//if (shiftChannels[0] != 0)
-			//{
-			//	hue = shift + shiftOffsets[0];
-			//}
-			//else
-			//{
-			//	// maybe it should use RNG from the dynamic section here?
-			//	hue = GetColorChannelValue(0, ref rngTimeSeeded, Config.GetValue(COLOR_MODEL));
-			//}
-			//if (shiftChannels[1] != 0)
-			//{
-			//	sat = shift + shiftOffsets[1];
-			//}
-			//else
-			//{
-			//	sat = GetColorChannelValue(1, ref rngTimeSeeded, Config.GetValue(COLOR_MODEL));
-			//}
-			//if (shiftChannels[2] != 0)
-			//{
-			//	val_lightness = shift + shiftOffsets[2];
-			//}
-			//else
-			//{
-			//	val_lightness = GetColorChannelValue(2, ref rngTimeSeeded, Config.GetValue(COLOR_MODEL));
-			//}
-
-			sat = GetColorChannelValue(1, rand, Config.GetValue(COLOR_MODEL));
-			val_lightness = GetColorChannelValue(2, rand, Config.GetValue(COLOR_MODEL));
-
-			if (Config.GetValue(USE_STATIC_COLOR))
-			{
-				alpha = Config.GetValue(NODE_COLOR).a;
-			}
-
-			BaseX.color c = Config.GetValue(NODE_COLOR);
-			switch (Config.GetValue(COLOR_MODEL))
-			{
-				case ColorModelEnum.HSV:
-					c = new ColorHSV(hue, sat, val_lightness, alpha).ToRGB();
-					break;
-				case ColorModelEnum.HSL:
-					c = new ColorHSL(hue, sat, val_lightness, alpha).ToRGB();
-					break;
-				case ColorModelEnum.RGB:
-					// hue = r, sat = g, val_lightness = b
-					c = new color(hue, sat, val_lightness, alpha);
-					break;
-				default:
-					break;
-			}
-			return c;
-		}
-
-		private static color GetColorWithRNG(Random rand)
-		{
-			// RNG seeded by any constant node factor will always give the same color
-			float hue;
-			float sat;
-			float val_lightness;
-			float alpha = 0.8f;
-			if (Config.GetValue(USE_NODE_ALPHA))
-			{
-				alpha = Config.GetValue(NODE_ALPHA);
-			}
-
-			hue = GetColorChannelValue(0, rand, Config.GetValue(COLOR_MODEL));
-			sat = GetColorChannelValue(1, rand, Config.GetValue(COLOR_MODEL));
-			val_lightness = GetColorChannelValue(2, rand, Config.GetValue(COLOR_MODEL));
-
-			if (Config.GetValue(USE_STATIC_COLOR))
-			{
-				alpha = Config.GetValue(NODE_COLOR).a;
-			}
-
-			switch (Config.GetValue(COLOR_MODEL))
-			{
-				case ColorModelEnum.HSV:
-					return new ColorHSV(hue, sat, val_lightness, alpha).ToRGB();
-				case ColorModelEnum.HSL:
-					return new ColorHSL(hue, sat, val_lightness, alpha).ToRGB();
-				case ColorModelEnum.RGB:
-					return new color(hue, sat, val_lightness, alpha);
-				default:
-					return Config.GetValue(NODE_COLOR);
-			}
-		}
-
-		private static float GetLuminance(color c)
-		{
-			float sR = (float)Math.Pow(c.r, 2.2f);
-			float sG = (float)Math.Pow(c.g, 2.2f);
-			float sB = (float)Math.Pow(c.b, 2.2f);
-
-			float luminance = (0.2126f * sR + 0.7152f * sG + 0.0722f * sB);
-			
-			return luminance;
-		}
-
-		private static float GetPerceptualLightness(float luminance)
-		{
-			// 1 = white, 0.5 = middle gray, 0 = black
-			// the power can be tweaked here. ~0.6 to ~0.8
-			return (float)Math.Pow(luminance, Config.GetValue(PERCEPTUAL_LIGHTNESS_EXPONENT));
-		}
-
-		private static color GetTextColor(color bg)
-		{
-			color c;
-			if (Config.GetValue(USE_STATIC_TEXT_COLOR))
-			{
-				c = Config.GetValue(STATIC_TEXT_COLOR);
-			}
-			else
-			{
-				c = GetPerceptualLightness(GetLuminance(bg)) >= 0.5f ? color.Black : color.White;
-			}
-			if (!Config.GetValue(ALLOW_NEGATIVE_AND_EMISSIVE_COLORS))
-			{
-				ClampColor(ref c);
-			}
-			return c;
-		}
-
-		private static void ClampColor(ref color c)
-		{
-			// clamp color to min 0 and max 1 (no negative or emissive colors allowed)
-			if (c.r > 1) c = c.SetR(1f);
-			if (c.r < 0) c = c.SetR(0f);
-
-			if (c.g > 1) c = c.SetG(1f);
-			if (c.g < 0) c = c.SetG(0f);
-
-			if (c.b > 1) c = c.SetB(1f);
-			if (c.b < 0) c = c.SetB(0f);
-
-			if (c.a > 1) c = c.SetA(1f);
-			if (c.a < 0) c = c.SetA(0f);
-		}
-
-		private static void UpdateRefOrDriverNodeColor(LogixNode node, string targetField)
-		{
-			if (node == null) return;
-			if (node.ActiveVisual == null) return;
-			//Debug("in UpdateRefOrDriverNodeColor method");
-			node.RunInUpdates(0, () =>
-			{
-				var targetSyncRef = node.TryGetField(targetField) as ISyncRef;
-				if (targetSyncRef == null) return;
-				Debug($"Updating color for Node {node.Name} {node.ReferenceID.ToString()}");
-
-				if (targetSyncRef.Target == null)
-				{
-					Debug("Null syncref target found! setting error color");
-					var imageSlot1 = node.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
-					if (imageSlot1 != null)
-					{
-						var image1 = imageSlot1.GetComponent<Image>();
-						if (image1 != null)
-						{
-							TrySetImageTint(image1, Config.GetValue(NODE_ERROR_COLOR));
-							//TrySetTag(visualSlot, COLOR_SET_TAG);
-							var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");
-							if (imageSlot2 != null)
-							{
-								var image2 = imageSlot2.GetComponent<Image>();
-								if (image2 != null)
-								{
-									TrySetImageTint(image2, Config.GetValue(NODE_ERROR_COLOR));
-									//TrySetTag(visualSlot, COLOR_SET_TAG);
-								}
-							}
-						}
-					}
-				}
-				else
-				{
-					Debug($"SyncRef Target not null. Setting default color. SyncRef Target: {targetSyncRef.Target.ToString()}");
-					var imageSlot1 = node.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
-					if (imageSlot1 != null)
-					{
-						var image1 = imageSlot1.GetComponent<Image>();
-						if (image1 != null)
-						{
-							var defaultColor = LogixHelper.GetColor(node.GetType().GetGenericArguments()[0]);
-							defaultColor = defaultColor.SetA(0.8f);
-							TrySetImageTint(image1, defaultColor);
-							//TrySetTag(visualSlot, COLOR_SET_TAG);
-							var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");
-							if (imageSlot2 != null)
-							{
-								var image2 = imageSlot2.GetComponent<Image>();
-								if (image2 != null)
-								{
-									TrySetImageTint(image2, defaultColor);
-									//TrySetTag(visualSlot, COLOR_SET_TAG);
-								}
-							}
-						}
-					}
-				}
-			});
-		}
-
-		private static bool ShouldColorInputNode(LogixNode node)
-		{
-			InputNodeOverrideEnum inputNodeType = Config.GetValue(INPUT_NODE_OVERRIDE_TYPE);
-
-			// Primitive input
-			return (inputNodeType == InputNodeOverrideEnum.Primitives && (node.Name.EndsWith("Input"))) ||
-				// Primitive and enum
-				(inputNodeType == InputNodeOverrideEnum.PrimitivesAndEnums && (node.Name.EndsWith("Input") || node.Name.StartsWith("EnumInput"))) ||
-				// Whole input category
-				(inputNodeType == InputNodeOverrideEnum.Everything && (GetNodeCategoryString(node.GetType()) == "LogiX/Input" || GetNodeCategoryString(node.GetType()) == "LogiX/Input/Uncommon")) ||
-				// Dynamic variable input
-				(Config.GetValue(OVERRIDE_DYNAMIC_VARIABLE_INPUT) && node.Name.StartsWith("DynamicVariableInput"));
-		}
-
-		private static color ComputeColorForLogixNode(LogixNode node)
-		{
-			BaseX.color colorToSet = Config.GetValue(NODE_COLOR);
-			rng = null;
-
-			if (Config.GetValue(USE_DISPLAY_COLOR_OVERRIDE) && (node.Name.StartsWith("Display_") || node.Name == "DisplayImpulse"))
-			{
-				colorToSet = Config.GetValue(DISPLAY_COLOR_OVERRIDE);
-			}
-			else if (Config.GetValue(USE_INPUT_COLOR_OVERRIDE) && ShouldColorInputNode(node))
-			{
-				colorToSet = Config.GetValue(INPUT_COLOR_OVERRIDE);
-			}
-			else
-			{
-				string nodeCategoryString;
-				switch (Config.GetValue(NODE_COLOR_MODE))
-				{
-					case NodeColorModeEnum.NodeName:
-						rng = new System.Random(LogixHelper.GetNodeName(node.GetType()).GetHashCode() + Config.GetValue(RANDOM_SEED));
-						break;
-					case NodeColorModeEnum.NodeCategory:
-						nodeCategoryString = GetNodeCategoryString(node.GetType());
-						rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
-						break;
-					case NodeColorModeEnum.TopmostNodeCategory:
-						nodeCategoryString = GetNodeCategoryString(node.GetType(), onlyTopmost: true);
-						rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
-						break;
-					case NodeColorModeEnum.FullTypeName:
-						rng = new System.Random(node.GetType().FullName.GetHashCode() + Config.GetValue(RANDOM_SEED));
-						break;
-					case NodeColorModeEnum.RefID:
-						rng = new System.Random(node.Slot.ReferenceID.GetHashCode() + Config.GetValue(RANDOM_SEED));
-						//Msg($"RefID Position: {root.Parent.ReferenceID.Position.ToString()}");
-						break;
-					default:
-						break;
-				}
-
-				if (Config.GetValue(ENABLE_NON_RANDOM_REFID))
-				{
-					int refidModDivisor = Config.GetValue(REFID_MOD_DIVISOR);
-
-					// force it to 1 to avoid dividing by 0
-					ulong divisor = (refidModDivisor > 1) ? (ulong)refidModDivisor : 1;
-
-					if (Config.GetValue(USE_SYSTEM_TIME_RNG))
-					{
-						colorToSet = GetColorFromUlong(node.Slot.ReferenceID.Position, divisor, rngTimeSeeded);
-					}
-					else
-					{
-						colorToSet = GetColorFromUlong(node.Slot.ReferenceID.Position, divisor, rng);
-					}
-
-					// set rng to null so that the color doesn't get messed with
-					rng = null;
-				}
-
-				if (rng != null)
-				{
-					if (Config.GetValue(USE_SYSTEM_TIME_RNG))
-					{
-						colorToSet = GetColorWithRNG(rngTimeSeeded);
-					}
-					else
-					{
-						colorToSet = GetColorWithRNG(rng);
-					}
-				}
-			}
-
-			if (Config.GetValue(MULTIPLY_OUTPUT_BY_RGB))
-			{
-				float3 multiplier = Config.GetValue(RGB_CHANNEL_MULTIPLIER);
-				colorToSet = colorToSet.MulR(multiplier.x);
-				colorToSet = colorToSet.MulG(multiplier.y);
-				colorToSet = colorToSet.MulB(multiplier.z);
-			}
-
-			//Msg($"before clamp {colorToSet.r.ToString()} {colorToSet.g.ToString()} {colorToSet.b.ToString()}");
-			if (!Config.GetValue(ALLOW_NEGATIVE_AND_EMISSIVE_COLORS))
-			{
-				ClampColor(ref colorToSet);
-			}
-			//Msg($"after clamp {colorToSet.r.ToString()} {colorToSet.g.ToString()} {colorToSet.b.ToString()}");
-
-			return colorToSet;
-		}
-
-		private static Image GetBackgroundImageForNode(LogixNode node)
-		{
-			var imageSlot = node.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
-			if (imageSlot != null)
-			{
-				return imageSlot.GetComponent<Image>();
-			}
-			return null;
-		}
-
-		private static List<Text> GetTextListForNode(LogixNode node)
-		{
-			return node.ActiveVisual.GetComponentsInChildren<Text>((Text text) => text.Slot.Name == "Text" && (text.Slot.Parent.Name == "Vertical Layout" || text.Slot.Parent.Name == "Horizontal Layout" || text.Slot.Parent.Name == "TextPadding"));
-		}
-
 		[HarmonyPatch(typeof(LogixNode))]
 		[HarmonyPatch("GenerateVisual")]
 		class Patch_LogixNode_GenerateVisual
@@ -930,34 +331,39 @@ namespace ColorMyLogixNodes
 						{
 							__instance.RunInUpdates(0, () =>
 							{
-								var targetSlot = refDriverNodeDataSlot.FindChild((Slot c) => c.Name == __instance.ReferenceID.ToString() && c.Tag == __instance.LocalUser.ReferenceID.ToString());
+								if (Config.GetValue(ADD_REF_DRIVER_NODES_TO_DATA_SLOT))
+								{
+                                    var targetSlot = refDriverNodeDataSlot.FindChild((Slot c) => c.Name == __instance.ReferenceID.ToString() && c.Tag == __instance.LocalUser.ReferenceID.ToString());
 
-								if (targetSlot != null) return;
+                                    if (targetSlot != null) return;
 
-								ISyncRef syncRef = __instance.TryGetField(targetField) as ISyncRef;
+                                    ISyncRef syncRef = __instance.TryGetField(targetField) as ISyncRef;
 
-								Debug("Subscribing to this node's Changed event.");
+                                    Debug("Subscribing to this node's Changed event.");
 
-								syncRef.Changed += (iChangeable) =>
+                                    syncRef.Changed += (iChangeable) =>
+                                    {
+                                        UpdateRefOrDriverNodeColor(__instance, targetField);
+                                    };
+
+                                    UpdateRefOrDriverNodeColor(__instance, targetField);
+
+                                    var newSlot = refDriverNodeDataSlot.AddSlot(__instance.ReferenceID.ToString());
+                                    newSlot.PersistentSelf = false;
+                                    newSlot.Tag = __instance.LocalUser.ReferenceID.ToString();
+
+                                    var destroyOnUserLeave = newSlot.AttachComponent<DestroyOnUserLeave>();
+                                    destroyOnUserLeave.TargetUser.User.Value = __instance.LocalUser.ReferenceID;
+                                    destroyOnUserLeave.Persistent = false;
+
+                                    var destroyProxy = __instance.Slot.AttachComponent<DestroyProxy>();
+                                    destroyProxy.Persistent = false;
+                                    destroyProxy.DestroyTarget.Value = newSlot.ReferenceID;
+                                }
+								else
 								{
 									UpdateRefOrDriverNodeColor(__instance, targetField);
-								};
-
-								UpdateRefOrDriverNodeColor(__instance, targetField);
-
-								//TrySetSlotTag(__instance.Slot, DELEGATE_ADDED_TAG);
-							
-								var newSlot = refDriverNodeDataSlot.AddSlot(__instance.ReferenceID.ToString());
-								newSlot.PersistentSelf = false;
-								newSlot.Tag = __instance.LocalUser.ReferenceID.ToString();
-								//newSlot.GetComponentOrAttach<AssetOptimizationBlock>();
-								var destroyOnUserLeave = newSlot.AttachComponent<DestroyOnUserLeave>();
-								destroyOnUserLeave.TargetUser.User.Value = __instance.LocalUser.ReferenceID;
-								destroyOnUserLeave.Persistent = false;
-
-								var destroyProxy = __instance.Slot.AttachComponent<DestroyProxy>();
-								destroyProxy.Persistent = false;
-								destroyProxy.DestroyTarget.Value = newSlot.ReferenceID;
+								}
 							});
 						}
 						else
@@ -983,7 +389,6 @@ namespace ColorMyLogixNodes
 					// don't apply custom color to cast nodes, because it makes it confusing to read the data types
 					if (__instance.Name.StartsWith("CastClass")) return;
 					if (__instance.Name.StartsWith("Cast_")) return;
-					if (!Config.GetValue(COLOR_RELAY_NODES) && (__instance.Name.StartsWith("RelayNode") || __instance.Name.StartsWith("ImpulseRelay"))) return;
 
 					if (root.Tag != COLOR_SET_TAG)
 					{
@@ -992,7 +397,7 @@ namespace ColorMyLogixNodes
 							dataRootSlot = __instance.World.AssetsSlot.FindOrAdd(DATA_ROOT_SLOT_NAME, false);
 							dataRootSlot.GetComponentOrAttach<AssetOptimizationBlock>();
 						}
-
+						
 						if (regularNodeDataSlot == null || regularNodeDataSlot.World != Engine.Current.WorldManager.FocusedWorld)
 						{
 							regularNodeDataSlot = dataRootSlot.FindOrAdd(REGULAR_NODE_DATA_SLOT_NAME, false);
@@ -1001,41 +406,46 @@ namespace ColorMyLogixNodes
 
 						__instance.RunInUpdates(3, () =>
 						{
-							var nodeDataSlot = regularNodeDataSlot.FindOrAdd(__instance.ReferenceID.ToString(), false);
-							//nodeDataSlot.GetComponentOrAttach<AssetOptimizationBlock>();
-							TrySetSlotTag(nodeDataSlot, __instance.LocalUser.ReferenceID.ToString());
+							Slot nodeDataSlot = null;
 
-							//var nodeRefSlot = nodeDataSlot.FindOrAdd("Node Ref", false);
+							if (Config.GetValue(ADD_REGULAR_NODES_TO_DATA_SLOT))
+							{
+                                nodeDataSlot = regularNodeDataSlot.FindOrAdd(__instance.ReferenceID.ToString(), false);
+                                TrySetSlotTag(nodeDataSlot, __instance.LocalUser.ReferenceID.ToString());
 
-							var nodeRefField = nodeDataSlot.GetComponentOrAttach<ReferenceField<LogixNode>>();
-							nodeRefField.Reference.Value = __instance.ReferenceID;
+                                var nodeRefField = nodeDataSlot.GetComponentOrAttach<ReferenceField<LogixNode>>();
+                                nodeRefField.Reference.Value = __instance.ReferenceID;
 
-							var destroyProxy = __instance.ActiveVisual.GetComponentOrAttach<DestroyProxy>();
-							destroyProxy.DestroyTarget.Value = nodeDataSlot.ReferenceID;
-							destroyProxy.Persistent = false;
+                                var destroyProxy = __instance.ActiveVisual.GetComponentOrAttach<DestroyProxy>();
+                                destroyProxy.DestroyTarget.Value = nodeDataSlot.ReferenceID;
+                                destroyProxy.Persistent = false;
+                            }
 
 							var backgroundImage = GetBackgroundImageForNode(__instance);
 							if (backgroundImage != null)
 							{
-								//var bgRefSlot = nodeDataSlot.AddSlot("BG Tint Ref", false);
-								//var bgRefField = bgRefSlot.AttachComponent<ReferenceField<IField<color>>>();
-								//bgRefField.Reference.Value = backgroundImage.TryGetField<color>("Tint").ReferenceID;
-								var bgImageRefField = nodeDataSlot.GetComponentOrAttach<ReferenceField<IField<color>>>();
-								bgImageRefField.Reference.Value = backgroundImage.TryGetField<color>("Tint").ReferenceID;
-								bgImageRefField.UpdateOrder = 0;
-								if (root.Tag == "Disabled")
+                                if (Config.GetValue(ADD_REGULAR_NODES_TO_DATA_SLOT))
+                                {
+                                    var bgImageRefField = nodeDataSlot.GetComponentOrAttach<ReferenceField<IField<color>>>();
+                                    bgImageRefField.Reference.Value = backgroundImage.TryGetField<color>("Tint").ReferenceID;
+                                    bgImageRefField.UpdateOrder = 0;
+                                }
+
+                                if (root.Tag == "Disabled")
 								{
 									TrySetImageTint(backgroundImage, Config.GetValue(NODE_ERROR_COLOR));
 								}
 								else
 								{
-									color colorToSet = ComputeColorForLogixNode(__instance);
+									color colorToSet;
 
-									TrySetImageTint(backgroundImage, colorToSet);
+                                    colorToSet = ComputeColorForLogixNode(__instance);
+
+                                    TrySetImageTint(backgroundImage, colorToSet);
 
 									if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA))
 									{
-										// Make the type-colored images on nodes have full alpha to make them easier to read
+										// Make the connect points on nodes have full alpha to make it easier to read type information
 										foreach (Image i in backgroundImage.Slot.GetComponentsInChildren<Image>())
 										{
 											if (i != backgroundImage) TrySetImageTint(i, i.Tint.Value.SetA(1f));
@@ -1044,16 +454,20 @@ namespace ColorMyLogixNodes
 
 									if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 									{
-										// set node label's text color
+										// set node's text color, there could be multiple text components that need to be colored
 										// need to wait 3 updates because who knows why...
 										__instance.RunInUpdates(3, () =>
 										{
 											foreach (Text text in GetTextListForNode(__instance))
 											{
 												TrySetTextColor(text, GetTextColor(colorToSet));
-												var textColorRefField = nodeDataSlot.AttachComponent<ReferenceField<IField<color>>>();
-												textColorRefField.Reference.Value = text.TryGetField<color>("Color").ReferenceID;
-												textColorRefField.UpdateOrder = 1;
+
+                                                if (Config.GetValue(ADD_REGULAR_NODES_TO_DATA_SLOT))
+                                                {
+                                                    var textColorRefField = nodeDataSlot.AttachComponent<ReferenceField<IField<color>>>();
+                                                    textColorRefField.Reference.Value = text.TryGetField<color>("Color").ReferenceID;
+                                                    textColorRefField.UpdateOrder = 1;
+                                                }
 											}
 										});
 									}
