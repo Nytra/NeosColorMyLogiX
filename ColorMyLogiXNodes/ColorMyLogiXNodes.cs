@@ -6,8 +6,6 @@ using FrooxEngine.UIX;
 using HarmonyLib;
 using NeosModLoader;
 using BaseX;
-using static NeosAssets.Graphics.LogiX;
-using FrooxEngine.LogiX.Operators;
 
 #if DEBUG
 
@@ -103,7 +101,7 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> USE_INPUT_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_INPUT_COLOR_OVERRIDE", "Override input node color:", () => true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<InputNodeOverrideEnum> INPUT_NODE_OVERRIDE_TYPE = new ModConfigurationKey<InputNodeOverrideEnum>("INPUT_NODE_OVERRIDE_TYPE", "Input Node Type:", () => InputNodeOverrideEnum.PrimitivesAndEnums);
+		private static ModConfigurationKey<InputNodeOverrideEnum> INPUT_NODE_OVERRIDE_TYPE = new ModConfigurationKey<InputNodeOverrideEnum>("INPUT_NODE_OVERRIDE_TYPE", "Input Node Type:", () => InputNodeOverrideEnum.PrimitivesAndEnums, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<BaseX.color> INPUT_COLOR_OVERRIDE = new ModConfigurationKey<BaseX.color>("INPUT_COLOR_OVERRIDE", "Input node color:", () => new BaseX.color(0.25f, 0.25f, 0.25f, 0.8f));
 		[AutoRegisterConfigKey]
@@ -149,7 +147,7 @@ namespace ColorMyLogixNodes
 
 		// MORE INTERNAL ACCESS CONFIG KEYS
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_7_7 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_7", SEP_STRING, () => new dummy());
+		private static ModConfigurationKey<dummy> DUMMY_SEP_7_7 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_7", SEP_STRING, () => new dummy(), internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> UPDATE_NODES_ON_CONFIG_CHANGED = new ModConfigurationKey<bool>("UPDATE_NODES_ON_CONFIG_CHANGED", "Auto-refresh the colors of regular nodes in the data slot when your mod config changes:", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
@@ -157,13 +155,13 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ADD_REF_DRIVER_NODES_TO_DATA_SLOT = new ModConfigurationKey<bool>("ADD_REF_DRIVER_NODES_TO_DATA_SLOT", "Add ref and driver nodes to the data slot (Makes them change color when their references change):", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_8 = new ModConfigurationKey<dummy>("DUMMY_SEP_8", SEP_STRING, () => new dummy());
+		private static ModConfigurationKey<dummy> DUMMY_SEP_8 = new ModConfigurationKey<dummy>("DUMMY_SEP_8", SEP_STRING, () => new dummy(), internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> COLOR_NULL_REFERENCE_NODES = new ModConfigurationKey<bool>("COLOR_NULL_REFERENCE_NODES", "Should Null Reference Nodes use Node Error Color:", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> COLOR_NULL_DRIVER_NODES = new ModConfigurationKey<bool>("COLOR_NULL_DRIVER_NODES", "Should Null Driver Nodes use Node Error Color:", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_8_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_8_1", SEP_STRING, () => new dummy());
+		private static ModConfigurationKey<dummy> DUMMY_SEP_8_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_8_1", SEP_STRING, () => new dummy(), internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<int> REFID_MOD_DIVISOR = new ModConfigurationKey<int>("REFID_MOD_DIVISOR", "RefID divisor for Channel Shift (Smaller value = faster shifting, minimum 1):", () => 100000, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
@@ -251,6 +249,8 @@ namespace ColorMyLogixNodes
 									{
 										color c = ComputeColorForLogixNode(node);
 										IField<color> colorField = refField.Reference.RawTarget;
+
+										// background
 										if (refField.UpdateOrder == 0)
 										{
 											if (node.ActiveVisual != null && node.ActiveVisual.Tag == "Disabled")
@@ -262,7 +262,20 @@ namespace ColorMyLogixNodes
 												colorField.Value = c;
 											}
 										}
+										// connect point (unused)
 										else if (refField.UpdateOrder == 1)
+										{
+											if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA))
+											{
+												colorField.Value = colorField.Value.SetA(1f);
+											}
+											else
+											{
+												colorField.Value = colorField.Value.SetA(0.8f);
+											}
+										}
+										// text
+										else if (refField.UpdateOrder == 2)
 										{
 											if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 											{
@@ -437,9 +450,19 @@ namespace ColorMyLogixNodes
 									if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA))
 									{
 										// Make the connect points on nodes have full alpha to make it easier to read type information
-										foreach (Image i in backgroundImage.Slot.GetComponentsInChildren<Image>())
+										foreach (Image img in backgroundImage.Slot.GetComponentsInChildren<Image>())
 										{
-											if (i != backgroundImage) TrySetImageTint(i, i.Tint.Value.SetA(1f));
+											if (img != backgroundImage)
+											{
+												TrySetImageTint(img, img.Tint.Value.SetA(1f));
+
+												//if (Config.GetValue(ADD_REGULAR_NODES_TO_DATA_SLOT))
+												//{
+													//var connectPointColorRefField = nodeDataSlot.AttachComponent<ReferenceField<IField<color>>>();
+													//connectPointColorRefField.Reference.Value = img.TryGetField<color>("Tint").ReferenceID;
+													//connectPointColorRefField.UpdateOrder = 1;
+												//}
+											}
 										}
 									}
 
@@ -457,7 +480,7 @@ namespace ColorMyLogixNodes
 												{
 													var textColorRefField = nodeDataSlot.AttachComponent<ReferenceField<IField<color>>>();
 													textColorRefField.Reference.Value = text.TryGetField<color>("Color").ReferenceID;
-													textColorRefField.UpdateOrder = 1;
+													textColorRefField.UpdateOrder = 2;
 												}
 											}
 										});

@@ -180,7 +180,7 @@ namespace ColorMyLogixNodes
 				// Primitive and enum
 				(inputNodeType == InputNodeOverrideEnum.PrimitivesAndEnums && (node.Name.EndsWith("Input") || node.Name.StartsWith("EnumInput"))) ||
 				// Whole input category
-				(inputNodeType == InputNodeOverrideEnum.Everything && (GetNodeCategoryString(node.GetType()) == "LogiX/Input" || GetNodeCategoryString(node.GetType()) == "LogiX/Input/Uncommon")) ||
+				(inputNodeType == InputNodeOverrideEnum.Everything && (GetNodeCategoryString(node.GetType()) == "LogiX/Input" || GetNodeCategoryString(node.GetType()) == "LogiX/Input/Uncommon" || node.Name.EndsWith("Input"))) ||
 				// Dynamic variable input
 				(Config.GetValue(OVERRIDE_DYNAMIC_VARIABLE_INPUT) && node.Name.StartsWith("DynamicVariableInput"));
 		}
