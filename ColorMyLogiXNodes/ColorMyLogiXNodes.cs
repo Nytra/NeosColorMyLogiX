@@ -6,6 +6,7 @@ using FrooxEngine.UIX;
 using HarmonyLib;
 using NeosModLoader;
 using BaseX;
+using System;
 
 #if DEBUG
 
@@ -85,9 +86,9 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_7_8 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_8", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> USE_NODE_ALPHA = new ModConfigurationKey<bool>("USE_NODE_ALPHA", "Use custom node alpha:", () => false);
+		private static ModConfigurationKey<bool> USE_NODE_ALPHA = new ModConfigurationKey<bool>("USE_NODE_ALPHA", "Use node alpha:", () => false);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<float> NODE_ALPHA = new ModConfigurationKey<float>("NODE_ALPHA", "Custom node alpha [0 to 1]:", () => 0.8f);
+		private static ModConfigurationKey<float> NODE_ALPHA = new ModConfigurationKey<float>("NODE_ALPHA", "Node alpha [0 to 1]:", () => 0.8f);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_6 = new ModConfigurationKey<dummy>("DUMMY_SEP_6", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
@@ -105,7 +106,7 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<BaseX.color> INPUT_COLOR_OVERRIDE = new ModConfigurationKey<BaseX.color>("INPUT_COLOR_OVERRIDE", "Input node color:", () => new BaseX.color(0.25f, 0.25f, 0.25f, 0.8f));
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> OVERRIDE_DYNAMIC_VARIABLE_INPUT = new ModConfigurationKey<bool>("OVERRIDE_DYNAMIC_VARIABLE_INPUT", "Include DynamicVariableInput nodes:", () => true);
+		private static ModConfigurationKey<bool> OVERRIDE_DYNAMIC_VARIABLE_INPUT = new ModConfigurationKey<bool>("OVERRIDE_DYNAMIC_VARIABLE_INPUT", "Include DynamicVariableInput nodes:", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_4", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
@@ -121,9 +122,21 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float> PERCEPTUAL_LIGHTNESS_EXPONENT = new ModConfigurationKey<float>("PERCEPTUAL_LIGHTNESS_EXPONENT", "Exponent for perceptual lightness calculation (affects automatic text color, best ~0.6 to ~0.8):", () => 0.5f, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_7_7 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_7", SEP_STRING, () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_7_9 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_9", $"<color={HEADER_TEXT_COLOR}>[EXTRA DATA FEATURES]</color>", () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> UPDATE_NODES_ON_CONFIG_CHANGED = new ModConfigurationKey<bool>("UPDATE_NODES_ON_CONFIG_CHANGED", "Automatically update the color of standard nodes when your mod config changes:", () => false);
+		//[AutoRegisterConfigKey]
+		//private static ModConfigurationKey<bool> ADD_REGULAR_NODES_TO_DATA_SLOT = new ModConfigurationKey<bool>("ADD_REGULAR_NODES_TO_DATA_SLOT", "Add regular nodes to the data slot (Required for auto-refresh to work):", () => true, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> ADD_REF_DRIVER_NODES_TO_DATA_SLOT = new ModConfigurationKey<bool>("ADD_REF_DRIVER_NODES_TO_DATA_SLOT", "Automatically update the color of reference and driver nodes when their targets change:", () => false);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_7_10 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_10", $"<color={DETAIL_TEXT_COLOR}><i>These options will cause some data to be added to the Assets slot in the world root</i></color>", () => new dummy());
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_5", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_5_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_1", $"<color={HEADER_TEXT_COLOR}>[EXTRA]</color>", () => new dummy());
+		private static ModConfigurationKey<dummy> DUMMY_SEP_5_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_1", $"<color={HEADER_TEXT_COLOR}>[MISC]</color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> MULTIPLY_OUTPUT_BY_RGB = new ModConfigurationKey<bool>("MULTIPLY_OUTPUT_BY_RGB", "Use Output RGB Channel Multiplier:", () => false);
 		[AutoRegisterConfigKey]
@@ -146,14 +159,6 @@ namespace ColorMyLogixNodes
 		private static ModConfigurationKey<BaseX.color> NODE_ERROR_COLOR = new ModConfigurationKey<BaseX.color>("NODE_ERROR_COLOR", "Node Error Color:", () => new BaseX.color(3.0f, 0.5f, 0.5f, 0.8f));
 
 		// MORE INTERNAL ACCESS CONFIG KEYS
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_7_7 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_7", SEP_STRING, () => new dummy(), internalAccessOnly: true);
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> UPDATE_NODES_ON_CONFIG_CHANGED = new ModConfigurationKey<bool>("UPDATE_NODES_ON_CONFIG_CHANGED", "Auto-refresh the colors of regular nodes in the data slot when your mod config changes:", () => true, internalAccessOnly: true);
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> ADD_REGULAR_NODES_TO_DATA_SLOT = new ModConfigurationKey<bool>("ADD_REGULAR_NODES_TO_DATA_SLOT", "Add regular nodes to the data slot (Required for auto-refresh to work):", () => true, internalAccessOnly: true);
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> ADD_REF_DRIVER_NODES_TO_DATA_SLOT = new ModConfigurationKey<bool>("ADD_REF_DRIVER_NODES_TO_DATA_SLOT", "Add ref and driver nodes to the data slot (Makes them change color when their references change):", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_8 = new ModConfigurationKey<dummy>("DUMMY_SEP_8", SEP_STRING, () => new dummy(), internalAccessOnly: true);
 		[AutoRegisterConfigKey]
@@ -213,9 +218,9 @@ namespace ColorMyLogixNodes
 
 		private const string COLOR_SET_TAG = "ColorMyLogiX.ColorSet";
 		//private const string DELEGATE_ADDED_TAG = "ColorMyLogiX.EventSubscribed";
-		private const string DATA_ROOT_SLOT_NAME = "ColorMyLogiX.DataRoot";
+		private const string DATA_ROOT_SLOT_NAME = "ColorMyLogiX.ExtraData";
 		private const string REF_DRIVER_NODE_DATA_SLOT_NAME = "ColorMyLogiX.RefDriverNodeData";
-		private const string REGULAR_NODE_DATA_SLOT_NAME = "ColorMyLogiX.RegularNodeData";
+		private const string REGULAR_NODE_DATA_SLOT_NAME = "ColorMyLogiX.StandardNodeData";
 
 		private static Slot dataRootSlot = null;
 		private static Slot refDriverNodeDataSlot = null;
@@ -250,11 +255,17 @@ namespace ColorMyLogixNodes
 
 					foreach (Slot slot in regularNodeDataSlot.Children)
 					{
-						if (slot.Tag != slot.LocalUser.ReferenceID.ToString()) return;
+						//if (slot.Tag != slot.LocalUser.ReferenceID.ToString()) return;
+						//var refIdField = slot.GetComponent<ValueField<RefID>>();
+						//if (refIdField == null) return;
+						//if (refIdField != null && refIdField.Value.Value != slot.LocalUser.ReferenceID) return;
 
 						LogixNode node = slot.GetComponent<ReferenceField<LogixNode>>().Reference;
 						if (node != null)
 						{
+							if (node.ActiveVisual != null && node.ActiveVisual.ReferenceID.User != node.LocalUser.AllocationID) return;
+							if (node.ActiveVisual == null) return;
+							
 							foreach (var refField in slot.GetComponents<ReferenceField<IField<color>>>())
 							{
 								if (refField.Reference == null) continue;
@@ -331,45 +342,86 @@ namespace ColorMyLogixNodes
 					}
 					if (targetField != null)
 					{
-						if (dataRootSlot == null || dataRootSlot.World != Engine.Current.WorldManager.FocusedWorld)
+						Slot targetSlot = null;
+
+						if (Config.GetValue(ADD_REF_DRIVER_NODES_TO_DATA_SLOT))
 						{
-							dataRootSlot = __instance.World.AssetsSlot.FindOrAdd(DATA_ROOT_SLOT_NAME, false);
-							dataRootSlot.GetComponentOrAttach<AssetOptimizationBlock>();
+							if (dataRootSlot == null || dataRootSlot.World != Engine.Current.WorldManager.FocusedWorld)
+							{
+								dataRootSlot = __instance.World.AssetsSlot.FindOrAdd(DATA_ROOT_SLOT_NAME, false);
+								//dataRootSlot.Tag = "Extra Data";
+								dataRootSlot.GetComponentOrAttach<AssetOptimizationBlock>();
+							}
+
+							if (refDriverNodeDataSlot == null || refDriverNodeDataSlot.World != Engine.Current.WorldManager.FocusedWorld)
+							{
+								refDriverNodeDataSlot = dataRootSlot.FindOrAdd(REF_DRIVER_NODE_DATA_SLOT_NAME, false);
+								refDriverNodeDataSlot.GetComponentOrAttach<AssetOptimizationBlock>();
+							}
+
+							targetSlot = refDriverNodeDataSlot.FindChild((Slot c) => c.Name == __instance.ReferenceID.ToString());
 						}
 
-						if (refDriverNodeDataSlot == null || refDriverNodeDataSlot.World != Engine.Current.WorldManager.FocusedWorld)
-						{
-							refDriverNodeDataSlot = dataRootSlot.FindOrAdd(REF_DRIVER_NODE_DATA_SLOT_NAME, false);
-							refDriverNodeDataSlot.GetComponentOrAttach<AssetOptimizationBlock>();
-						}
-
-						var targetSlot = refDriverNodeDataSlot.FindChild((Slot c) => c.Name == __instance.ReferenceID.ToString() && c.Tag == __instance.LocalUser.ReferenceID.ToString());
 						if (targetSlot == null)
 						{
 							__instance.RunInUpdates(0, () =>
 							{
 								if (Config.GetValue(ADD_REF_DRIVER_NODES_TO_DATA_SLOT))
 								{
-									var targetSlot = refDriverNodeDataSlot.FindChild((Slot c) => c.Name == __instance.ReferenceID.ToString() && c.Tag == __instance.LocalUser.ReferenceID.ToString());
+									var targetSlot = refDriverNodeDataSlot.FindChild((Slot c) => c.Name == __instance.ReferenceID.ToString());
+									//ValueField<RefID> refIdField = null;
+									DestroyOnUserLeave destroyOnUserLeave = null;
 
-									if (targetSlot != null) return;
+
+									if (targetSlot != null)
+									{
+										// check if we already made a slot for this node and user
+										//refIdField = targetSlot.GetComponent<ValueField<RefID>>();
+										//if (refIdField != null && refIdField.Value.Value == __instance.LocalUser.ReferenceID) return;
+										destroyOnUserLeave = targetSlot.GetComponent<DestroyOnUserLeave>();
+										if (destroyOnUserLeave != null && destroyOnUserLeave.TargetUser.User.Value == __instance.LocalUser.ReferenceID) return;
+									}
+
+									//if (targetSlot != null) return;
 
 									ISyncRef syncRef = __instance.TryGetField(targetField) as ISyncRef;
 
-									Debug("Subscribing to this node's Changed event.");
+									Debug("Subscribing to this node's events.");
 
-									syncRef.Changed += (iChangeable) =>
+									Action<IChangeable> action = (iChangeable) =>
 									{
-										UpdateRefOrDriverNodeColor(__instance, targetField);
+										Debug("SyncRef Changed.");
+										if (Config.GetValue(ADD_REF_DRIVER_NODES_TO_DATA_SLOT))
+										{
+											Debug("Updating ref or driver node color.");
+											UpdateRefOrDriverNodeColor(__instance, targetField);
+										}
 									};
+
+									syncRef.Changed += action;
+
+									Action<IChangeable> action2 = null;
+
+									action2 = (iChangeable) =>
+									{
+										Debug("Ref or Driver node destroyed. Unsubscribing from events.");
+										syncRef.Changed -= action;
+										__instance.Destroyed -= action2;
+									};
+
+									__instance.Destroyed += action2;
 
 									UpdateRefOrDriverNodeColor(__instance, targetField);
 
 									var newSlot = refDriverNodeDataSlot.AddSlot(__instance.ReferenceID.ToString());
 									newSlot.PersistentSelf = false;
-									newSlot.Tag = __instance.LocalUser.ReferenceID.ToString();
+									//newSlot.Tag = __instance.LocalUser.ReferenceID.ToString();
 
-									var destroyOnUserLeave = newSlot.AttachComponent<DestroyOnUserLeave>();
+									//refIdField = newSlot.AttachComponent<ValueField<RefID>>();
+									//refIdField.Value.Value = __instance.LocalUser.ReferenceID;
+									//refIdField.Persistent = false;
+
+									destroyOnUserLeave = newSlot.AttachComponent<DestroyOnUserLeave>();
 									destroyOnUserLeave.TargetUser.User.Value = __instance.LocalUser.ReferenceID;
 									destroyOnUserLeave.Persistent = false;
 
@@ -409,29 +461,34 @@ namespace ColorMyLogixNodes
 
 					if (root.Tag != COLOR_SET_TAG)
 					{
-						if (dataRootSlot == null || dataRootSlot.World != Engine.Current.WorldManager.FocusedWorld)
-						{
-							dataRootSlot = __instance.World.AssetsSlot.FindOrAdd(DATA_ROOT_SLOT_NAME, false);
-							dataRootSlot.GetComponentOrAttach<AssetOptimizationBlock>();
-						}
-						
-						if (regularNodeDataSlot == null || regularNodeDataSlot.World != Engine.Current.WorldManager.FocusedWorld)
-						{
-							regularNodeDataSlot = dataRootSlot.FindOrAdd(REGULAR_NODE_DATA_SLOT_NAME, false);
-							regularNodeDataSlot.GetComponentOrAttach<AssetOptimizationBlock>();
-						}
-
 						__instance.RunInUpdates(3, () =>
 						{
 							Slot nodeDataSlot = null;
 
-							if (Config.GetValue(ADD_REGULAR_NODES_TO_DATA_SLOT))
+							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 							{
+								if (dataRootSlot == null || dataRootSlot.World != Engine.Current.WorldManager.FocusedWorld)
+								{
+									dataRootSlot = __instance.World.AssetsSlot.FindOrAdd(DATA_ROOT_SLOT_NAME, false);
+									dataRootSlot.GetComponentOrAttach<AssetOptimizationBlock>();
+								}
+
+								if (regularNodeDataSlot == null || regularNodeDataSlot.World != Engine.Current.WorldManager.FocusedWorld)
+								{
+									regularNodeDataSlot = dataRootSlot.FindOrAdd(REGULAR_NODE_DATA_SLOT_NAME, false);
+									regularNodeDataSlot.GetComponentOrAttach<AssetOptimizationBlock>();
+								}
+
 								nodeDataSlot = regularNodeDataSlot.FindOrAdd(__instance.ReferenceID.ToString(), false);
-								TrySetSlotTag(nodeDataSlot, __instance.LocalUser.ReferenceID.ToString());
+
+								//var refIdField = nodeDataSlot.GetComponentOrAttach<ValueField<RefID>>();
+								//refIdField.Value.Value = __instance.LocalUser.ReferenceID;
+								//refIdField.Persistent = false;
+								//TrySetSlotTag(nodeDataSlot, __instance.LocalUser.ReferenceID.ToString());
 
 								var nodeRefField = nodeDataSlot.GetComponentOrAttach<ReferenceField<LogixNode>>();
 								nodeRefField.Reference.Value = __instance.ReferenceID;
+								nodeRefField.Persistent = false;
 
 								var destroyProxy = __instance.ActiveVisual.GetComponentOrAttach<DestroyProxy>();
 								destroyProxy.DestroyTarget.Value = nodeDataSlot.ReferenceID;
@@ -441,11 +498,12 @@ namespace ColorMyLogixNodes
 							var backgroundImage = GetBackgroundImageForNode(__instance);
 							if (backgroundImage != null)
 							{
-								if (Config.GetValue(ADD_REGULAR_NODES_TO_DATA_SLOT))
+								if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 								{
 									var bgImageRefField = nodeDataSlot.GetComponentOrAttach<ReferenceField<IField<color>>>();
 									bgImageRefField.Reference.Value = backgroundImage.TryGetField<color>("Tint").ReferenceID;
 									bgImageRefField.UpdateOrder = 0;
+									bgImageRefField.Persistent = false;
 								}
 
 								if (root.Tag == "Disabled")
@@ -489,11 +547,12 @@ namespace ColorMyLogixNodes
 											{
 												TrySetTextColor(text, GetTextColor(colorToSet));
 
-												if (Config.GetValue(ADD_REGULAR_NODES_TO_DATA_SLOT))
+												if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 												{
 													var textColorRefField = nodeDataSlot.AttachComponent<ReferenceField<IField<color>>>();
 													textColorRefField.Reference.Value = text.TryGetField<color>("Color").ReferenceID;
 													textColorRefField.UpdateOrder = 2;
+													textColorRefField.Persistent = false;
 												}
 											}
 										});
