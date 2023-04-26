@@ -20,38 +20,38 @@ namespace ColorMyLogixNodes
 			NodeInfo outNodeInfo = null;
 			if (nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo))
 			{
-                outNodeInfo.bgField.Value = c;
-            }
+				outNodeInfo.bgField.Value = c;
+			}
 			else
 			{
 				Debug("Could not set Bg Color. NodeInfo was not found.");
 			}
-        }
+		}
 
 		private static void NodeInfoSetTextColor(NodeInfo nodeInfo, color c)
 		{
 			NodeInfo outNodeInfo = null;
 			if (nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo))
 			{
-                foreach (IField<color> field in outNodeInfo.textFields)
+				foreach (IField<color> field in outNodeInfo.textFields)
 				{
-                    if (field.IsRemoved)
-                    {
-                        NodeInfoRemove(nodeInfo);
-                        return;
-                    }
-                    else
-                    {
-                        field.Value = c;
-                    }
-                }
+					if (field.IsRemoved)
+					{
+						NodeInfoRemove(nodeInfo);
+						return;
+					}
+					else
+					{
+						field.Value = c;
+					}
+				}
 
-            }
+			}
 			else
 			{
 				Debug("Could not set Text Color. NodeInfo was not found.");
 			}
-        }
+		}
 
 		private static bool NodeInfoListContainsNode(LogixNode node)
 		{
@@ -80,9 +80,9 @@ namespace ColorMyLogixNodes
 			}
 			NodeInfo outNodeInfo = null;
 			nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo);
-            outNodeInfo.node = null;
-            outNodeInfo.bgField = null;
-            outNodeInfo.textFields = null;
+			outNodeInfo.node = null;
+			outNodeInfo.bgField = null;
+			outNodeInfo.textFields = null;
 			if (nodeInfoSet.Remove(nodeInfo))
 			{
 				Debug("NodeInfo was removed from nodeInfoSet. New size of nodeInfoSet: " + nodeInfoSet.Count.ToString());
@@ -91,19 +91,19 @@ namespace ColorMyLogixNodes
 			{
 				Debug("NodeInfo was not in nodeInfoSet (you should not be seeing this).");
 			}
-            nodeInfoSet.TrimExcess();
+			nodeInfoSet.TrimExcess();
 		}
 
 		private static void NodeInfoListClear()
 		{
 			foreach (NodeInfo nodeInfo in nodeInfoSet)
 			{
-                nodeInfo.node = null;
-                nodeInfo.bgField = null;
-                nodeInfo.textFields = null;
+				nodeInfo.node = null;
+				nodeInfo.bgField = null;
+				nodeInfo.textFields = null;
 			}
-            nodeInfoSet.Clear();
-            nodeInfoSet.TrimExcess();
+			nodeInfoSet.Clear();
+			nodeInfoSet.TrimExcess();
 		}
 	}
 }
