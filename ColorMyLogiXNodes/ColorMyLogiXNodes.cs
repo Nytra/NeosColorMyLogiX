@@ -6,6 +6,9 @@ using FrooxEngine.UIX;
 using HarmonyLib;
 using NeosModLoader;
 using BaseX;
+using System.Collections.Generic;
+using System.Threading;
+using System.Linq;
 using System;
 
 #if DEBUG
@@ -74,6 +77,12 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<int> RANDOM_SEED = new ModConfigurationKey<int>("RANDOM_SEED", "Seed:", () => 0);
 		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_7_8 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_8", SEP_STRING, () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> USE_NODE_ALPHA = new ModConfigurationKey<bool>("USE_NODE_ALPHA", "Use node alpha:", () => false);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<float> NODE_ALPHA = new ModConfigurationKey<float>("NODE_ALPHA", "Node alpha [0 to 1]:", () => 0.8f);
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_7_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_3", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float3> COLOR_CHANNELS_MAX = new ModConfigurationKey<float3>("COLOR_CHANNELS_MAX", "Random Max [0 to 1]:", () => new float3(1f, 0.5f, 1f));
@@ -84,23 +93,17 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_2_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_3", $"<color={DETAIL_TEXT_COLOR}><i>The randomness in this section is affected by the Selected Node Factor plus the Seed</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_7_8 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_8", SEP_STRING, () => new dummy());
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> USE_NODE_ALPHA = new ModConfigurationKey<bool>("USE_NODE_ALPHA", "Use node alpha:", () => false);
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<float> NODE_ALPHA = new ModConfigurationKey<float>("NODE_ALPHA", "Node alpha [0 to 1]:", () => 0.8f);
-		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_6 = new ModConfigurationKey<dummy>("DUMMY_SEP_6", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_6_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_6_1", $"<color={HEADER_TEXT_COLOR}>[OVERRIDES]</color>", () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> USE_DISPLAY_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_DISPLAY_COLOR_OVERRIDE", "Override display node color:", () => true);
+		private static ModConfigurationKey<bool> USE_DISPLAY_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_DISPLAY_COLOR_OVERRIDE", "Override display node color:", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<BaseX.color> DISPLAY_COLOR_OVERRIDE = new ModConfigurationKey<BaseX.color>("DISPLAY_COLOR_OVERRIDE", "Display node color:", () => new BaseX.color(0.25f, 0.25f, 0.25f, 0.8f));
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_7 = new ModConfigurationKey<dummy>("DUMMY_SEP_7", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> USE_INPUT_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_INPUT_COLOR_OVERRIDE", "Override input node color:", () => true);
+		private static ModConfigurationKey<bool> USE_INPUT_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_INPUT_COLOR_OVERRIDE", "Override input node color:", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<InputNodeOverrideEnum> INPUT_NODE_OVERRIDE_TYPE = new ModConfigurationKey<InputNodeOverrideEnum>("INPUT_NODE_OVERRIDE_TYPE", "Input Node Type:", () => InputNodeOverrideEnum.PrimitivesAndEnums, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
@@ -124,15 +127,19 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_7_7 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_7", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_7_9 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_9", $"<color={HEADER_TEXT_COLOR}>[EXTRA DATA FEATURES]</color>", () => new dummy());
+		private static ModConfigurationKey<dummy> DUMMY_SEP_7_9 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_9", $"<color={HEADER_TEXT_COLOR}>[OPTIONAL EXTRA FEATURES]</color>", () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> UPDATE_NODES_ON_CONFIG_CHANGED = new ModConfigurationKey<bool>("UPDATE_NODES_ON_CONFIG_CHANGED", "Automatically update the color of standard nodes when your mod config changes:", () => false);
+		private static ModConfigurationKey<bool> UPDATE_NODES_ON_CONFIG_CHANGED = new ModConfigurationKey<bool>("UPDATE_NODES_ON_CONFIG_CHANGED", "Automatically update the color of nodes when your mod config changes:", () => false);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<int> STANDARD_THREAD_SLEEP_TIME = new ModConfigurationKey<int>("STANDARD_THREAD_SLEEP_TIME", "Standard node thread sleep time:", () => 10000, internalAccessOnly: true);
 		//[AutoRegisterConfigKey]
 		//private static ModConfigurationKey<bool> ADD_REGULAR_NODES_TO_DATA_SLOT = new ModConfigurationKey<bool>("ADD_REGULAR_NODES_TO_DATA_SLOT", "Add regular nodes to the data slot (Required for auto-refresh to work):", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> ADD_REF_DRIVER_NODES_TO_DATA_SLOT = new ModConfigurationKey<bool>("ADD_REF_DRIVER_NODES_TO_DATA_SLOT", "Automatically update the color of reference and driver nodes when their targets change:", () => false);
+		private static ModConfigurationKey<bool> AUTO_UPDATE_REF_AND_DRIVER_NODES = new ModConfigurationKey<bool>("AUTO_UPDATE_REF_AND_DRIVER_NODES", "Automatically update the color of reference and driver nodes when their targets change:", () => false);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_7_10 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_10", $"<color={DETAIL_TEXT_COLOR}><i>These options will cause some data to be added to the Assets slot in the world root</i></color>", () => new dummy());
+		private static ModConfigurationKey<int> REF_DRIVER_THREAD_SLEEP_TIME = new ModConfigurationKey<int>("REF_DRIVER_THREAD_SLEEP_TIME", "Ref driver node thread sleep time:", () => 1500, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_7_10 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_10", $"<color={DETAIL_TEXT_COLOR}><i>These options will cause the mod to use more memory and processing</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_5", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
@@ -213,18 +220,20 @@ namespace ColorMyLogixNodes
 		//	Sine
 		//}
 
+		private static NodeInfo nullNodeInfo = new();
+
 		private static System.Random rng;
 		private static System.Random rngTimeSeeded = new System.Random();
 
 		private const string COLOR_SET_TAG = "ColorMyLogiX.ColorSet";
-		//private const string DELEGATE_ADDED_TAG = "ColorMyLogiX.EventSubscribed";
-		private const string DATA_ROOT_SLOT_NAME = "ColorMyLogiX.ExtraData";
-		private const string REF_DRIVER_NODE_DATA_SLOT_NAME = "ColorMyLogiX.RefDriverNodeData";
-		private const string REGULAR_NODE_DATA_SLOT_NAME = "ColorMyLogiX.StandardNodeData";
 
-		private static Slot dataRootSlot = null;
-		private static Slot refDriverNodeDataSlot = null;
-		private static Slot regularNodeDataSlot = null;
+		private static List<NodeInfo> refDriverNodeInfoList = new();
+		private static List<NodeInfo> standardNodeInfoList = new();
+
+		//private static void Test(object sender, EventArgs e)
+		//{
+		//	UpdateRefOrDriverNodeColor(GetNodeInfoForNode(sender as LogixNode, ref refDriverNodeInfoList));
+		//}
 
 		public override void OnEngineInit()
 		{
@@ -233,93 +242,183 @@ namespace ColorMyLogixNodes
 			Config.Save(true);
 			harmony.PatchAll();
 
+			nullNodeInfo.node = null;
+			nullNodeInfo.syncRef = null;
+			nullNodeInfo.prevTarget = null;
+			nullNodeInfo.bgField = null;
+			nullNodeInfo.textFields = null;
+
+			Thread thread1 = new(new ThreadStart(RefDriverNodeThread));
+			thread1.Start();
+
+			Thread thread2 = new(new ThreadStart(StandardNodeThread));
+			thread2.Start();
+
 			Config.OnThisConfigurationChanged += (config) =>
 			{
+				if (Config.GetValue(MOD_ENABLED) && !Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES))
+				{
+					Debug("refDriverNodeInfoList Size before clear: " + refDriverNodeInfoList.Count.ToString());
+					NodeInfoListClear(ref refDriverNodeInfoList);
+					Debug("Cleared refDriverNodeInfoList. Size: " + refDriverNodeInfoList.Count.ToString());
+				}
+
+				if (Config.GetValue(MOD_ENABLED) && !Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+				{
+					Debug("standardNodeInfoList Size before clear: " + standardNodeInfoList.Count.ToString());
+					NodeInfoListClear(ref standardNodeInfoList);
+					Debug("Cleared standardNodeInfoList. Size: " + standardNodeInfoList.Count.ToString());
+				}
+
 				if (Config.GetValue(MOD_ENABLED) && Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED)) {
 
-					if (dataRootSlot == null || regularNodeDataSlot == null) return;
-
-					if (dataRootSlot.World != Engine.Current.WorldManager.FocusedWorld)
+					foreach (NodeInfo nodeInfo in standardNodeInfoList.ToList())
 					{
-						//dataRootSlot = Engine.Current.WorldManager.FocusedWorld.AssetsSlot.FindOrAdd(DATA_ROOT_SLOT_NAME, false);
-						dataRootSlot = Engine.Current.WorldManager.FocusedWorld.AssetsSlot.FindChild((Slot s) => s.Name == DATA_ROOT_SLOT_NAME);
-					}
-
-					if (regularNodeDataSlot.World != Engine.Current.WorldManager.FocusedWorld)
-					{
-						//regularNodeDataSlot = dataRootSlot.FindOrAdd(REGULAR_NODE_DATA_SLOT_NAME, false);
-						regularNodeDataSlot = Engine.Current.WorldManager.FocusedWorld.AssetsSlot.FindChild((Slot s) => s.Name == REGULAR_NODE_DATA_SLOT_NAME);
-					}
-
-					if (dataRootSlot == null || regularNodeDataSlot == null) return;
-
-					foreach (Slot slot in regularNodeDataSlot.Children)
-					{
-						//if (slot.Tag != slot.LocalUser.ReferenceID.ToString()) return;
-						//var refIdField = slot.GetComponent<ValueField<RefID>>();
-						//if (refIdField == null) return;
-						//if (refIdField != null && refIdField.Value.Value != slot.LocalUser.ReferenceID) return;
-
-						LogixNode node = slot.GetComponent<ReferenceField<LogixNode>>().Reference;
-						if (node != null)
+						if (nodeInfo == null)
 						{
-							if (node.ActiveVisual != null && node.ActiveVisual.ReferenceID.User != node.LocalUser.AllocationID) return;
-							if (node.ActiveVisual == null) return;
-							
-							foreach (var refField in slot.GetComponents<ReferenceField<IField<color>>>())
+							Debug("NodeInfo was null");
+							NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
+							continue;
+						}
+						if (nodeInfo.node != null && !(nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed))
+						{
+							if (nodeInfo.node.ActiveVisual != null && nodeInfo.node.ActiveVisual.ReferenceID.User != nodeInfo.node.LocalUser.AllocationID)
 							{
-								if (refField.Reference == null) continue;
-								if (refField.Reference.RawTarget == null) continue;
-								node.RunInUpdates(0, () =>
-								{
-									color c = ComputeColorForLogixNode(node);
-									IField<color> colorField = refField.Reference.RawTarget;
+								NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
+								continue;
+							}
+							if (nodeInfo.node.ActiveVisual == null)
+							{
+								NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
+								continue;
+							}
 
-									// background
-									if (refField.UpdateOrder == 0)
+							if (nodeInfo.node.World != Engine.Current.WorldManager.FocusedWorld) continue;
+
+							color c = ComputeColorForLogixNode(nodeInfo.node);
+
+							if (nodeInfo.bgField != null)
+							{
+								nodeInfo.node.RunInUpdates(0, () =>
+								{
+									if (nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed || nodeInfo.bgField.IsRemoved)
 									{
-										if (node.ActiveVisual != null && node.ActiveVisual.Tag == "Disabled")
+										NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
+									}
+									else
+									{
+										if (nodeInfo.node.ActiveVisual != null && nodeInfo.node.ActiveVisual.Tag == "Disabled")
 										{
-											colorField.Value = Config.GetValue(NODE_ERROR_COLOR);
+											NodeInfoSetBgColor(nodeInfo, Config.GetValue(NODE_ERROR_COLOR));
 										}
 										else
 										{
-											colorField.Value = c;
+											NodeInfoSetBgColor(nodeInfo, c);
 										}
 									}
-									// connect point (unused)
-									else if (refField.UpdateOrder == 1)
+								});
+							}
+
+							if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
+							{
+								nodeInfo.node.RunInUpdates(0, () =>
+								{
+									if (nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed)
 									{
-										if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA))
-										{
-											colorField.Value = colorField.Value.SetA(1f);
-										}
-										else
-										{
-											colorField.Value = colorField.Value.SetA(0.8f);
-										}
+										NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
 									}
-									// text
-									else if (refField.UpdateOrder == 2)
+									else
 									{
-										if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
-										{
-											colorField.Value = GetTextColor(c);
-										}
+										NodeInfoSetTextColor(nodeInfo, GetTextColor(c));
 									}
 								});
 							}
 						}
 						else
 						{
-							slot.RunInUpdates(0, () =>
-							{
-								slot.Destroy();
-							});
+							NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
 						}
 					}
 				}
 			};
+		}
+
+		
+
+		private static void RefDriverNodeThread()
+		{
+			while (true)
+			{
+				try
+				{
+					if (Config.GetValue(MOD_ENABLED) && Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES))
+					{
+						foreach (NodeInfo nodeInfo in refDriverNodeInfoList.ToList())
+						{
+							if (nodeInfo.node == null) NodeInfoRemove(nodeInfo, ref refDriverNodeInfoList);
+							else if (nodeInfo.node.IsRemoved) NodeInfoRemove(nodeInfo, ref refDriverNodeInfoList);
+							else if (nodeInfo.node.IsDestroyed) NodeInfoRemove(nodeInfo, ref refDriverNodeInfoList);
+							else if (nodeInfo.node.IsDisposed) NodeInfoRemove(nodeInfo, ref refDriverNodeInfoList);
+							else if (nodeInfo.node.Slot == null) NodeInfoRemove(nodeInfo, ref refDriverNodeInfoList);
+							else if (nodeInfo.node.Slot.IsDestroyed || nodeInfo.node.Slot.IsRemoved) NodeInfoRemove(nodeInfo, ref refDriverNodeInfoList);
+							else if (nodeInfo.node.World == null) NodeInfoRemove(nodeInfo, ref refDriverNodeInfoList);
+							else if (nodeInfo.node.World.IsDestroyed || nodeInfo.node.World.IsDisposed) NodeInfoRemove(nodeInfo, ref refDriverNodeInfoList);
+							else if (nodeInfo.syncRef == null) NodeInfoRemove(nodeInfo, ref refDriverNodeInfoList);
+							else if (nodeInfo.syncRef.Target != nodeInfo.prevTarget)
+							{
+								Debug("Node syncRef Target changed. Updating color.");
+								refDriverNodeInfoList[refDriverNodeInfoList.IndexOf(nodeInfo)].prevTarget = nodeInfo.syncRef.Target;
+								UpdateRefOrDriverNodeColor(nodeInfo);
+							}
+
+							//Thread.Sleep(7);
+						}
+					}
+
+					Thread.Sleep(Config.GetValue(REF_DRIVER_THREAD_SLEEP_TIME));
+				}
+				catch (Exception e)
+				{
+					Debug("Ref driver node thread error! " + e.Message);
+					Debug("Continuing thread...");
+					continue;
+				}
+			}
+		}
+
+		private static void StandardNodeThread()
+		{
+			while (true)
+			{
+				try
+				{
+					if (Config.GetValue(MOD_ENABLED) && Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+					{
+						foreach (NodeInfo nodeInfo in standardNodeInfoList.ToList())
+						{
+							if (nodeInfo.node == null) NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
+							else if (nodeInfo.node.IsRemoved) NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
+							else if (nodeInfo.node.IsDestroyed) NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
+							else if (nodeInfo.node.IsDisposed) NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
+							else if (nodeInfo.node.Slot == null) NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
+							else if (nodeInfo.node.Slot.IsDestroyed || nodeInfo.node.Slot.IsRemoved) NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
+							else if (nodeInfo.node.World == null) NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
+							else if (nodeInfo.node.World.IsDestroyed || nodeInfo.node.World.IsDisposed) NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
+
+							//Thread.Sleep(7);
+						}
+
+					}
+
+					Thread.Sleep(Config.GetValue(STANDARD_THREAD_SLEEP_TIME));
+				}
+				catch (Exception e)
+				{
+					Debug("Standard node thread error! " + e.Message);
+					Debug("Continuing thread...");
+					continue;
+				}
+			}
 		}
 
 		[HarmonyPatch(typeof(LogixNode))]
@@ -342,103 +441,34 @@ namespace ColorMyLogixNodes
 					}
 					if (targetField != null)
 					{
-						Slot targetSlot = null;
-
-						if (Config.GetValue(ADD_REF_DRIVER_NODES_TO_DATA_SLOT))
-						{
-							if (dataRootSlot == null || dataRootSlot.World != Engine.Current.WorldManager.FocusedWorld)
-							{
-								dataRootSlot = __instance.World.AssetsSlot.FindOrAdd(DATA_ROOT_SLOT_NAME, false);
-								//dataRootSlot.Tag = "Extra Data";
-								dataRootSlot.GetComponentOrAttach<AssetOptimizationBlock>();
-							}
-
-							if (refDriverNodeDataSlot == null || refDriverNodeDataSlot.World != Engine.Current.WorldManager.FocusedWorld)
-							{
-								refDriverNodeDataSlot = dataRootSlot.FindOrAdd(REF_DRIVER_NODE_DATA_SLOT_NAME, false);
-								refDriverNodeDataSlot.GetComponentOrAttach<AssetOptimizationBlock>();
-							}
-
-							targetSlot = refDriverNodeDataSlot.FindChild((Slot c) => c.Name == __instance.ReferenceID.ToString());
-						}
-
-						if (targetSlot == null)
+						if (Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES) && !NodeInfoListContainsNode(__instance, ref refDriverNodeInfoList))
 						{
 							__instance.RunInUpdates(0, () =>
 							{
-								if (Config.GetValue(ADD_REF_DRIVER_NODES_TO_DATA_SLOT))
-								{
-									var targetSlot = refDriverNodeDataSlot.FindChild((Slot c) => c.Name == __instance.ReferenceID.ToString());
-									//ValueField<RefID> refIdField = null;
-									DestroyOnUserLeave destroyOnUserLeave = null;
+								if (NodeInfoListContainsNode(__instance, ref refDriverNodeInfoList)) return;
 
+								ISyncRef syncRef = __instance.TryGetField(targetField) as ISyncRef;
 
-									if (targetSlot != null)
-									{
-										// check if we already made a slot for this node and user
-										//refIdField = targetSlot.GetComponent<ValueField<RefID>>();
-										//if (refIdField != null && refIdField.Value.Value == __instance.LocalUser.ReferenceID) return;
-										destroyOnUserLeave = targetSlot.GetComponent<DestroyOnUserLeave>();
-										if (destroyOnUserLeave != null && destroyOnUserLeave.TargetUser.User.Value == __instance.LocalUser.ReferenceID) return;
-									}
+								Debug("Subscribing to this node.");
+								Debug("refDriverNodeInfoList size before add: " + refDriverNodeInfoList.Count.ToString());
 
-									//if (targetSlot != null) return;
+								NodeInfo nodeInfo = new();
 
-									ISyncRef syncRef = __instance.TryGetField(targetField) as ISyncRef;
+								nodeInfo.node = __instance;
+								nodeInfo.syncRef = syncRef;
+								nodeInfo.prevTarget = syncRef.Target;
 
-									Debug("Subscribing to this node's events.");
+								refDriverNodeInfoList.Add(nodeInfo);
 
-									Action<IChangeable> action = (iChangeable) =>
-									{
-										Debug("SyncRef Changed.");
-										if (Config.GetValue(ADD_REF_DRIVER_NODES_TO_DATA_SLOT))
-										{
-											Debug("Updating ref or driver node color.");
-											UpdateRefOrDriverNodeColor(__instance, targetField);
-										}
-									};
+								UpdateRefOrDriverNodeColor(nodeInfo);
 
-									syncRef.Changed += action;
-
-									Action<IChangeable> action2 = null;
-
-									action2 = (iChangeable) =>
-									{
-										Debug("Ref or Driver node destroyed. Unsubscribing from events.");
-										syncRef.Changed -= action;
-										__instance.Destroyed -= action2;
-									};
-
-									__instance.Destroyed += action2;
-
-									UpdateRefOrDriverNodeColor(__instance, targetField);
-
-									var newSlot = refDriverNodeDataSlot.AddSlot(__instance.ReferenceID.ToString());
-									newSlot.PersistentSelf = false;
-									//newSlot.Tag = __instance.LocalUser.ReferenceID.ToString();
-
-									//refIdField = newSlot.AttachComponent<ValueField<RefID>>();
-									//refIdField.Value.Value = __instance.LocalUser.ReferenceID;
-									//refIdField.Persistent = false;
-
-									destroyOnUserLeave = newSlot.AttachComponent<DestroyOnUserLeave>();
-									destroyOnUserLeave.TargetUser.User.Value = __instance.LocalUser.ReferenceID;
-									destroyOnUserLeave.Persistent = false;
-
-									var destroyProxy = __instance.Slot.AttachComponent<DestroyProxy>();
-									destroyProxy.Persistent = false;
-									destroyProxy.DestroyTarget.Value = newSlot.ReferenceID;
-								}
-								else
-								{
-									UpdateRefOrDriverNodeColor(__instance, targetField);
-								}
+								Debug("refDriverNodeInfoList size after add: " + refDriverNodeInfoList.Count.ToString());
 							});
 						}
 						else
 						{
-							Debug("Node already subscribed. Updating node color.");
-							UpdateRefOrDriverNodeColor(__instance, targetField);
+							Debug("Node already subscribed or skipped. Updating node color.");
+							UpdateRefOrDriverNodeColor(GetNodeInfoForNode(__instance, ref refDriverNodeInfoList));
 						}
 					}
 				}
@@ -463,36 +493,33 @@ namespace ColorMyLogixNodes
 					{
 						__instance.RunInUpdates(3, () =>
 						{
-							Slot nodeDataSlot = null;
+							NodeInfo nodeInfo = null;
 
 							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 							{
-								if (dataRootSlot == null || dataRootSlot.World != Engine.Current.WorldManager.FocusedWorld)
-								{
-									dataRootSlot = __instance.World.AssetsSlot.FindOrAdd(DATA_ROOT_SLOT_NAME, false);
-									dataRootSlot.GetComponentOrAttach<AssetOptimizationBlock>();
-								}
+								//if (dataRootSlot == null || dataRootSlot.World != Engine.Current.WorldManager.FocusedWorld)
+								//{
+								//dataRootSlot = __instance.World.AssetsSlot.FindOrAdd(DATA_ROOT_SLOT_NAME, false);
+								//dataRootSlot.GetComponentOrAttach<AssetOptimizationBlock>();
+								//}
 
-								if (regularNodeDataSlot == null || regularNodeDataSlot.World != Engine.Current.WorldManager.FocusedWorld)
-								{
-									regularNodeDataSlot = dataRootSlot.FindOrAdd(REGULAR_NODE_DATA_SLOT_NAME, false);
-									regularNodeDataSlot.GetComponentOrAttach<AssetOptimizationBlock>();
-								}
+								//if (regularNodeDataSlot == null || regularNodeDataSlot.World != Engine.Current.WorldManager.FocusedWorld)
+								//{
+								//regularNodeDataSlot = dataRootSlot.FindOrAdd(REGULAR_NODE_DATA_SLOT_NAME, false);
+								//regularNodeDataSlot.GetComponentOrAttach<AssetOptimizationBlock>();
+								//}
 
-								nodeDataSlot = regularNodeDataSlot.FindOrAdd(__instance.ReferenceID.ToString(), false);
+								//nodeDataSlot = regularNodeDataSlot.FindOrAdd(__instance.ReferenceID.ToString(), false);
 
-								//var refIdField = nodeDataSlot.GetComponentOrAttach<ValueField<RefID>>();
-								//refIdField.Value.Value = __instance.LocalUser.ReferenceID;
-								//refIdField.Persistent = false;
-								//TrySetSlotTag(nodeDataSlot, __instance.LocalUser.ReferenceID.ToString());
+								//var nodeRefField = nodeDataSlot.GetComponentOrAttach<ReferenceField<LogixNode>>();
+								//nodeRefField.Reference.Value = __instance.ReferenceID;
+								//nodeRefField.Persistent = false;
 
-								var nodeRefField = nodeDataSlot.GetComponentOrAttach<ReferenceField<LogixNode>>();
-								nodeRefField.Reference.Value = __instance.ReferenceID;
-								nodeRefField.Persistent = false;
-
-								var destroyProxy = __instance.ActiveVisual.GetComponentOrAttach<DestroyProxy>();
-								destroyProxy.DestroyTarget.Value = nodeDataSlot.ReferenceID;
-								destroyProxy.Persistent = false;
+								//var destroyProxy = __instance.ActiveVisual.GetComponentOrAttach<DestroyProxy>();
+								//destroyProxy.DestroyTarget.Value = nodeDataSlot.ReferenceID;
+								//destroyProxy.Persistent = false;
+								nodeInfo = new();
+								nodeInfo.node = __instance;
 							}
 
 							var backgroundImage = GetBackgroundImageForNode(__instance);
@@ -500,10 +527,11 @@ namespace ColorMyLogixNodes
 							{
 								if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 								{
-									var bgImageRefField = nodeDataSlot.GetComponentOrAttach<ReferenceField<IField<color>>>();
-									bgImageRefField.Reference.Value = backgroundImage.TryGetField<color>("Tint").ReferenceID;
-									bgImageRefField.UpdateOrder = 0;
-									bgImageRefField.Persistent = false;
+									//var bgImageRefField = nodeDataSlot.GetComponentOrAttach<ReferenceField<IField<color>>>();
+									//bgImageRefField.Reference.Value = backgroundImage.TryGetField<color>("Tint").ReferenceID;
+									//bgImageRefField.UpdateOrder = 0;
+									//bgImageRefField.Persistent = false;
+									nodeInfo.bgField = backgroundImage.TryGetField<color>("Tint");
 								}
 
 								if (root.Tag == "Disabled")
@@ -526,13 +554,6 @@ namespace ColorMyLogixNodes
 											if (img != backgroundImage)
 											{
 												TrySetImageTint(img, img.Tint.Value.SetA(1f));
-
-												//if (Config.GetValue(ADD_REGULAR_NODES_TO_DATA_SLOT))
-												//{
-													//var connectPointColorRefField = nodeDataSlot.AttachComponent<ReferenceField<IField<color>>>();
-													//connectPointColorRefField.Reference.Value = img.TryGetField<color>("Tint").ReferenceID;
-													//connectPointColorRefField.UpdateOrder = 1;
-												//}
 											}
 										}
 									}
@@ -541,6 +562,7 @@ namespace ColorMyLogixNodes
 									{
 										// set node's text color, there could be multiple text components that need to be colored
 										// need to wait 3 updates because who knows why...
+										nodeInfo.textFields = new();
 										__instance.RunInUpdates(3, () =>
 										{
 											foreach (Text text in GetTextListForNode(__instance))
@@ -549,16 +571,22 @@ namespace ColorMyLogixNodes
 
 												if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 												{
-													var textColorRefField = nodeDataSlot.AttachComponent<ReferenceField<IField<color>>>();
-													textColorRefField.Reference.Value = text.TryGetField<color>("Color").ReferenceID;
-													textColorRefField.UpdateOrder = 2;
-													textColorRefField.Persistent = false;
+													//var textColorRefField = nodeDataSlot.AttachComponent<ReferenceField<IField<color>>>();
+													//textColorRefField.Reference.Value = text.TryGetField<color>("Color").ReferenceID;
+													//textColorRefField.UpdateOrder = 2;
+													//textColorRefField.Persistent = false;
+													nodeInfo.textFields.Add(text.TryGetField<color>("Color"));
 												}
 											}
 										});
 									}
 
 									TrySetSlotTag(root, COLOR_SET_TAG);
+
+									if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+									{
+										standardNodeInfoList.Add(nodeInfo);
+									}
 								}
 							}
 						});

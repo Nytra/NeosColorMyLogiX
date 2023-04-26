@@ -1,7 +1,6 @@
 ﻿using FrooxEngine;
 using FrooxEngine.LogiX;
 using FrooxEngine.UIX;
-using HarmonyLib;
 using NeosModLoader;
 using System;
 using System.Reflection;
@@ -107,28 +106,25 @@ namespace ColorMyLogixNodes
 			}
 		}
 
-		private static void UpdateRefOrDriverNodeColor(LogixNode node, string targetField)
+		private static void UpdateRefOrDriverNodeColor(NodeInfo nodeInfo)
 		{
-			if (node == null) return;
-			if (node.ActiveVisual == null) return;
-			//Debug("in UpdateRefOrDriverNodeColor method");
-			node.RunInUpdates(0, () =>
+			if (nodeInfo.node == null) return;
+			if (nodeInfo.node.ActiveVisual == null) return;
+			nodeInfo.node.RunInUpdates(0, () =>
 			{
-				var targetSyncRef = node.TryGetField(targetField) as ISyncRef;
-				if (targetSyncRef == null) return;
-				Debug($"Updating color for Node {node.Name} {node.ReferenceID.ToString()}");
+				if (nodeInfo.syncRef == null) return;
+				Debug($"Updating color for Node {nodeInfo.node.Name} {nodeInfo.node.ReferenceID.ToString()}");
 
-				if (targetSyncRef.Target == null)
+				if (nodeInfo.syncRef.Target == null)
 				{
 					Debug("Null syncref target found! setting error color");
-					var imageSlot1 = node.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
+					var imageSlot1 = nodeInfo.node.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
 					if (imageSlot1 != null)
 					{
 						var image1 = imageSlot1.GetComponent<Image>();
 						if (image1 != null)
 						{
 							TrySetImageTint(image1, Config.GetValue(NODE_ERROR_COLOR));
-							//TrySetTag(visualSlot, COLOR_SET_TAG);
 							var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");
 							if (imageSlot2 != null)
 							{
@@ -136,25 +132,27 @@ namespace ColorMyLogixNodes
 								if (image2 != null)
 								{
 									TrySetImageTint(image2, Config.GetValue(NODE_ERROR_COLOR));
-									//TrySetTag(visualSlot, COLOR_SET_TAG);
+									image2 = null;
 								}
+								imageSlot2 = null;
 							}
+							image1 = null;
 						}
+						imageSlot1 = null;
 					}
 				}
 				else
 				{
-					Debug($"SyncRef Target not null. Setting default color. SyncRef Target: {targetSyncRef.Target.ToString()}");
-					var imageSlot1 = node.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
+					Debug($"SyncRef Target not null. Setting default color. SyncRef Target: {nodeInfo.syncRef.Target.Name.ToString()}");
+					var imageSlot1 = nodeInfo.node.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
 					if (imageSlot1 != null)
 					{
 						var image1 = imageSlot1.GetComponent<Image>();
 						if (image1 != null)
 						{
-							var defaultColor = GetNodeDefaultColor(node);
+							var defaultColor = GetNodeDefaultColor(nodeInfo.node);
 							defaultColor = defaultColor.SetA(0.8f);
 							TrySetImageTint(image1, defaultColor);
-							//TrySetTag(visualSlot, COLOR_SET_TAG);
 							var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");
 							if (imageSlot2 != null)
 							{
@@ -162,10 +160,13 @@ namespace ColorMyLogixNodes
 								if (image2 != null)
 								{
 									TrySetImageTint(image2, defaultColor);
-									//TrySetTag(visualSlot, COLOR_SET_TAG);
+									image2 = null;
 								}
+								imageSlot2 = null;
 							}
+							image1 = null;
 						}
+						imageSlot1 = null;
 					}
 				}
 			});
