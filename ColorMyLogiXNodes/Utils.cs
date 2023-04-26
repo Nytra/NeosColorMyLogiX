@@ -106,19 +106,19 @@ namespace ColorMyLogixNodes
 			}
 		}
 
-		private static void UpdateRefOrDriverNodeColor(NodeInfo nodeInfo)
+		private static void UpdateRefOrDriverNodeColor(LogixNode node, ISyncRef syncRef)
 		{
-			if (nodeInfo.node == null) return;
-			if (nodeInfo.node.ActiveVisual == null) return;
-			nodeInfo.node.RunInUpdates(0, () =>
+			if (node == null) return;
+			if (node.ActiveVisual == null) return;
+			node.RunInUpdates(0, () =>
 			{
-				if (nodeInfo.syncRef == null) return;
-				Debug($"Updating color for Node {nodeInfo.node.Name} {nodeInfo.node.ReferenceID.ToString()}");
+				if (syncRef == null) return;
+				Debug($"Updating color for Node {node.Name} {node.ReferenceID.ToString()}");
 
-				if (nodeInfo.syncRef.Target == null)
+				if (syncRef.Target == null)
 				{
 					Debug("Null syncref target found! setting error color");
-					var imageSlot1 = nodeInfo.node.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
+					var imageSlot1 = node.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
 					if (imageSlot1 != null)
 					{
 						var image1 = imageSlot1.GetComponent<Image>();
@@ -143,14 +143,14 @@ namespace ColorMyLogixNodes
 				}
 				else
 				{
-					Debug($"SyncRef Target not null. Setting default color. SyncRef Target: {nodeInfo.syncRef.Target.Name.ToString()}");
-					var imageSlot1 = nodeInfo.node.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
+					Debug($"SyncRef Target not null. Setting default color. SyncRef Target: {syncRef.Target.Name.ToString()}");
+					var imageSlot1 = node.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
 					if (imageSlot1 != null)
 					{
 						var image1 = imageSlot1.GetComponent<Image>();
 						if (image1 != null)
 						{
-							var defaultColor = GetNodeDefaultColor(nodeInfo.node);
+							var defaultColor = GetNodeDefaultColor(node);
 							defaultColor = defaultColor.SetA(0.8f);
 							TrySetImageTint(image1, defaultColor);
 							var imageSlot2 = imageSlot1.FindChild((Slot c) => c.Name == "Image");

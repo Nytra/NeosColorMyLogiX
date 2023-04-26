@@ -131,13 +131,15 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> UPDATE_NODES_ON_CONFIG_CHANGED = new ModConfigurationKey<bool>("UPDATE_NODES_ON_CONFIG_CHANGED", "Automatically update the color of nodes when your mod config changes:", () => false);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<int> STANDARD_THREAD_SLEEP_TIME = new ModConfigurationKey<int>("STANDARD_THREAD_SLEEP_TIME", "Standard node thread sleep time:", () => 10000, internalAccessOnly: true);
+		private static ModConfigurationKey<int> STANDARD_THREAD_SLEEP_TIME = new ModConfigurationKey<int>("STANDARD_THREAD_SLEEP_TIME", "Standard node thread sleep time:", () => 1000, internalAccessOnly: true);
 		//[AutoRegisterConfigKey]
 		//private static ModConfigurationKey<bool> ADD_REGULAR_NODES_TO_DATA_SLOT = new ModConfigurationKey<bool>("ADD_REGULAR_NODES_TO_DATA_SLOT", "Add regular nodes to the data slot (Required for auto-refresh to work):", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> AUTO_UPDATE_REF_AND_DRIVER_NODES = new ModConfigurationKey<bool>("AUTO_UPDATE_REF_AND_DRIVER_NODES", "Automatically update the color of reference and driver nodes when their targets change:", () => false);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<int> REF_DRIVER_THREAD_SLEEP_TIME = new ModConfigurationKey<int>("REF_DRIVER_THREAD_SLEEP_TIME", "Ref driver node thread sleep time:", () => 1500, internalAccessOnly: true);
+		private static ModConfigurationKey<int> REF_DRIVER_THREAD_SLEEP_TIME = new ModConfigurationKey<int>("REF_DRIVER_THREAD_SLEEP_TIME", "Ref driver node thread sleep time:", () => 1000, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<int> THREAD_INNER_SLEEP_TIME = new ModConfigurationKey<int>("THREAD_INNER_SLEEP_TIME", "Thread inner sleep time:", () => 5, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_7_10 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_10", $"<color={DETAIL_TEXT_COLOR}><i>These options will cause the mod to use more memory and processing</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
@@ -227,13 +229,9 @@ namespace ColorMyLogixNodes
 
 		private const string COLOR_SET_TAG = "ColorMyLogiX.ColorSet";
 
-		private static List<NodeInfo> refDriverNodeInfoList = new();
-		private static List<NodeInfo> standardNodeInfoList = new();
+		private static HashSet<NodeInfo> nodeInfoSet = new();
 
-		//private static void Test(object sender, EventArgs e)
-		//{
-		//	UpdateRefOrDriverNodeColor(GetNodeInfoForNode(sender as LogixNode, ref refDriverNodeInfoList));
-		//}
+		private static HashSet<ISyncRef> syncRefSet = new();
 
 		public override void OnEngineInit()
 		{
@@ -243,8 +241,6 @@ namespace ColorMyLogixNodes
 			harmony.PatchAll();
 
 			nullNodeInfo.node = null;
-			nullNodeInfo.syncRef = null;
-			nullNodeInfo.prevTarget = null;
 			nullNodeInfo.bgField = null;
 			nullNodeInfo.textFields = null;
 
@@ -258,38 +254,44 @@ namespace ColorMyLogixNodes
 			{
 				if (Config.GetValue(MOD_ENABLED) && !Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES))
 				{
-					Debug("refDriverNodeInfoList Size before clear: " + refDriverNodeInfoList.Count.ToString());
-					NodeInfoListClear(ref refDriverNodeInfoList);
-					Debug("Cleared refDriverNodeInfoList. Size: " + refDriverNodeInfoList.Count.ToString());
+					Debug("syncRefSet Size before clear: " + syncRefSet.Count.ToString());
+					foreach (ISyncRef syncRef in syncRefSet.ToList())
+					{
+						syncRef.Changed -= HandleSyncRefChanged;
+						syncRefSet.Remove(syncRef);
+					}
+					syncRefSet.Clear();
+					syncRefSet.TrimExcess();
+					Debug("Cleared syncRefSet. Size: " + syncRefSet.Count.ToString());
 				}
 
 				if (Config.GetValue(MOD_ENABLED) && !Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 				{
-					Debug("standardNodeInfoList Size before clear: " + standardNodeInfoList.Count.ToString());
-					NodeInfoListClear(ref standardNodeInfoList);
-					Debug("Cleared standardNodeInfoList. Size: " + standardNodeInfoList.Count.ToString());
+					Debug("nodeInfoList Size before clear: " + nodeInfoSet.Count.ToString());
+					NodeInfoListClear();
+					Debug("Cleared nodeInfoList. Size: " + nodeInfoSet.Count.ToString());
 				}
 
 				if (Config.GetValue(MOD_ENABLED) && Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED)) {
 
-					foreach (NodeInfo nodeInfo in standardNodeInfoList.ToList())
+					foreach (NodeInfo nodeInfo in nodeInfoSet.ToList())
 					{
 						if (nodeInfo == null)
 						{
 							Debug("NodeInfo was null");
-							NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
+							NodeInfoRemove(nodeInfo);
 							continue;
 						}
 						if (nodeInfo.node != null && !(nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed))
 						{
 							if (nodeInfo.node.ActiveVisual != null && nodeInfo.node.ActiveVisual.ReferenceID.User != nodeInfo.node.LocalUser.AllocationID)
 							{
-								NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
+								NodeInfoRemove(nodeInfo);
 								continue;
 							}
 							if (nodeInfo.node.ActiveVisual == null)
 							{
-								NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
+								NodeInfoRemove(nodeInfo);
 								continue;
 							}
 
@@ -303,7 +305,7 @@ namespace ColorMyLogixNodes
 								{
 									if (nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed || nodeInfo.bgField.IsRemoved)
 									{
-										NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
+										NodeInfoRemove(nodeInfo);
 									}
 									else
 									{
@@ -325,7 +327,7 @@ namespace ColorMyLogixNodes
 								{
 									if (nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed)
 									{
-										NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
+										NodeInfoRemove(nodeInfo);
 									}
 									else
 									{
@@ -336,7 +338,7 @@ namespace ColorMyLogixNodes
 						}
 						else
 						{
-							NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
+							NodeInfoRemove(nodeInfo);
 						}
 					}
 				}
@@ -353,25 +355,23 @@ namespace ColorMyLogixNodes
 				{
 					if (Config.GetValue(MOD_ENABLED) && Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES))
 					{
-						foreach (NodeInfo nodeInfo in refDriverNodeInfoList.ToList())
+						bool flag = false;
+						foreach (ISyncRef syncRef in syncRefSet.ToList())
 						{
-							if (nodeInfo.node == null) NodeInfoRemove(nodeInfo, ref refDriverNodeInfoList);
-							else if (nodeInfo.node.IsRemoved) NodeInfoRemove(nodeInfo, ref refDriverNodeInfoList);
-							else if (nodeInfo.node.IsDestroyed) NodeInfoRemove(nodeInfo, ref refDriverNodeInfoList);
-							else if (nodeInfo.node.IsDisposed) NodeInfoRemove(nodeInfo, ref refDriverNodeInfoList);
-							else if (nodeInfo.node.Slot == null) NodeInfoRemove(nodeInfo, ref refDriverNodeInfoList);
-							else if (nodeInfo.node.Slot.IsDestroyed || nodeInfo.node.Slot.IsRemoved) NodeInfoRemove(nodeInfo, ref refDriverNodeInfoList);
-							else if (nodeInfo.node.World == null) NodeInfoRemove(nodeInfo, ref refDriverNodeInfoList);
-							else if (nodeInfo.node.World.IsDestroyed || nodeInfo.node.World.IsDisposed) NodeInfoRemove(nodeInfo, ref refDriverNodeInfoList);
-							else if (nodeInfo.syncRef == null) NodeInfoRemove(nodeInfo, ref refDriverNodeInfoList);
-							else if (nodeInfo.syncRef.Target != nodeInfo.prevTarget)
+							if (syncRef == null || syncRef.IsRemoved || syncRef.Parent == null || syncRef.Parent.IsRemoved)
 							{
-								Debug("Node syncRef Target changed. Updating color.");
-								refDriverNodeInfoList[refDriverNodeInfoList.IndexOf(nodeInfo)].prevTarget = nodeInfo.syncRef.Target;
-								UpdateRefOrDriverNodeColor(nodeInfo);
+								Debug("Unsubscribing from syncRef and removing from syncRefSet");
+								syncRef.Changed -= HandleSyncRefChanged;
+								syncRefSet.Remove(syncRef);
+								flag = true;
 							}
 
-							//Thread.Sleep(7);
+							Thread.Sleep(Config.GetValue(THREAD_INNER_SLEEP_TIME));
+						}
+						if (flag)
+						{
+							syncRefSet.TrimExcess();
+							Debug("syncRefSet size: " + syncRefSet.Count.ToString());
 						}
 					}
 
@@ -394,18 +394,17 @@ namespace ColorMyLogixNodes
 				{
 					if (Config.GetValue(MOD_ENABLED) && Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 					{
-						foreach (NodeInfo nodeInfo in standardNodeInfoList.ToList())
+						foreach (NodeInfo nodeInfo in nodeInfoSet.ToList())
 						{
-							if (nodeInfo.node == null) NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
-							else if (nodeInfo.node.IsRemoved) NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
-							else if (nodeInfo.node.IsDestroyed) NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
-							else if (nodeInfo.node.IsDisposed) NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
-							else if (nodeInfo.node.Slot == null) NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
-							else if (nodeInfo.node.Slot.IsDestroyed || nodeInfo.node.Slot.IsRemoved) NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
-							else if (nodeInfo.node.World == null) NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
-							else if (nodeInfo.node.World.IsDestroyed || nodeInfo.node.World.IsDisposed) NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
+							//if (nodeInfo == null) NodeInfoRemove(nodeInfo);
+							if (nodeInfo.node == null) NodeInfoRemove(nodeInfo);
+							else if (nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed) NodeInfoRemove(nodeInfo);
+							else if (nodeInfo.node.Slot == null) NodeInfoRemove(nodeInfo);
+							else if (nodeInfo.node.Slot.IsDestroyed || nodeInfo.node.Slot.IsRemoved || nodeInfo.node.Slot.IsDisposed) NodeInfoRemove(nodeInfo);
+							else if (nodeInfo.node.World == null) NodeInfoRemove(nodeInfo);
+							else if (nodeInfo.node.World.IsDestroyed || nodeInfo.node.World.IsDisposed) NodeInfoRemove(nodeInfo);
 
-							//Thread.Sleep(7);
+							Thread.Sleep(Config.GetValue(THREAD_INNER_SLEEP_TIME));
 						}
 
 					}
@@ -419,6 +418,15 @@ namespace ColorMyLogixNodes
 					continue;
 				}
 			}
+		}
+
+		private static void HandleSyncRefChanged(IChangeable iChangeable)
+		{
+			ISyncRef syncRef = iChangeable as ISyncRef;
+			if (syncRef == null || syncRef.Parent == null) return;
+			LogixNode node = syncRef.Parent as LogixNode;
+			if (node == null) return;
+			UpdateRefOrDriverNodeColor(node, syncRef);
 		}
 
 		[HarmonyPatch(typeof(LogixNode))]
@@ -441,34 +449,36 @@ namespace ColorMyLogixNodes
 					}
 					if (targetField != null)
 					{
-						if (Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES) && !NodeInfoListContainsNode(__instance, ref refDriverNodeInfoList))
+						ISyncRef syncRef = __instance.TryGetField(targetField) as ISyncRef;
+						if (Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES) && !syncRefSet.Contains(syncRef))
 						{
 							__instance.RunInUpdates(0, () =>
 							{
-								if (NodeInfoListContainsNode(__instance, ref refDriverNodeInfoList)) return;
-
-								ISyncRef syncRef = __instance.TryGetField(targetField) as ISyncRef;
+								if (syncRefSet.Contains(syncRef)) return;
 
 								Debug("Subscribing to this node.");
-								Debug("refDriverNodeInfoList size before add: " + refDriverNodeInfoList.Count.ToString());
 
-								NodeInfo nodeInfo = new();
+								syncRef.Changed += HandleSyncRefChanged;
 
-								nodeInfo.node = __instance;
-								nodeInfo.syncRef = syncRef;
-								nodeInfo.prevTarget = syncRef.Target;
+								syncRefSet.Add(syncRef);
 
-								refDriverNodeInfoList.Add(nodeInfo);
+								//NodeInfo nodeInfo = new();
 
-								UpdateRefOrDriverNodeColor(nodeInfo);
+								//nodeInfo.node = __instance;
+								//nodeInfo.syncRef = syncRef;
+								//nodeInfo.prevTarget = syncRef.Target;
 
-								Debug("refDriverNodeInfoList size after add: " + refDriverNodeInfoList.Count.ToString());
+								//refDriverNodeInfoList.Add(nodeInfo);
+
+								UpdateRefOrDriverNodeColor(__instance, syncRef);
+
+								Debug("syncRefSet size after add: " + syncRefSet.Count.ToString());
 							});
 						}
 						else
 						{
 							Debug("Node already subscribed or skipped. Updating node color.");
-							UpdateRefOrDriverNodeColor(GetNodeInfoForNode(__instance, ref refDriverNodeInfoList));
+							UpdateRefOrDriverNodeColor(__instance, syncRef);
 						}
 					}
 				}
@@ -585,7 +595,7 @@ namespace ColorMyLogixNodes
 
 									if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 									{
-										standardNodeInfoList.Add(nodeInfo);
+										nodeInfoSet.Add(nodeInfo);
 									}
 								}
 							}

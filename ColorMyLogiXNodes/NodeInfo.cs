@@ -3,7 +3,6 @@ using FrooxEngine;
 using NeosModLoader;
 using System.Collections.Generic;
 using BaseX;
-using System.Security.Permissions;
 
 namespace ColorMyLogixNodes
 {
@@ -12,102 +11,99 @@ namespace ColorMyLogixNodes
 		public class NodeInfo
 		{
 			public LogixNode node;
-			public ISyncRef syncRef;
-			public IWorldElement prevTarget;
 			public IField<color> bgField;
 			public List<IField<color>> textFields;
 		}
 
 		private static void NodeInfoSetBgColor(NodeInfo nodeInfo, color c)
 		{
-			int index = standardNodeInfoList.IndexOf(nodeInfo);
-			if (index >= 0)
+			NodeInfo outNodeInfo = null;
+			if (nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo))
 			{
-				standardNodeInfoList[index].bgField.Value = c;
-			}
+                outNodeInfo.bgField.Value = c;
+            }
 			else
 			{
-				Debug("Index was -1");
+				Debug("Could not set Bg Color. NodeInfo was not found.");
 			}
-		}
+        }
 
 		private static void NodeInfoSetTextColor(NodeInfo nodeInfo, color c)
 		{
-			int index = standardNodeInfoList.IndexOf(nodeInfo);
-			if (index >= 0)
+			NodeInfo outNodeInfo = null;
+			if (nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo))
 			{
-				foreach (IField<color> field in standardNodeInfoList[index].textFields)
+                foreach (IField<color> field in outNodeInfo.textFields)
 				{
-					if (field.IsRemoved)
-					{
-						NodeInfoRemove(nodeInfo, ref standardNodeInfoList);
-						return;
-					}
-					else
-					{
-						field.Value = c;
-					}
-				}
-			}
+                    if (field.IsRemoved)
+                    {
+                        NodeInfoRemove(nodeInfo);
+                        return;
+                    }
+                    else
+                    {
+                        field.Value = c;
+                    }
+                }
+
+            }
 			else
 			{
-				Debug("Index was -1");
+				Debug("Could not set Text Color. NodeInfo was not found.");
 			}
-		}
+        }
 
-		private static bool NodeInfoListContainsNode(LogixNode node, ref List<NodeInfo> list)
+		private static bool NodeInfoListContainsNode(LogixNode node)
 		{
-			foreach (NodeInfo nodeInfo in list)
+			foreach (NodeInfo nodeInfo in nodeInfoSet)
 			{
 				if (nodeInfo.node == node) return true;
 			}
 			return false;
 		}
 
-		private static NodeInfo GetNodeInfoForNode(LogixNode node, ref List<NodeInfo> list)
+		private static NodeInfo GetNodeInfoForNode(LogixNode node)
 		{
-			foreach (NodeInfo nodeInfo in list)
+			foreach (NodeInfo nodeInfo in nodeInfoSet)
 			{
 				if (nodeInfo.node == node) return nodeInfo;
 			}
 			return nullNodeInfo;
 		}
 
-		private static void NodeInfoRemove(NodeInfo nodeInfo, ref List<NodeInfo> list)
+		private static void NodeInfoRemove(NodeInfo nodeInfo)
 		{
-			if (!list.Contains(nodeInfo))
+			if (!nodeInfoSet.Contains(nodeInfo))
 			{
-				Debug("NodeInfo was not in list.");
+				Debug("NodeInfo was not in nodeInfoSet.");
 				return;
 			}
-			int index = list.IndexOf(nodeInfo);
-			list[index].node = null;
-			list[index].syncRef = null;
-			list[index].prevTarget = null;
-			//list[index] = null;
-			if (list.Remove(nodeInfo))
+			NodeInfo outNodeInfo = null;
+			nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo);
+            outNodeInfo.node = null;
+            outNodeInfo.bgField = null;
+            outNodeInfo.textFields = null;
+			if (nodeInfoSet.Remove(nodeInfo))
 			{
-				Debug("NodeInfo was removed from list. New size of list: " + list.Count.ToString());
+				Debug("NodeInfo was removed from nodeInfoSet. New size of nodeInfoSet: " + nodeInfoSet.Count.ToString());
 			}
 			else
 			{
-				Debug("NodeInfo was not in list (somehow?).");
+				Debug("NodeInfo was not in nodeInfoSet (you should not be seeing this).");
 			}
-			list.TrimExcess();
+            nodeInfoSet.TrimExcess();
 		}
 
-		private static void NodeInfoListClear(ref List<NodeInfo> list)
+		private static void NodeInfoListClear()
 		{
-			for (int i = 0; i < list.Count; i++)
+			foreach (NodeInfo nodeInfo in nodeInfoSet)
 			{
-				list[i].node = null;
-				list[i].syncRef = null;
-				list[i].prevTarget = null;
-				list[i].bgField = null;
-				list[i].textFields = null;
+                nodeInfo.node = null;
+                nodeInfo.bgField = null;
+                nodeInfo.textFields = null;
 			}
-			list.Clear();
-			list.TrimExcess();
+            nodeInfoSet.Clear();
+            nodeInfoSet.TrimExcess();
 		}
 	}
 }
