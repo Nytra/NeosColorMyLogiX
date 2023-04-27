@@ -301,10 +301,17 @@ namespace ColorMyLogixNodes
 
 			if (!Config.GetValue(COLOR_RELAY_NODES) && (node.Name.StartsWith("RelayNode") || node.Name.StartsWith("ImpulseRelay")))
 			{
-				color cRGB = GetNodeDefaultColor(node);
-				ColorHSV colorHSV = new ColorHSV(in cRGB);
-				colorHSV.v = ((colorHSV.v > 0.5f) ? (colorHSV.v * 0.5f) : (colorHSV.v * 2f));
-				return colorHSV.ToRGB();
+				if (node.Name.StartsWith("ImpulseRelay"))
+				{
+					return color.Gray;
+				}
+				else
+				{
+					color cRGB = GetNodeDefaultColor(node);
+					ColorHSV colorHSV = new ColorHSV(in cRGB);
+					colorHSV.v = ((colorHSV.v > 0.5f) ? (colorHSV.v * 0.5f) : (colorHSV.v * 2f));
+					return colorHSV.ToRGB();
+				}
 			}
 
 			if (Config.GetValue(USE_DISPLAY_COLOR_OVERRIDE) && (node.Name.StartsWith("Display_") || node.Name == "DisplayImpulse"))
@@ -360,6 +367,11 @@ namespace ColorMyLogixNodes
 
 					// set rng to null so that the color doesn't get messed with
 					rng = null;
+				}
+
+				if (Config.GetValue(PARTY_MODE))
+				{
+					rng = rngTimeSeeded;
 				}
 
 				if (rng != null)
