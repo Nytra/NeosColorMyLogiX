@@ -137,13 +137,15 @@ namespace ColorMyLogixNodes
 		//[AutoRegisterConfigKey]
 		//private static ModConfigurationKey<bool> ADD_REGULAR_NODES_TO_DATA_SLOT = new ModConfigurationKey<bool>("ADD_REGULAR_NODES_TO_DATA_SLOT", "Add regular nodes to the data slot (Required for auto-refresh to work):", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> AUTO_UPDATE_REF_AND_DRIVER_NODES = new ModConfigurationKey<bool>("AUTO_UPDATE_REF_AND_DRIVER_NODES", "Automatically update the color of reference nodes and driver nodes when their targets change:", () => false);
+		private static ModConfigurationKey<bool> AUTO_UPDATE_REF_AND_DRIVER_NODES = new ModConfigurationKey<bool>("AUTO_UPDATE_REF_AND_DRIVER_NODES", "Automatically update the color of reference nodes and driver nodes when their targets change:", () => true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<int> REF_DRIVER_THREAD_SLEEP_TIME = new ModConfigurationKey<int>("REF_DRIVER_THREAD_SLEEP_TIME", "Ref driver node thread sleep time (milliseconds):", () => 1000, internalAccessOnly: true);
+		private static ModConfigurationKey<int> REF_DRIVER_THREAD_SLEEP_TIME = new ModConfigurationKey<int>("REF_DRIVER_THREAD_SLEEP_TIME", "Ref driver node thread sleep time (milliseconds):", () => 1500, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<int> THREAD_INNER_SLEEP_TIME = new ModConfigurationKey<int>("THREAD_INNER_SLEEP_TIME", "Thread inner sleep time (milliseconds):", () => 5, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_7_10 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_10", $"<color={DETAIL_TEXT_COLOR}><i>These options will cause the mod to use more memory and do more processing</i></color>", () => new dummy());
+		private static ModConfigurationKey<dummy> DUMMY_SEP_7_10 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_10", $"<color={DETAIL_TEXT_COLOR}><i>These options will cause the mod to use more memory and processing</i></color>", () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_7_12 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_12", $"<color={DETAIL_TEXT_COLOR}><i>Setting these to false will clear all memory associated with that option</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_5", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
@@ -254,7 +256,7 @@ namespace ColorMyLogixNodes
 
 			Config.OnThisConfigurationChanged += (config) =>
 			{
-				if (Config.GetValue(MOD_ENABLED) && !Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES))
+				if (!Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES))
 				{
 					Debug("syncRefSet Size before clear: " + syncRefSet.Count.ToString());
 					foreach (ISyncRef syncRef in syncRefSet.ToList())
@@ -267,7 +269,7 @@ namespace ColorMyLogixNodes
 					Debug("Cleared syncRefSet. Size: " + syncRefSet.Count.ToString());
 				}
 
-				if (Config.GetValue(MOD_ENABLED) && !Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+				if (!Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 				{
 					Debug("nodeInfoList Size before clear: " + nodeInfoSet.Count.ToString());
 					NodeInfoListClear();
@@ -398,13 +400,12 @@ namespace ColorMyLogixNodes
 					{
 						foreach (NodeInfo nodeInfo in nodeInfoSet.ToList())
 						{
-							//if (nodeInfo == null) NodeInfoRemove(nodeInfo);
-							if (nodeInfo.node == null) NodeInfoRemove(nodeInfo);
-							else if (nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed) NodeInfoRemove(nodeInfo);
-							else if (nodeInfo.node.Slot == null) NodeInfoRemove(nodeInfo);
-							else if (nodeInfo.node.Slot.IsDestroyed || nodeInfo.node.Slot.IsRemoved || nodeInfo.node.Slot.IsDisposed) NodeInfoRemove(nodeInfo);
-							else if (nodeInfo.node.World == null) NodeInfoRemove(nodeInfo);
-							else if (nodeInfo.node.World.IsDestroyed || nodeInfo.node.World.IsDisposed) NodeInfoRemove(nodeInfo);
+							if ((nodeInfo.node == null) ||
+							(nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed) ||
+							(nodeInfo.node.Slot == null) ||
+							(nodeInfo.node.Slot.IsDestroyed || nodeInfo.node.Slot.IsRemoved || nodeInfo.node.Slot.IsDisposed) ||
+							(nodeInfo.node.World == null) ||
+							(nodeInfo.node.World.IsDestroyed || nodeInfo.node.World.IsDisposed)) NodeInfoRemove(nodeInfo);
 
 							Thread.Sleep(Config.GetValue(THREAD_INNER_SLEEP_TIME));
 						}
