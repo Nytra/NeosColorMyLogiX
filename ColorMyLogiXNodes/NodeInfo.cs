@@ -20,7 +20,14 @@ namespace ColorMyLogixNodes
 			NodeInfo outNodeInfo = null;
 			if (nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo))
 			{
-				outNodeInfo.bgField.Value = c;
+				if (outNodeInfo.bgField.IsRemoved)
+				{
+					NodeInfoRemove(nodeInfo);
+				}
+				else
+				{
+					outNodeInfo.bgField.Value = c;
+				}
 			}
 			else
 			{
@@ -93,7 +100,7 @@ namespace ColorMyLogixNodes
 			}
 			nodeInfoSet.TrimExcess();
 		}
-
+	
 		private static void NodeInfoListClear()
 		{
 			foreach (NodeInfo nodeInfo in nodeInfoSet)

@@ -117,7 +117,7 @@ namespace ColorMyLogixNodes
 
 				if (syncRef.Target == null)
 				{
-					Debug("Null syncref target found! setting error color");
+					Debug("Setting error color");
 					var imageSlot1 = node.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
 					if (imageSlot1 != null)
 					{
@@ -143,7 +143,7 @@ namespace ColorMyLogixNodes
 				}
 				else
 				{
-					Debug($"SyncRef Target not null. Setting default color. SyncRef Target: {syncRef.Target.Name.ToString()}");
+					Debug($"Setting default color");
 					var imageSlot1 = node.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
 					if (imageSlot1 != null)
 					{
