@@ -79,15 +79,15 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_2_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_3", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<float3> COLOR_CHANNELS_MAX = new ModConfigurationKey<float3>("COLOR_CHANNELS_MAX", "Random Max [0 to 1]:", () => new float3(1f, 0.5f, 1f));
+		private static ModConfigurationKey<float3> COLOR_CHANNELS_MAX = new ModConfigurationKey<float3>("COLOR_CHANNELS_MAX", "Channel Maximums [0 to 1]:", () => new float3(1f, 0.5f, 1f));
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<float3> COLOR_CHANNELS_MIN = new ModConfigurationKey<float3>("COLOR_CHANNELS_MIN", "Random Min [0 to 1]:", () => new float3(0f, 0.5f, 1f));
+		private static ModConfigurationKey<float3> COLOR_CHANNELS_MIN = new ModConfigurationKey<float3>("COLOR_CHANNELS_MIN", "Channel Minimums [0 to 1]:", () => new float3(0f, 0.5f, 1f));
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_2_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_4", $"<color={DETAIL_TEXT_COLOR}><i>Maximum and minimum values for the channels of the Selected Color Model</i></color>", () => new dummy());
+		private static ModConfigurationKey<dummy> DUMMY_SEP_2_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_4", $"<color={DETAIL_TEXT_COLOR}><i>Maximum and minimum bounds for the channels of the Selected Color Model</i></color>", () => new dummy());
         [AutoRegisterConfigKey]
         private static ModConfigurationKey<dummy> DUMMY_SEP_2_4_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_4_1", SEP_STRING, () => new dummy());
         [AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_2_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_5", $"<color={DETAIL_TEXT_COLOR}><i>This section produces random colors based on the Selected Node Factor plus the Seed</i></color>", () => new dummy());
+		private static ModConfigurationKey<dummy> DUMMY_SEP_2_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_5", $"<color={DETAIL_TEXT_COLOR}><i>This section produces colors based on the Selected Node Factor plus the Seed</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_3", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
@@ -109,11 +109,11 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_3_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_3_3", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> USE_NODE_ALPHA = new ModConfigurationKey<bool>("USE_NODE_ALPHA", "Override node alpha:", () => false);
+		private static ModConfigurationKey<bool> USE_NODE_ALPHA = new ModConfigurationKey<bool>("USE_NODE_ALPHA", "Override node alpha (Affects the dynamic section):", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float> NODE_ALPHA = new ModConfigurationKey<float>("NODE_ALPHA", "Node alpha [0 to 1]:", () => 0.8f);
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_3_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_3_4", $"<color={DETAIL_TEXT_COLOR}><i>Node alpha affects the dynamic section</i></color>", () => new dummy());
+		//[AutoRegisterConfigKey]
+		//private static ModConfigurationKey<dummy> DUMMY_SEP_3_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_3_4", $"<color={DETAIL_TEXT_COLOR}><i>Node alpha affects the dynamic section</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_4", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
@@ -155,7 +155,7 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> PARTY_MODE = new ModConfigurationKey<bool>("PARTY_MODE", "Party mode:", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<int> PARTY_MODE_THREAD_SLEEP_TIME = new ModConfigurationKey<int>("PARTY_MODE_THREAD_SLEEP_TIME", "Party mode color change interval (milliseconds, min 250, max 25000):", () => 1000, internalAccessOnly: true);
+		private static ModConfigurationKey<int> PARTY_MODE_THREAD_SLEEP_TIME = new ModConfigurationKey<int>("PARTY_MODE_THREAD_SLEEP_TIME", "Party mode color change interval (milliseconds, min 1000, max 25000):", () => 1000, internalAccessOnly: true);
 		//[AutoRegisterConfigKey]
 		//private static ModConfigurationKey<dummy> DUMMY_SEP_5_8 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_8", $"<color={DETAIL_TEXT_COLOR}><i>Party mode may take a few seconds to start</i></color>", () => new dummy(), internalAccessOnly: true);
 		//[AutoRegisterConfigKey]
@@ -280,7 +280,7 @@ namespace ColorMyLogixNodes
 
 			Config.OnThisConfigurationChanged += (config) =>
 			{
-				if (!Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES))
+				if (!Config.GetValue(MOD_ENABLED) || !Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES))
 				{
 					Debug("syncRefTargetMap Size before clear: " + syncRefTargetMap.Count.ToString());
 					foreach (ISyncRef syncRef in syncRefTargetMap.Keys.ToList())
@@ -292,7 +292,7 @@ namespace ColorMyLogixNodes
 					Debug("Cleared syncRefTargetMap. New size: " + syncRefTargetMap.Count.ToString());
 				}
 
-				if (!Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && !Config.GetValue(PARTY_MODE))
+				if (!Config.GetValue(MOD_ENABLED) || (!Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && !Config.GetValue(PARTY_MODE)))
 				{
 					Debug("nodeInfoList Size before clear: " + nodeInfoSet.Count.ToString());
 					NodeInfoListClear();
@@ -488,7 +488,7 @@ namespace ColorMyLogixNodes
 					else
 					{
 						mre.Reset();
-						mre.WaitOne(Math.Min(Math.Max(Config.GetValue(PARTY_MODE_THREAD_SLEEP_TIME), 250), 25000));
+						mre.WaitOne(Math.Min(Math.Max(Config.GetValue(PARTY_MODE_THREAD_SLEEP_TIME), 1000), 25000));
 					}
 				}
 				catch (Exception e)
