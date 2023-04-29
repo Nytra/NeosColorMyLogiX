@@ -117,7 +117,7 @@ namespace ColorMyLogixNodes
 
 				if (syncRef.Target == null)
 				{
-					Debug("Setting error color");
+					Debug("Setting error color!!!");
 					var imageSlot1 = node.ActiveVisual.FindChild((Slot c) => c.Name == "Image");
 					if (imageSlot1 != null)
 					{

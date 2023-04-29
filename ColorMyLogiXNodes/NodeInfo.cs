@@ -3,6 +3,7 @@ using FrooxEngine;
 using NeosModLoader;
 using System.Collections.Generic;
 using BaseX;
+using System.Linq;
 
 namespace ColorMyLogixNodes
 {
@@ -12,7 +13,7 @@ namespace ColorMyLogixNodes
 		{
 			public LogixNode node;
 			public IField<color> bgField;
-			public List<IField<color>> textFields;
+			public HashSet<IField<color>> textFields;
 		}
 
 		private static void NodeInfoSetBgColor(NodeInfo nodeInfo, color c)
@@ -96,7 +97,7 @@ namespace ColorMyLogixNodes
 			}
 			else
 			{
-				Debug("NodeInfo was not in nodeInfoSet (you should not be seeing this).");
+				Debug("NodeInfo was not in nodeInfoSet (this should never happen).");
 			}
 			nodeInfoSet.TrimExcess();
 		}
