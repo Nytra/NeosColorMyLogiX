@@ -3,7 +3,7 @@ using FrooxEngine;
 using NeosModLoader;
 using System.Collections.Generic;
 using BaseX;
-using System.Linq;
+using System;
 
 namespace ColorMyLogixNodes
 {
@@ -99,7 +99,15 @@ namespace ColorMyLogixNodes
 			{
 				Debug("NodeInfo was not in nodeInfoSet (this should never happen).");
 			}
-			nodeInfoSet.TrimExcess();
+
+			try
+			{
+				nodeInfoSet.TrimExcess();
+			}
+			catch (Exception e)
+			{
+				Debug("Error while trying to trim excess node infos. " + e.ToString());
+			}
 		}
 	
 		private static void NodeInfoListClear()

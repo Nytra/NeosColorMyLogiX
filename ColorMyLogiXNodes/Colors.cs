@@ -100,7 +100,14 @@ namespace ColorMyLogixNodes
 			float3 maxs = Config.GetValue(COLOR_CHANNELS_MAX);
 			float3 random_strength = MathX.Abs(maxs - mins);
 			float3 random_offset = mins;
-			return (float)rand.NextDouble() * random_strength[index] + random_offset[index];
+			if (rand != null)
+			{
+				return (float)rand.NextDouble() * random_strength[index] + random_offset[index];
+			}
+			else
+			{
+				return (float)rngTimeSeeded.NextDouble() * random_strength[index] + random_offset[index];
+			}
 		}
 
 		private static float GetColorChannelValue(int index, Random rand, ColorModelEnum model)
@@ -256,7 +263,7 @@ namespace ColorMyLogixNodes
 		private static float GetPerceptualLightness(float luminance)
 		{
 			// 1 = white, 0.5 = middle gray, 0 = black
-			// the power can be tweaked here. ~0.6 to ~0.8
+			// the power can be tweaked here. ~0.5 is best IMO.
 			return (float)Math.Pow(luminance, Config.GetValue(PERCEPTUAL_LIGHTNESS_EXPONENT));
 		}
 
