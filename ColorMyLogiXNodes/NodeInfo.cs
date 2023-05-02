@@ -93,7 +93,7 @@ namespace ColorMyLogixNodes
 			outNodeInfo.textFields = null;
 			if (nodeInfoSet.Remove(nodeInfo))
 			{
-				Debug("NodeInfo was removed from nodeInfoSet. New size of nodeInfoSet: " + nodeInfoSet.Count.ToString());
+				Debug("NodeInfo removed. New size of nodeInfoSet: " + nodeInfoSet.Count.ToString());
 			}
 			else
 			{
@@ -106,7 +106,7 @@ namespace ColorMyLogixNodes
 			}
 			catch (Exception e)
 			{
-				Debug("Error while trying to trim excess node infos. " + e.ToString());
+				Debug("Error while trying to trim excess NodeInfos. " + e.ToString());
 			}
 		}
 	

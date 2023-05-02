@@ -119,13 +119,13 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_4_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_4_1", $"<color={HEADER_TEXT_COLOR}>[TEXT]</color>", () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> ENABLE_TEXT_CONTRAST = new ModConfigurationKey<bool>("ENABLE_TEXT_CONTRAST", "Automatically change the color of text to contrast better with the node background:", () => true);
+		private static ModConfigurationKey<bool> ENABLE_TEXT_CONTRAST = new ModConfigurationKey<bool>("ENABLE_TEXT_CONTRAST", "Automatically change the color of text to improve readability:", () => true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float> PERCEPTUAL_LIGHTNESS_EXPONENT = new ModConfigurationKey<float>("PERCEPTUAL_LIGHTNESS_EXPONENT", "Exponent for perceptual lightness calculation (affects automatic text color, best ~0.5):", () => 0.5f, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_4_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_4_2", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> USE_STATIC_TEXT_COLOR = new ModConfigurationKey<bool>("USE_STATIC_TEXT_COLOR", "Use Static Text Color (Disables automatic text coloring):", () => false);
+		private static ModConfigurationKey<bool> USE_STATIC_TEXT_COLOR = new ModConfigurationKey<bool>("USE_STATIC_TEXT_COLOR", "Use Static Text Color (Overrides automatic text coloring):", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<BaseX.color> STATIC_TEXT_COLOR = new ModConfigurationKey<BaseX.color>("STATIC_TEXT_COLOR", "Static Text Color:", () => new BaseX.color(0f, 0f, 0f, 1f));
 		[AutoRegisterConfigKey]
@@ -133,7 +133,7 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_1", $"<color={HEADER_TEXT_COLOR}>[EXTRA FEATURES]</color>", () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> UPDATE_NODES_ON_CONFIG_CHANGED = new ModConfigurationKey<bool>("UPDATE_NODES_ON_CONFIG_CHANGED", "Automatically update the color of nodes when your mod config changes:", () => true);
+		private static ModConfigurationKey<bool> UPDATE_NODES_ON_CONFIG_CHANGED = new ModConfigurationKey<bool>("UPDATE_NODES_ON_CONFIG_CHANGED", "Automatically update the color of nodes when your mod config changes:", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5_1_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_1_1", $"<color={DETAIL_TEXT_COLOR}><i>Will use some memory and CPU for every node</i></color>", () => new dummy());
 		//[AutoRegisterConfigKey]
@@ -155,15 +155,15 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> PARTY_MODE = new ModConfigurationKey<bool>("PARTY_MODE", "Party mode:", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<int> PARTY_MODE_THREAD_SLEEP_TIME = new ModConfigurationKey<int>("PARTY_MODE_THREAD_SLEEP_TIME", "Party mode color change interval (milliseconds, min 1000, max 30000):", () => 1000, internalAccessOnly: true);
+		private static ModConfigurationKey<int> PARTY_MODE_THREAD_SLEEP_TIME = new ModConfigurationKey<int>("PARTY_MODE_THREAD_SLEEP_TIME", "Party mode color change interval (milliseconds, min 2500, max 30000):", () => 2500, internalAccessOnly: true);
 		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<dummy> DUMMY_SEP_5_8 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_8", $"<color={DETAIL_TEXT_COLOR}><i>Party mode may take a few seconds to start</i></color>", () => new dummy(), internalAccessOnly: true);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<dummy> DUMMY_SEP_5_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_4", $"<color={DETAIL_TEXT_COLOR}><i>Setting an option here to false will clear all memory associated with it</i></color>", () => new dummy());
+		//private static ModConfigurationKey<dummy> DUMMY_SEP_5_8 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_8", $"<color={DETAIL_TEXT_COLOR}><i>Party mode shares memory with the first option</i></color>", () => new dummy(), internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5_7_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_7_1", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_5", $"<color={DETAIL_TEXT_COLOR}><i>Extra features will only apply to newly created nodes</i></color>", () => new dummy());
+		//[AutoRegisterConfigKey]
+		//private static ModConfigurationKey<dummy> DUMMY_SEP_5_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_4", $"<color={DETAIL_TEXT_COLOR}><i>Setting an option here to false will clear its memory</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_6 = new ModConfigurationKey<dummy>("DUMMY_SEP_6", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
@@ -257,12 +257,13 @@ namespace ColorMyLogixNodes
 
 		private static ManualResetEvent mre = new(false);
 
-		private const int THREAD_INNER_SLEEP_TIME_MILLISECONDS = 1;
+		private const int THREAD_INNER_SLEEP_TIME_MILLISECONDS = 0;
 
 		public override void OnEngineInit()
 		{
 			Harmony harmony = new Harmony($"owo.{Author}.{Name}");
 			Config = GetConfiguration()!;
+			Config.Unset(PARTY_MODE);
 			Config.Save(true);
 			harmony.PatchAll();
 
@@ -314,18 +315,22 @@ namespace ColorMyLogixNodes
 						}
 						if (nodeInfo.node != null && !(nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed))
 						{
-							if (nodeInfo.node.ActiveVisual != null && nodeInfo.node.ActiveVisual.ReferenceID.User != nodeInfo.node.LocalUser.AllocationID)
+							if ((nodeInfo.node.ActiveVisual != null && nodeInfo.node.ActiveVisual.ReferenceID.User != nodeInfo.node.LocalUser.AllocationID))
 							{
 								NodeInfoRemove(nodeInfo);
 								continue;
 							}
+
 							if (nodeInfo.node.ActiveVisual == null)
 							{
 								NodeInfoRemove(nodeInfo);
 								continue;
 							}
 
-							if (nodeInfo.node.World != Engine.Current.WorldManager.FocusedWorld) continue;
+							if (nodeInfo.node.World != Engine.Current.WorldManager.FocusedWorld)
+							{
+								continue;
+							}
 
 							if (nodeInfo == null)
 							{
@@ -382,7 +387,6 @@ namespace ColorMyLogixNodes
 						else
 						{
 							NodeInfoRemove(nodeInfo);
-							continue;
 						}
 					}
 				}
@@ -401,7 +405,7 @@ namespace ColorMyLogixNodes
 						{
 							if (syncRef == null || syncRef.IsRemoved || syncRef.Parent == null || syncRef.Parent.IsRemoved)
 							{
-								Debug("Removing syncRef from syncRefTargetMap");
+								Debug("=== Unsubscribing from a node ===");
 								syncRefTargetMap[syncRef] = null;
 								syncRefTargetMap.Remove(syncRef);
 								Debug("New syncRefTargetMap size: " + syncRefTargetMap.Count.ToString());
@@ -422,7 +426,7 @@ namespace ColorMyLogixNodes
 						}
 					}
 
-					Thread.Sleep(250);
+					Thread.Sleep(125);
 				}
 				catch (Exception e)
 				{
@@ -493,7 +497,7 @@ namespace ColorMyLogixNodes
 					else
 					{
 						mre.Reset();
-						mre.WaitOne(Math.Min(Math.Max(Config.GetValue(PARTY_MODE_THREAD_SLEEP_TIME), 1000), 30000));
+						mre.WaitOne(Math.Min(Math.Max(Config.GetValue(PARTY_MODE_THREAD_SLEEP_TIME), 2500), 30000));
 					}
 				}
 				catch (Exception e)
@@ -532,18 +536,18 @@ namespace ColorMyLogixNodes
 							{
 								if (syncRefTargetMap.ContainsKey(syncRef)) return;
 
-								Debug("Subscribing to this node.");
+								Debug("=== Subscribing to a node ===");
 
 								syncRefTargetMap.Add(syncRef, syncRef.Target);
 
 								UpdateRefOrDriverNodeColor(__instance, syncRef);
 
-								Debug("syncRefTargetMap size after add: " + syncRefTargetMap.Count.ToString());
+								Debug("New syncRefTargetMap size: " + syncRefTargetMap.Count.ToString());
 							});
 						}
 						else
 						{
-							Debug("Node already subscribed or skipped. Updating node color.");
+							Debug("Node already subscribed. Updating color...");
 							UpdateRefOrDriverNodeColor(__instance, syncRef);
 						}
 					}
@@ -604,7 +608,11 @@ namespace ColorMyLogixNodes
 										{
 											if (img != backgroundImage)
 											{
-												TrySetImageTint(img, img.Tint.Value.SetA(1f));
+												// nullable types are supposed to have 0.4 alpha
+												if (img.Tint.Value.a != 0.4)
+												{
+													TrySetImageTint(img, img.Tint.Value.SetA(1f));
+												}
 											}
 										}
 									}
@@ -633,7 +641,7 @@ namespace ColorMyLogixNodes
 									if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) || Config.GetValue(PARTY_MODE))
 									{
 										nodeInfoSet.Add(nodeInfo);
-										Debug("Node was added to nodeInfoSet. New size of nodeInfoSet: " + nodeInfoSet.Count.ToString());
+										Debug("NodeInfo added. New size of nodeInfoSet: " + nodeInfoSet.Count.ToString());
 									}
 								}
 							}
