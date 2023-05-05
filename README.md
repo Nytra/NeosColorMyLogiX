@@ -12,7 +12,7 @@ Also works with [LogixVisualCustomizer](https://github.com/Banane9/NeosLogixVisu
 1. Start the game. If you want to verify that the mod is working you can check your Neos logs.
 
 ## What does this actually do?
-It sets the Tint color on the Image component for LogiX nodes that have been newly created or newly unpacked by you. The color will go back to the default if the node gets unpacked by someone else who is not using this mod. No slots or components are created by the mod. The way that the nodes get colored can be configured via [NeosModSettings](https://github.com/badhaloninja/NeosModSettings).
+It writes the color for LogiX nodes that have been newly created or newly unpacked by you. The color will go back to default if the node gets unpacked by someone else who is not using this mod. Other people's LogiX will not be affected. No slots or components are created by the mod. The way that the nodes get colored can be configured via [NeosModSettings](https://github.com/badhaloninja/NeosModSettings).
 
 The colors are not local. Everybody can see them.
 
@@ -26,13 +26,13 @@ There are a lot of options here to give you a lot of control over the types of c
 
 The static node color can be used if you just want a single color to be used for all nodes. There is also an option here to use a random range around this color to allow for some variation.
 
-You can select which Node Factor is used to seed the randomness in the dynamic section. It is generally best to go with Node Category for this one. The others will introduce more or less variations. Using FullTypeName for example will cause the color of the node to change when it gets overloaded to another type. Choosing RefID will make every node you create have a different color (random mode). TopmostNodeCategory is like NodeCategory, except it ignores nested categories and only cares about the first one. NodeName uses the slot name of the node.
+You can select which Node Factor is used to seed the randomness in the dynamic section. It is generally best to go with Node Category for this one. The others will introduce more or less variation. Using FullTypeName for example will cause the color of the node to change when it gets overloaded to another type. Choosing RefID will make every node you create have a different color (essentially random mode). TopmostNodeCategory is like NodeCategory, except it ignores nested categories and only cares about the first one. NodeName uses the name of the node.
 
 The Seed option in the dynamic section can be used to get a completely different set of colors being generated. It works in addition to the Selected Node Factor. It can be any positive or negative integer.
 
-The Random Max and Random Min options will set the bounds for randomness in the channels of the Selected Color Model. For example, if your Selected Color Model is HSV, the options will control randomness for Hue, Saturation and Value respectively. If you set the max and min for Saturation to zero, you will get grayscale nodes, and the Value channel will control how light or dark they are.
+The Random Max and Random Min options will set the bounds for channels of the Selected Color Model. For example, if your Selected Color Model is HSV, the options will control Hue, Saturation and Value respectively. If you set the max and min for Saturation to zero, you will get grayscale nodes, and the Value channel will control how light or dark they are.
 
-For text, the option for automatic text coloring will make the text color either black or white depending on the perceptual lightness of the node's background color. You can also use a static text color that doesn't change if you want.
+For text, the option for automatic text coloring will make the text color either black or white depending on which would be more readable. You can also use a static text color that doesn't change if you want.
 
 You can use the output RGB multiplier to suppress or amplify the color channels of red, green or blue. If you don't want any red in your nodes, set the multiplier for red to zero. Or amplify it, if you like.
 
