@@ -75,8 +75,16 @@ namespace ColorMyLogixNodes
 					switch (Config.GetValue(STATIC_RANGE_MODE))
 					{
 						case StaticRangeModeEnum.NodeFactor:
-							coinflip = rand.Next(2) == 0 ? -1 : 1;
-							val += (float)rand.NextDouble() * range * (float)coinflip / 2f;
+							if (rand != null)
+							{
+								coinflip = rand.Next(2) == 0 ? -1 : 1;
+								val += (float)rand.NextDouble() * range * (float)coinflip / 2f;
+							}
+							else
+							{
+								coinflip = rngTimeSeeded.Next(2) == 0 ? -1 : 1;
+								val += (float)rngTimeSeeded.NextDouble() * range * (float)coinflip / 2f;
+							}
 							break;
 						case StaticRangeModeEnum.SystemTime:
 							coinflip = rngTimeSeeded.Next(2) == 0 ? -1 : 1;
@@ -331,52 +339,54 @@ namespace ColorMyLogixNodes
 			}
 			else
 			{
-				string nodeCategoryString;
-				switch (Config.GetValue(NODE_COLOR_MODE))
+				if (!Config.GetValue(PARTY_MODE))
 				{
-					case NodeColorModeEnum.NodeName:
-						rng = new System.Random(LogixHelper.GetNodeName(node.GetType()).GetHashCode() + Config.GetValue(RANDOM_SEED));
-						break;
-					case NodeColorModeEnum.NodeCategory:
-						nodeCategoryString = GetNodeCategoryString(node.GetType());
-						rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
-						break;
-					case NodeColorModeEnum.TopmostNodeCategory:
-						nodeCategoryString = GetNodeCategoryString(node.GetType(), onlyTopmost: true);
-						rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
-						break;
-					case NodeColorModeEnum.FullTypeName:
-						rng = new System.Random(node.GetType().FullName.GetHashCode() + Config.GetValue(RANDOM_SEED));
-						break;
-					case NodeColorModeEnum.RefID:
-						rng = new System.Random(node.Slot.ReferenceID.GetHashCode() + Config.GetValue(RANDOM_SEED));
-						//Msg($"RefID Position: {root.Parent.ReferenceID.Position.ToString()}");
-						break;
-					default:
-						break;
-				}
-
-				if (Config.GetValue(ENABLE_NON_RANDOM_REFID))
-				{
-					int refidModDivisor = Config.GetValue(REFID_MOD_DIVISOR);
-
-					// force it to 1 to avoid dividing by 0
-					ulong divisor = (refidModDivisor > 1) ? (ulong)refidModDivisor : 1;
-
-					if (Config.GetValue(USE_SYSTEM_TIME_RNG))
+					string nodeCategoryString;
+					switch (Config.GetValue(NODE_COLOR_MODE))
 					{
-						colorToSet = GetColorFromUlong(node.Slot.ReferenceID.Position, divisor, rngTimeSeeded);
-					}
-					else
-					{
-						colorToSet = GetColorFromUlong(node.Slot.ReferenceID.Position, divisor, rng);
+						case NodeColorModeEnum.NodeName:
+							rng = new System.Random(LogixHelper.GetNodeName(node.GetType()).GetHashCode() + Config.GetValue(RANDOM_SEED));
+							break;
+						case NodeColorModeEnum.NodeCategory:
+							nodeCategoryString = GetNodeCategoryString(node.GetType());
+							rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
+							break;
+						case NodeColorModeEnum.TopmostNodeCategory:
+							nodeCategoryString = GetNodeCategoryString(node.GetType(), onlyTopmost: true);
+							rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
+							break;
+						case NodeColorModeEnum.FullTypeName:
+							rng = new System.Random(node.GetType().FullName.GetHashCode() + Config.GetValue(RANDOM_SEED));
+							break;
+						case NodeColorModeEnum.RefID:
+							rng = new System.Random(node.Slot.ReferenceID.GetHashCode() + Config.GetValue(RANDOM_SEED));
+							//Msg($"RefID Position: {root.Parent.ReferenceID.Position.ToString()}");
+							break;
+						default:
+							break;
 					}
 
-					// set rng to null so that the color doesn't get messed with
-					rng = null;
-				}
+					if (Config.GetValue(ENABLE_NON_RANDOM_REFID))
+					{
+						int refidModDivisor = Config.GetValue(REFID_MOD_DIVISOR);
 
-				if (Config.GetValue(PARTY_MODE))
+						// force it to 1 to avoid dividing by 0
+						ulong divisor = (refidModDivisor > 1) ? (ulong)refidModDivisor : 1;
+
+						if (Config.GetValue(USE_SYSTEM_TIME_RNG))
+						{
+							colorToSet = GetColorFromUlong(node.Slot.ReferenceID.Position, divisor, rngTimeSeeded);
+						}
+						else
+						{
+							colorToSet = GetColorFromUlong(node.Slot.ReferenceID.Position, divisor, rng);
+						}
+
+						// set rng to null so that the color doesn't get messed with
+						rng = null;
+					}
+				}
+				else
 				{
 					rng = rngTimeSeeded;
 				}

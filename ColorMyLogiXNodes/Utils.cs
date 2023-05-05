@@ -19,7 +19,7 @@ namespace ColorMyLogixNodes
 			}
 			catch (Exception e)
 			{
-				Error($"Error occurred while trying to set Slot Tag.\nError message: {e.Message}");
+				Error($"Error occurred while trying to set Slot Tag.\nError: {e.ToString()}");
 			}
 		}
 
@@ -35,7 +35,7 @@ namespace ColorMyLogixNodes
 			}
 			catch (Exception e)
 			{
-				Error($"Error occurred while trying to set Image Tint Value.\nError message: {e.Message}");
+				Error($"Error occurred while trying to set Image Tint Value.\nError: {e.ToString()}");
 			}
 		}
 
@@ -51,7 +51,7 @@ namespace ColorMyLogixNodes
 			}
 			catch (Exception e)
 			{
-				Error($"Error occurred while trying to set Text Color Value.\nError message: {e.Message}");
+				Error($"Error occurred while trying to set Text Color Value.\nError: {e.ToString()}");
 			}
 		}
 

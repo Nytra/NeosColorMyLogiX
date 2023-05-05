@@ -27,7 +27,7 @@ namespace ColorMyLogixNodes
 				}
 				else
 				{
-					outNodeInfo.bgField.Value = c;
+					if (outNodeInfo.bgField.Value != c) outNodeInfo.bgField.Value = c;
 				}
 			}
 			else
@@ -50,7 +50,7 @@ namespace ColorMyLogixNodes
 					}
 					else
 					{
-						field.Value = c;
+						if (field.Value != c) field.Value = c;
 					}
 				}
 
@@ -81,6 +81,12 @@ namespace ColorMyLogixNodes
 
 		private static void NodeInfoRemove(NodeInfo nodeInfo)
 		{
+			if (nodeInfo == null)
+			{
+				Debug("Tried to remove null from nodeInfoSet");
+				TryTrimExcess();
+				return;
+			}
 			if (!nodeInfoSet.Contains(nodeInfo))
 			{
 				Debug("NodeInfo was not in nodeInfoSet.");
@@ -100,6 +106,12 @@ namespace ColorMyLogixNodes
 				Debug("NodeInfo was not in nodeInfoSet (this should never happen).");
 			}
 
+			TryTrimExcess();
+
+		}
+
+		private static void TryTrimExcess()
+		{
 			try
 			{
 				nodeInfoSet.TrimExcess();
@@ -119,7 +131,7 @@ namespace ColorMyLogixNodes
 				nodeInfo.textFields = null;
 			}
 			nodeInfoSet.Clear();
-			nodeInfoSet.TrimExcess();
+			TryTrimExcess();
 		}
 	}
 }

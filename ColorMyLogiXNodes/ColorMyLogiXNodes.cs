@@ -59,7 +59,7 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float3> RANDOM_RANGES_AROUND_STATIC_VALUES = new ModConfigurationKey<float3>("RANDOM_RANGES_AROUND_STATIC_VALUES", "Random Ranges around Static Node Color [0 to 1]:", () => new float3(0.1f, 0.1f, 0.1f));
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<StaticRangeModeEnum> STATIC_RANGE_MODE = new ModConfigurationKey<StaticRangeModeEnum>("STATIC_RANGE_MODE", "Seed for Random Ranges around Static Node Color:", () => StaticRangeModeEnum.SystemTime, internalAccessOnly: true);
+		private static ModConfigurationKey<StaticRangeModeEnum> STATIC_RANGE_MODE = new ModConfigurationKey<StaticRangeModeEnum>("STATIC_RANGE_MODE", "Seed for Random Ranges:", () => StaticRangeModeEnum.SystemTime, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_1_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_1_3", $"<color={DETAIL_TEXT_COLOR}><i>These ranges are for the channels of the Selected Color Model</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
@@ -133,9 +133,9 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_1", $"<color={HEADER_TEXT_COLOR}>[EXTRA FEATURES]</color>", () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> UPDATE_NODES_ON_CONFIG_CHANGED = new ModConfigurationKey<bool>("UPDATE_NODES_ON_CONFIG_CHANGED", "Automatically update the color of nodes when your mod config changes:", () => false);
+		private static ModConfigurationKey<bool> UPDATE_NODES_ON_CONFIG_CHANGED = new ModConfigurationKey<bool>("UPDATE_NODES_ON_CONFIG_CHANGED", "Automatically update the color of standard nodes when your mod config changes:", () => false);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_5_1_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_1_1", $"<color={DETAIL_TEXT_COLOR}><i>Will use some memory and CPU for every node</i></color>", () => new dummy());
+		private static ModConfigurationKey<dummy> DUMMY_SEP_5_1_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_1_1", $"<color={DETAIL_TEXT_COLOR}><i>Uses some extra memory and CPU for every standard node</i></color>", () => new dummy());
 		//[AutoRegisterConfigKey]
 		//private static ModConfigurationKey<int> STANDARD_THREAD_SLEEP_TIME = new ModConfigurationKey<int>("STANDARD_THREAD_SLEEP_TIME", "Standard node thread sleep time (milliseconds):", () => 10000, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
@@ -143,7 +143,7 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> AUTO_UPDATE_REF_AND_DRIVER_NODES = new ModConfigurationKey<bool>("AUTO_UPDATE_REF_AND_DRIVER_NODES", "Automatically update the color of reference and driver nodes when their targets change:", () => true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_5_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_3", $"<color={DETAIL_TEXT_COLOR}><i>Not as demanding as the other option, but still uses some memory and CPU</i></color>", () => new dummy());
+		private static ModConfigurationKey<dummy> DUMMY_SEP_5_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_3", $"<color={DETAIL_TEXT_COLOR}><i>Uses some extra memory and CPU for every reference and driver node</i></color>", () => new dummy());
 		//[AutoRegisterConfigKey]
 		//private static ModConfigurationKey<int> REF_DRIVER_THREAD_SLEEP_TIME = new ModConfigurationKey<int>("REF_DRIVER_THREAD_SLEEP_TIME", "Ref driver node thread sleep time (milliseconds):", () => 1500, internalAccessOnly: true);
 		//[AutoRegisterConfigKey]
@@ -153,9 +153,9 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5_7 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_7", SEP_STRING, () => new dummy(), internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> PARTY_MODE = new ModConfigurationKey<bool>("PARTY_MODE", "Party mode:", () => false, internalAccessOnly: true);
+		private static ModConfigurationKey<bool> PARTY_MODE = new ModConfigurationKey<bool>("PARTY_MODE", "Auto random color change mode:", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<int> PARTY_MODE_THREAD_SLEEP_TIME = new ModConfigurationKey<int>("PARTY_MODE_THREAD_SLEEP_TIME", "Party mode color change interval (milliseconds, min 2500, max 30000):", () => 2500, internalAccessOnly: true);
+		private static ModConfigurationKey<int> PARTY_MODE_THREAD_SLEEP_TIME = new ModConfigurationKey<int>("PARTY_MODE_THREAD_SLEEP_TIME", "Auto random color change interval (milliseconds, min 2500, max 30000):", () => 2500, internalAccessOnly: true);
 		//[AutoRegisterConfigKey]
 		//private static ModConfigurationKey<dummy> DUMMY_SEP_5_8 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_8", $"<color={DETAIL_TEXT_COLOR}><i>Party mode shares memory with the first option</i></color>", () => new dummy(), internalAccessOnly: true);
 		[AutoRegisterConfigKey]
@@ -259,6 +259,10 @@ namespace ColorMyLogixNodes
 
 		private const int THREAD_INNER_SLEEP_TIME_MILLISECONDS = 0;
 
+		private const int ANTI_PHOTOSENSITIVITY_INTERVAL_MILLISECONDS = 200;
+
+		private static long lastColorChangeTime = DateTime.UtcNow.Ticks;
+
 		public override void OnEngineInit()
 		{
 			Harmony harmony = new Harmony($"owo.{Author}.{Name}");
@@ -277,9 +281,9 @@ namespace ColorMyLogixNodes
 			Thread thread2 = new(new ThreadStart(StandardNodeThread));
 			thread2.Start();
 
-			Config.OnThisConfigurationChanged += (config) =>
+			Config.OnThisConfigurationChanged += (configChangedEvent) =>
 			{
-				if (!Config.GetValue(MOD_ENABLED) || !Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES))
+				if ((configChangedEvent.Key == MOD_ENABLED &&  !Config.GetValue(MOD_ENABLED)) || (configChangedEvent.Key == AUTO_UPDATE_REF_AND_DRIVER_NODES && !Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES)))
 				{
 					Debug("syncRefTargetMap Size before clear: " + syncRefTargetMap.Count.ToString());
 					foreach (ISyncRef syncRef in syncRefTargetMap.Keys.ToList())
@@ -291,19 +295,40 @@ namespace ColorMyLogixNodes
 					Debug("Cleared syncRefTargetMap. New size: " + syncRefTargetMap.Count.ToString());
 				}
 
-				if (!Config.GetValue(MOD_ENABLED) || (!Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && !Config.GetValue(PARTY_MODE)))
+				if ((configChangedEvent.Key == MOD_ENABLED && !Config.GetValue(MOD_ENABLED)) || ((configChangedEvent.Key == UPDATE_NODES_ON_CONFIG_CHANGED  || configChangedEvent.Key == PARTY_MODE && (!Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED)) && !Config.GetValue(PARTY_MODE))))
 				{
 					Debug("nodeInfoList Size before clear: " + nodeInfoSet.Count.ToString());
 					NodeInfoListClear();
 					Debug("Cleared nodeInfoList. New size: " + nodeInfoSet.Count.ToString());
+					//nodeInfoResetFlag = true;
 				}
 
-				if (Config.GetValue(PARTY_MODE))
+				if (configChangedEvent.Key == PARTY_MODE && Config.GetValue(PARTY_MODE))
 				{
 					mre.Set();
+					Debug("Setting MRE");
 				}
 
-				if (Config.GetValue(MOD_ENABLED) && Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED)) {
+				// don't run this code if party mode is enabled
+				if (Config.GetValue(MOD_ENABLED) && Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && !Config.GetValue(PARTY_MODE)) {
+
+					// anti-photosensitivity check
+					if ((Config.GetValue(USE_STATIC_COLOR) && Config.GetValue(USE_STATIC_RANGES) && Config.GetValue(STATIC_RANGE_MODE) == StaticRangeModeEnum.SystemTime))
+					{
+						// color can change exactly 5 times per second when this config is used. it strobes very quickly without this check.
+						if (DateTime.UtcNow.Ticks - lastColorChangeTime < 10000 * ANTI_PHOTOSENSITIVITY_INTERVAL_MILLISECONDS)
+						{
+							return;
+						}
+						else
+						{
+							lastColorChangeTime = DateTime.UtcNow.Ticks;
+						}
+					}
+					else
+					{
+						lastColorChangeTime = 10000 * ANTI_PHOTOSENSITIVITY_INTERVAL_MILLISECONDS;
+					}
 
 					foreach (NodeInfo nodeInfo in nodeInfoSet.ToList())
 					{
@@ -313,6 +338,7 @@ namespace ColorMyLogixNodes
 							NodeInfoRemove(nodeInfo);
 							continue;
 						}
+
 						if (nodeInfo.node != null && !(nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed))
 						{
 							if ((nodeInfo.node.ActiveVisual != null && nodeInfo.node.ActiveVisual.ReferenceID.User != nodeInfo.node.LocalUser.AllocationID))
@@ -430,7 +456,7 @@ namespace ColorMyLogixNodes
 				}
 				catch (Exception e)
 				{
-					Debug("Ref driver node thread error! " + e.Message);
+					Debug("Ref driver node thread error!\n" + e.ToString());
 					Debug("Continuing thread...");
 					continue;
 				}
@@ -483,10 +509,8 @@ namespace ColorMyLogixNodes
 									}
 								});
 							}
-							else
-							{
-								Thread.Sleep(THREAD_INNER_SLEEP_TIME_MILLISECONDS);
-							}
+
+							Thread.Sleep(THREAD_INNER_SLEEP_TIME_MILLISECONDS);
 						}
 					}
 					if (!Config.GetValue(PARTY_MODE))
@@ -502,7 +526,7 @@ namespace ColorMyLogixNodes
 				}
 				catch (Exception e)
 				{
-					Debug("Standard node thread error! " + e.Message);
+					Debug("Standard node thread error!\n" + e.ToString());
 					Debug("Continuing thread...");
 					continue;
 				}
@@ -573,6 +597,9 @@ namespace ColorMyLogixNodes
 					{
 						__instance.RunInUpdates(3, () =>
 						{
+
+							if (__instance == null) return;
+
 							NodeInfo nodeInfo = null;
 
 							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) || Config.GetValue(PARTY_MODE))
@@ -630,7 +657,14 @@ namespace ColorMyLogixNodes
 
 												if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) || Config.GetValue(PARTY_MODE))
 												{
-													nodeInfo.textFields.Add(text.TryGetField<color>("Color"));
+													if (nodeInfo != null && nodeInfo.textFields != null)
+													{
+														nodeInfo.textFields.Add(text.TryGetField<color>("Color"));
+													}
+													else
+													{
+														NodeInfoRemove(nodeInfo);
+													}
 												}
 											}
 										});
