@@ -300,7 +300,6 @@ namespace ColorMyLogixNodes
 					Debug("nodeInfoList Size before clear: " + nodeInfoSet.Count.ToString());
 					NodeInfoListClear();
 					Debug("Cleared nodeInfoList. New size: " + nodeInfoSet.Count.ToString());
-					//nodeInfoResetFlag = true;
 				}
 
 				if (configChangedEvent.Key == PARTY_MODE && Config.GetValue(PARTY_MODE))
@@ -309,7 +308,7 @@ namespace ColorMyLogixNodes
 					Debug("Setting MRE");
 				}
 
-				// don't run this code if party mode is enabled
+				// don't do anything in here if party mode is enabled
 				if (Config.GetValue(MOD_ENABLED) && Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && !Config.GetValue(PARTY_MODE)) {
 
 					// anti-photosensitivity check
@@ -498,7 +497,7 @@ namespace ColorMyLogixNodes
 										NodeInfoRemove(nodeInfo);
 										return;
 									}
-									// if it didn't already get removed
+									// if it didn't already get removed in another thread uwu
 									if (nodeInfoSet.Contains(nodeInfo))
 									{
 										NodeInfoSetBgColor(nodeInfo, c);
