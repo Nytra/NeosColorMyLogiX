@@ -27,7 +27,7 @@ namespace ColorMyLogixNodes
 		const string SEP_STRING = "<size=0></size>";
 		const string DETAIL_TEXT_COLOR = "gray";
 		const string HEADER_TEXT_COLOR = "green";
-		
+
 		public static ModConfiguration Config;
 
 		[AutoRegisterConfigKey]
@@ -283,7 +283,7 @@ namespace ColorMyLogixNodes
 
 			Config.OnThisConfigurationChanged += (configChangedEvent) =>
 			{
-				if ((configChangedEvent.Key == MOD_ENABLED &&  !Config.GetValue(MOD_ENABLED)) || (configChangedEvent.Key == AUTO_UPDATE_REF_AND_DRIVER_NODES && !Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES)))
+				if ((configChangedEvent.Key == MOD_ENABLED && !Config.GetValue(MOD_ENABLED)) || (configChangedEvent.Key == AUTO_UPDATE_REF_AND_DRIVER_NODES && !Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES)))
 				{
 					Debug("syncRefTargetMap Size before clear: " + syncRefTargetMap.Count.ToString());
 					foreach (ISyncRef syncRef in syncRefTargetMap.Keys.ToList())
@@ -295,7 +295,7 @@ namespace ColorMyLogixNodes
 					Debug("Cleared syncRefTargetMap. New size: " + syncRefTargetMap.Count.ToString());
 				}
 
-				if ((configChangedEvent.Key == MOD_ENABLED && !Config.GetValue(MOD_ENABLED)) || ((configChangedEvent.Key == UPDATE_NODES_ON_CONFIG_CHANGED  || configChangedEvent.Key == PARTY_MODE && (!Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED)) && !Config.GetValue(PARTY_MODE))))
+				if ((configChangedEvent.Key == MOD_ENABLED && !Config.GetValue(MOD_ENABLED)) || ((configChangedEvent.Key == UPDATE_NODES_ON_CONFIG_CHANGED || configChangedEvent.Key == PARTY_MODE && (!Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED)) && !Config.GetValue(PARTY_MODE))))
 				{
 					Debug("nodeInfoList Size before clear: " + nodeInfoSet.Count.ToString());
 					NodeInfoListClear();
@@ -309,7 +309,8 @@ namespace ColorMyLogixNodes
 				}
 
 				// don't do anything in here if party mode is enabled
-				if (Config.GetValue(MOD_ENABLED) && Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && !Config.GetValue(PARTY_MODE)) {
+				if (Config.GetValue(MOD_ENABLED) && Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && !Config.GetValue(PARTY_MODE))
+				{
 
 					// anti-photosensitivity check
 					if ((Config.GetValue(USE_STATIC_COLOR) && Config.GetValue(USE_STATIC_RANGES) && Config.GetValue(STATIC_RANGE_MODE) == StaticRangeModeEnum.SystemTime))
@@ -478,7 +479,7 @@ namespace ColorMyLogixNodes
 							(nodeInfo.node.Slot == null) ||
 							(nodeInfo.node.Slot.IsDestroyed || nodeInfo.node.Slot.IsRemoved || nodeInfo.node.Slot.IsDisposed) ||
 							(nodeInfo.node.World == null) ||
-							(nodeInfo.node.World.IsDestroyed || nodeInfo.node.World.IsDisposed)) 
+							(nodeInfo.node.World.IsDestroyed || nodeInfo.node.World.IsDisposed))
 							{
 								NodeInfoRemove(nodeInfo);
 								Thread.Sleep(THREAD_INNER_SLEEP_TIME_MILLISECONDS);
@@ -634,10 +635,14 @@ namespace ColorMyLogixNodes
 										{
 											if (img != backgroundImage)
 											{
-												// nullable types are supposed to have 0.4 alpha
-												if (img.Tint.Value.a != 0.4)
+												// nullable types are supposed to have 50% alpha (usually 0.4)
+												if (img.Tint.Value.a == 0.8f)
 												{
 													TrySetImageTint(img, img.Tint.Value.SetA(1f));
+												}
+												else if (img.Tint.Value.a == 0.4f)
+												{
+													TrySetImageTint(img, img.Tint.Value.SetA(0.5f));
 												}
 											}
 										}
