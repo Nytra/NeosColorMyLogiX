@@ -118,7 +118,7 @@ namespace ColorMyLogixNodes
 			}
 			catch (Exception e)
 			{
-				Debug("Error while trying to trim excess NodeInfos. " + e.ToString());
+				Error("Error while trying to trim excess NodeInfo's. " + e.ToString());
 			}
 		}
 	

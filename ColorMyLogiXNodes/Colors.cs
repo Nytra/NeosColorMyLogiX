@@ -339,7 +339,7 @@ namespace ColorMyLogixNodes
 			}
 			else
 			{
-				if (!Config.GetValue(PARTY_MODE))
+				if (!Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
 				{
 					string nodeCategoryString;
 					switch (Config.GetValue(NODE_COLOR_MODE))
