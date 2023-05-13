@@ -46,7 +46,7 @@ namespace ColorMyLogixNodes
 						}
 					}
 
-					Thread.Sleep(125);
+					Thread.Sleep(250);
 				}
 				catch (Exception e)
 				{

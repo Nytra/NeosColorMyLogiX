@@ -325,7 +325,7 @@ namespace ColorMyLogixNodes
 					Debug("Setting manualResetEvent");
 				}
 
-				// don't do anything in here if party mode is enabled
+				// don't do anything in here if USE_AUTO_RANDOM_COLOR_CHANGE is enabled
 				if (Config.GetValue(MOD_ENABLED) && Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && !Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
 				{
 
