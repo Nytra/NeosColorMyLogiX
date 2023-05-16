@@ -7,102 +7,66 @@ namespace ColorMyLogixNodes
 {
 	public partial class ColorMyLogixNodes : NeosMod
 	{
-		private static float GetStaticColorChannelValue(int index, ColorModelEnum model, Random rand)
-		{
-			float val = 0;
-			int coinflip;
-			switch (model)
-			{
-				case ColorModelEnum.HSV:
-					ColorHSV colorHSV = new ColorHSV(Config.GetValue(NODE_COLOR));
-					switch (index)
-					{
-						case 0:
-							val = colorHSV.h;
-							break;
-						case 1:
-							val = colorHSV.s;
-							break;
-						case 2:
-							val = colorHSV.v;
-							break;
-						default:
-							break;
-					}
-					break;
-				case ColorModelEnum.HSL:
-					ColorHSL colorHSL = new ColorHSL(Config.GetValue(NODE_COLOR));
-					switch (index)
-					{
-						case 0:
-							val = colorHSL.h;
-							break;
-						case 1:
-							val = colorHSL.s;
-							break;
-						case 2:
-							val = colorHSL.l;
-							break;
-						default:
-							break;
-					}
-					break;
-				case ColorModelEnum.RGB:
-					color colorRGB = new color(Config.GetValue(NODE_COLOR));
-					switch (index)
-					{
-						case 0:
-							val = colorRGB.r;
-							break;
-						case 1:
-							val = colorRGB.g;
-							break;
-						case 2:
-							val = colorRGB.b;
-							break;
-						default:
-							break;
-					}
-					break;
-				default:
-					break;
-			}
-			if (Config.GetValue(USE_STATIC_RANGES))
-			{
-				float range = Config.GetValue(RANDOM_RANGES_AROUND_STATIC_VALUES)[index];
-				if (range >= 0)
-				{
-					switch (Config.GetValue(STATIC_RANGE_MODE))
-					{
-						case StaticRangeModeEnum.NodeFactor:
-							if (rand != null)
-							{
-								coinflip = rand.Next(2) == 0 ? -1 : 1;
-								val += (float)rand.NextDouble() * range * (float)coinflip / 2f;
-							}
-							else
-							{
-								coinflip = rngTimeSeeded.Next(2) == 0 ? -1 : 1;
-								val += (float)rngTimeSeeded.NextDouble() * range * (float)coinflip / 2f;
-							}
-							break;
-						case StaticRangeModeEnum.SystemTime:
-							coinflip = rngTimeSeeded.Next(2) == 0 ? -1 : 1;
-							val += (float)rngTimeSeeded.NextDouble() * range * (float)coinflip / 2f;
-							break;
-						default:
-							break;
-					}
-				}
-				else
-				{
-					val = GetRandomColorChannelValue(index, rand);
-				}
-			}
-			return val;
-		}
+        private static float GetStaticColorChannelValue(int index, ColorModelEnum model, Random rand)
+        {
+            float val = GetColorChannelValueFromModel(index, model);
 
-		private static float GetRandomColorChannelValue(int index, Random rand)
+            if (Config.GetValue(USE_STATIC_RANGES))
+            {
+                float range = Config.GetValue(RANDOM_RANGES_AROUND_STATIC_VALUES)[index];
+                if (range >= 0)
+                {
+                    val = ApplyRangeToValue(val, range, rand);
+                }
+                else
+                {
+                    val = GetRandomColorChannelValue(index, rand);
+                }
+            }
+
+            return val;
+        }
+        private static float GetColorChannelValueFromModel(int index, ColorModelEnum model)
+        {
+            float val = 0;
+            switch (model)
+            {
+                case ColorModelEnum.HSV:
+                    ColorHSV colorHSV = new ColorHSV(Config.GetValue(NODE_COLOR));
+                    val = GetColorChannelValue(colorHSV.h, colorHSV.s, colorHSV.v, index);
+                    break;
+                case ColorModelEnum.HSL:
+                    ColorHSL colorHSL = new ColorHSL(Config.GetValue(NODE_COLOR));
+                    val = GetColorChannelValue(colorHSL.h, colorHSL.s, colorHSL.l, index);
+                    break;
+                case ColorModelEnum.RGB:
+                    color colorRGB = new color(Config.GetValue(NODE_COLOR));
+                    val = GetColorChannelValue(colorRGB.r, colorRGB.g, colorRGB.b, index);
+                    break;
+            }
+            return val;
+        }
+        private static float GetColorChannelValue(float channel1, float channel2, float channel3, int index)
+        {
+            return index switch
+            {
+                0 => channel1,
+                1 => channel2,
+                2 => channel3,
+                _ => 0,
+            };
+        }
+        private static float ApplyRangeToValue(float val, float range, Random rand)
+        {
+            int coinflip;
+            Random randomToUse = rand ?? rngTimeSeeded;
+            coinflip = randomToUse.Next(2) == 0 ? -1 : 1;
+            val += (float)randomToUse.NextDouble() * range * (float)coinflip / 2f;
+
+            return val;
+        }
+
+        private static float GetRandomColorChannelValue(int index, Random rand)
 		{
 			float3 mins = Config.GetValue(COLOR_CHANNELS_MIN);
 			float3 maxs = Config.GetValue(COLOR_CHANNELS_MAX);
@@ -132,132 +96,86 @@ namespace ColorMyLogixNodes
 			return val;
 		}
 
-		private static BaseX.color GetColorFromUlong(ulong val, ulong divisor, Random rand)
-		{
-			float hue = 0f;
-			float sat = 0f;
-			float val_lightness = 0f;
-			float alpha = 0.8f;
-			if (Config.GetValue(USE_NODE_ALPHA))
-			{
-				alpha = Config.GetValue(NODE_ALPHA);
-			}
+        private static BaseX.color GetColorFromUlong(ulong val, ulong divisor, Random rand)
+        {
+            float strength = (val % divisor) / (float)divisor;
+            float hue, sat, val_lightness, alpha;
 
-			//float shift = 0f;
-			float strength = (val % divisor) / (float)divisor;
+            if (Config.GetValue(USE_NODE_ALPHA))
+            {
+                alpha = Config.GetValue(NODE_ALPHA);
+            }
+            else
+            {
+                alpha = 0.8f;
+            }
 
-			if (Config.GetValue(COLOR_MODEL) == ColorModelEnum.RGB)
-			{
-				hue = GetColorChannelValue(0, rand, Config.GetValue(COLOR_MODEL));
-			}
-			else
-			{
-				hue = strength;
-			}
+            if (Config.GetValue(COLOR_MODEL) == ColorModelEnum.RGB)
+            {
+                hue = GetColorChannelValue(0, rand, Config.GetValue(COLOR_MODEL));
+            }
+            else
+            {
+                hue = strength;
+            }
 
-			//switch (Config.GetValue(NON_RANDOM_REFID_WAVEFORM))
-			//{
-			//	case ChannelShiftWaveformEnum.Sawtooth:
-			//		shift = strength;
-			//		break;
-			//	case ChannelShiftWaveformEnum.Sine:
-			//		shift = MathX.Sin(strength * 2f * (float)Math.PI);
-			//		break;
-			//	default:
-			//		break;
-			//}
+            sat = GetColorChannelValue(1, rand, Config.GetValue(COLOR_MODEL));
+            val_lightness = GetColorChannelValue(2, rand, Config.GetValue(COLOR_MODEL));
 
-			//int3 shiftChannels = Config.GetValue(NON_RANDOM_REFID_CHANNELS);
-			//float3 shiftOffsets = Config.GetValue(NON_RANDOM_REFID_OFFSETS);
+            if (Config.GetValue(USE_STATIC_COLOR))
+            {
+                alpha = Config.GetValue(NODE_COLOR).a;
+            }
 
-			//if (shiftChannels[0] != 0)
-			//{
-			//	hue = shift + shiftOffsets[0];
-			//}
-			//else
-			//{
-			//	// maybe it should use RNG from the dynamic section here?
-			//	hue = GetColorChannelValue(0, ref rngTimeSeeded, Config.GetValue(COLOR_MODEL));
-			//}
-			//if (shiftChannels[1] != 0)
-			//{
-			//	sat = shift + shiftOffsets[1];
-			//}
-			//else
-			//{
-			//	sat = GetColorChannelValue(1, ref rngTimeSeeded, Config.GetValue(COLOR_MODEL));
-			//}
-			//if (shiftChannels[2] != 0)
-			//{
-			//	val_lightness = shift + shiftOffsets[2];
-			//}
-			//else
-			//{
-			//	val_lightness = GetColorChannelValue(2, ref rngTimeSeeded, Config.GetValue(COLOR_MODEL));
-			//}
+            BaseX.color c;
+            switch (Config.GetValue(COLOR_MODEL))
+            {
+                case ColorModelEnum.HSV:
+                    c = new ColorHSV(hue, sat, val_lightness, alpha).ToRGB();
+                    break;
+                case ColorModelEnum.HSL:
+                    c = new ColorHSL(hue, sat, val_lightness, alpha).ToRGB();
+                    break;
+                case ColorModelEnum.RGB:
+                    c = new color(hue, sat, val_lightness, alpha);
+                    break;
+                default:
+                    c = Config.GetValue(NODE_COLOR);
+                    break;
+            }
 
-			sat = GetColorChannelValue(1, rand, Config.GetValue(COLOR_MODEL));
-			val_lightness = GetColorChannelValue(2, rand, Config.GetValue(COLOR_MODEL));
+            return c;
+        }
 
-			if (Config.GetValue(USE_STATIC_COLOR))
-			{
-				alpha = Config.GetValue(NODE_COLOR).a;
-			}
+        private static color GetColorWithRNG(Random rand)
+        {
+            float hue, sat, val_lightness, alpha;
 
-			BaseX.color c = Config.GetValue(NODE_COLOR);
-			switch (Config.GetValue(COLOR_MODEL))
-			{
-				case ColorModelEnum.HSV:
-					c = new ColorHSV(hue, sat, val_lightness, alpha).ToRGB();
-					break;
-				case ColorModelEnum.HSL:
-					c = new ColorHSL(hue, sat, val_lightness, alpha).ToRGB();
-					break;
-				case ColorModelEnum.RGB:
-					// hue = r, sat = g, val_lightness = b
-					c = new color(hue, sat, val_lightness, alpha);
-					break;
-				default:
-					break;
-			}
-			return c;
-		}
+            alpha = Config.GetValue(USE_NODE_ALPHA) ? Config.GetValue(NODE_ALPHA) : 0.8f;
+            hue = GetColorChannelValue(0, rand, Config.GetValue(COLOR_MODEL));
+            sat = GetColorChannelValue(1, rand, Config.GetValue(COLOR_MODEL));
+            val_lightness = GetColorChannelValue(2, rand, Config.GetValue(COLOR_MODEL));
 
-		private static color GetColorWithRNG(Random rand)
-		{
-			// RNG seeded by any constant node factor will always give the same color
-			float hue;
-			float sat;
-			float val_lightness;
-			float alpha = 0.8f;
-			if (Config.GetValue(USE_NODE_ALPHA))
-			{
-				alpha = Config.GetValue(NODE_ALPHA);
-			}
+            if (Config.GetValue(USE_STATIC_COLOR))
+            {
+                alpha = Config.GetValue(NODE_COLOR).a;
+            }
 
-			hue = GetColorChannelValue(0, rand, Config.GetValue(COLOR_MODEL));
-			sat = GetColorChannelValue(1, rand, Config.GetValue(COLOR_MODEL));
-			val_lightness = GetColorChannelValue(2, rand, Config.GetValue(COLOR_MODEL));
+            switch (Config.GetValue(COLOR_MODEL))
+            {
+                case ColorModelEnum.HSV:
+                    return new ColorHSV(hue, sat, val_lightness, alpha).ToRGB();
+                case ColorModelEnum.HSL:
+                    return new ColorHSL(hue, sat, val_lightness, alpha).ToRGB();
+                case ColorModelEnum.RGB:
+                    return new color(hue, sat, val_lightness, alpha);
+                default:
+                    return Config.GetValue(NODE_COLOR);
+            }
+        }
 
-			if (Config.GetValue(USE_STATIC_COLOR))
-			{
-				alpha = Config.GetValue(NODE_COLOR).a;
-			}
 
-			switch (Config.GetValue(COLOR_MODEL))
-			{
-				case ColorModelEnum.HSV:
-					return new ColorHSV(hue, sat, val_lightness, alpha).ToRGB();
-				case ColorModelEnum.HSL:
-					return new ColorHSL(hue, sat, val_lightness, alpha).ToRGB();
-				case ColorModelEnum.RGB:
-					return new color(hue, sat, val_lightness, alpha);
-				default:
-					return Config.GetValue(NODE_COLOR);
-			}
-		}
-
-		private static float GetLuminance(color c)
+        private static float GetLuminance(color c)
 		{
 			float sR = (float)Math.Pow(c.r, 2.2f);
 			float sG = (float)Math.Pow(c.g, 2.2f);
