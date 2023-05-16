@@ -4,6 +4,7 @@ using NeosModLoader;
 using System.Collections.Generic;
 using BaseX;
 using System;
+using System.Linq;
 
 namespace ColorMyLogixNodes
 {
@@ -16,68 +17,61 @@ namespace ColorMyLogixNodes
 			public HashSet<IField<color>> textFields;
 		}
 
-		private static void NodeInfoSetBgColor(NodeInfo nodeInfo, color c)
-		{
-			NodeInfo outNodeInfo = null;
-			if (nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo))
-			{
-				if (outNodeInfo.bgField.IsRemoved)
-				{
+        private static void NodeInfoSetBgColor(NodeInfo nodeInfo, color c)
+        {
+            NodeInfo outNodeInfo = GetNodeInfoForNode(nodeInfo.node);
+
+            if (outNodeInfo != null && outNodeInfo != nullNodeInfo)
+            {
+                if (outNodeInfo.bgField.IsRemoved)
+                {
                     RemoveNodeInfo(nodeInfo);
-				}
-				else
-				{
-					if (outNodeInfo.bgField.Value != c) outNodeInfo.bgField.Value = c;
-				}
-			}
-			else
-			{
-				Debug("Could not set Bg Color. NodeInfo was not found.");
-			}
-		}
+                }
+                else
+                {
+                    if (outNodeInfo.bgField.Value != c) outNodeInfo.bgField.Value = c;
+                }
+            }
+            else
+            {
+                Debug("Could not set Bg Color. NodeInfo was not found.");
+            }
+        }
 
-		private static void NodeInfoSetTextColor(NodeInfo nodeInfo, color c)
-		{
-			NodeInfo outNodeInfo = null;
-			if (nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo))
-			{
-				foreach (IField<color> field in outNodeInfo.textFields)
-				{
-					if (field.IsRemoved)
-					{
+
+        private static void NodeInfoSetTextColor(NodeInfo nodeInfo, color c)
+        {
+            NodeInfo outNodeInfo = GetNodeInfoForNode(nodeInfo.node);
+
+            if (outNodeInfo != null && outNodeInfo != nullNodeInfo)
+            {
+                foreach (IField<color> field in outNodeInfo.textFields)
+                {
+                    if (field.IsRemoved)
+                    {
                         RemoveNodeInfo(nodeInfo);
-						return;
-					}
-					else
-					{
-						if (field.Value != c) field.Value = c;
-					}
-				}
+                        return;
+                    }
 
-			}
-			else
-			{
-				Debug("Could not set Text Color. NodeInfo was not found.");
-			}
-		}
+                    if (field.Value != c) field.Value = c;
+                }
+            }
+            else
+            {
+                Debug("Could not set Text Color. NodeInfo was not found.");
+            }
+        }
 
-		private static bool NodeInfoListContainsNode(LogixNode node)
-		{
-			foreach (NodeInfo nodeInfo in nodeInfoSet)
-			{
-				if (nodeInfo.node == node) return true;
-			}
-			return false;
-		}
 
-		private static NodeInfo GetNodeInfoForNode(LogixNode node)
-		{
-			foreach (NodeInfo nodeInfo in nodeInfoSet)
-			{
-				if (nodeInfo.node == node) return nodeInfo;
-			}
-			return nullNodeInfo;
-		}
+        private static bool NodeInfoListContainsNode(LogixNode node)
+        {
+            return nodeInfoSet.Any(nodeInfo => nodeInfo.node == node);
+        }
+
+        private static NodeInfo GetNodeInfoForNode(LogixNode node)
+        {
+            return nodeInfoSet.FirstOrDefault(nodeInfo => nodeInfo.node == node) ?? nullNodeInfo;
+        }
 
         private static void RemoveNodeInfo(NodeInfo nodeInfo)
         {
