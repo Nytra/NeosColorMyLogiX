@@ -20,8 +20,8 @@ namespace ColorMyLogixNodes
 	public partial class ColorMyLogixNodes : NeosMod
 	{
 		public override string Name => "ColorMyLogiX";
-		public override string Author => "Nytra";
-		public override string Version => "1.2.0";
+		public override string Author => "Nytra / Sharkmare";
+		public override string Version => "1.2.1";
 		public override string Link => "https://github.com/Nytra/NeosColorMyLogiX";
 
 		const string SEP_STRING = "<size=0></size>";
@@ -47,7 +47,7 @@ namespace ColorMyLogixNodes
 		private static ModConfigurationKey<dummy> DUMMY_SEP_0_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_3", $"<color={DETAIL_TEXT_COLOR}><i>HSL: Hue, Saturation and Lightness</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_0_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_4", $"<color={DETAIL_TEXT_COLOR}><i>RGB: Red, Green and Blue</i></color>", () => new dummy());
-		
+
 		// ===== STATIC =====
 
 		[AutoRegisterConfigKey]
@@ -221,6 +221,7 @@ namespace ColorMyLogixNodes
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> COLOR_RELAY_NODES = new ModConfigurationKey<bool>("COLOR_RELAY_NODES", "Apply colors to Relay Nodes:", () => false, internalAccessOnly: true);
 
+		//enums
 		private enum ColorModelEnum
 		{
 			HSV,
@@ -256,185 +257,215 @@ namespace ColorMyLogixNodes
 		//	Sine
 		//}
 
+		// NodeInfo
 		private static NodeInfo nullNodeInfo = new();
+		private static HashSet<NodeInfo> nodeInfoSet = new();
 
+		// Random number generators
 		private static System.Random rng;
 		private static System.Random rngTimeSeeded = new System.Random();
 
+		// Tags
 		private const string COLOR_SET_TAG = "ColorMyLogiX.ColorSet";
 
-		private static HashSet<NodeInfo> nodeInfoSet = new();
-
+		// Sync reference Map
 		private static Dictionary<ISyncRef, IWorldElement> syncRefTargetMap = new();
 
+		// Threading
 		private static ManualResetEvent manualResetEvent = new(false);
-
 		private const int THREAD_INNER_SLEEP_TIME_MILLISECONDS = 0;
 
+		// Real-time color change
 		private const int REALTIME_COLOR_CHANGE_INTERVAL_MILLISECONDS = 200;
-
 		private const bool ALWAYS_THROTTLE_REALTIME_COLOR_CHANGE = false;
-
 		private static long lastColorChangeTime = DateTime.UtcNow.Ticks;
+
 
 		// have any logix visual customizer patches been found?
 		private static bool? lvcHasPatches = null;
 
 		public override void OnEngineInit()
 		{
-			Harmony harmony = new Harmony($"owo.{Author}.{Name}");
-			Config = GetConfiguration()!;
-			Config.Unset(USE_AUTO_RANDOM_COLOR_CHANGE);
-			Config.Save(true);
-			harmony.PatchAll();
-
-			nullNodeInfo.node = null;
-			nullNodeInfo.bgField = null;
-			nullNodeInfo.textFields = null;
-
-			Thread thread1 = new(new ThreadStart(RefDriverNodeThread));
-			thread1.Start();
-
-			Thread thread2 = new(new ThreadStart(StandardNodeThread));
-			thread2.Start();
+			InitializeHarmony();
+			InitializeNullNodeInfo();
+			StartRefDriverNodeThread();
+			StartStandardNodeThread();
 
 			Config.OnThisConfigurationChanged += (configChangedEvent) =>
 			{
-				if ((configChangedEvent.Key == MOD_ENABLED && !Config.GetValue(MOD_ENABLED)) || (configChangedEvent.Key == AUTO_UPDATE_REF_AND_DRIVER_NODES && !Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES)))
+				bool modEnabled = Config.GetValue(MOD_ENABLED);
+				bool autoUpdateRefAndDriverNodes = Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES);
+				bool updateNodesOnConfigChanged = Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED);
+				bool useAutoRandomColorChange = Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE);
+
+				if (!modEnabled || !autoUpdateRefAndDriverNodes)
 				{
-					Debug("syncRefTargetMap Size before clear: " + syncRefTargetMap.Count.ToString());
-					foreach (ISyncRef syncRef in syncRefTargetMap.Keys.ToList())
-					{
-						syncRefTargetMap[syncRef] = null;
-						syncRefTargetMap.Remove(syncRef);
-					}
-					syncRefTargetMap.Clear();
-					Debug("Cleared syncRefTargetMap. New size: " + syncRefTargetMap.Count.ToString());
+					ClearSyncRefTargetMap();
+					ClearNodeInfoSet();
 				}
 
-				if ((configChangedEvent.Key == MOD_ENABLED && !Config.GetValue(MOD_ENABLED)) || ((configChangedEvent.Key == UPDATE_NODES_ON_CONFIG_CHANGED || configChangedEvent.Key == USE_AUTO_RANDOM_COLOR_CHANGE && (!Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED)) && !Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))))
-				{
-					Debug("nodeInfoList Size before clear: " + nodeInfoSet.Count.ToString());
-					NodeInfoListClear();
-					Debug("Cleared nodeInfoList. New size: " + nodeInfoSet.Count.ToString());
-				}
-
-				if (configChangedEvent.Key == USE_AUTO_RANDOM_COLOR_CHANGE && Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+				if (useAutoRandomColorChange)
 				{
 					manualResetEvent.Set();
 					Debug("Setting manualResetEvent");
 				}
 
-				// don't do anything in here if USE_AUTO_RANDOM_COLOR_CHANGE is enabled
-				if (Config.GetValue(MOD_ENABLED) && Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && !Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+				if (modEnabled && updateNodesOnConfigChanged && !useAutoRandomColorChange)
 				{
-
-					// anti-photosensitivity check
-					if (ALWAYS_THROTTLE_REALTIME_COLOR_CHANGE || (Config.GetValue(USE_STATIC_COLOR) && Config.GetValue(USE_STATIC_RANGES) && Config.GetValue(STATIC_RANGE_MODE) == StaticRangeModeEnum.SystemTime))
-					{
-						// color can change exactly 5 times per second when this config is used. it strobes very quickly without this check.
-						if (DateTime.UtcNow.Ticks - lastColorChangeTime < 10000 * REALTIME_COLOR_CHANGE_INTERVAL_MILLISECONDS)
-						{
-							return;
-						}
-						else
-						{
-							lastColorChangeTime = DateTime.UtcNow.Ticks;
-						}
-					}
-					else
-					{
-						lastColorChangeTime = 10000 * REALTIME_COLOR_CHANGE_INTERVAL_MILLISECONDS;
-					}
+					ThrottleRealtimeColorChange();
 
 					foreach (NodeInfo nodeInfo in nodeInfoSet.ToList())
 					{
-						if (nodeInfo == null)
+						if (nodeInfo == null || nodeInfo.node == null ||
+							nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed)
 						{
-							Debug("NodeInfo was null");
-							NodeInfoRemove(nodeInfo);
+							RemoveNodeInfo(nodeInfo);
 							continue;
 						}
 
-						if (nodeInfo.node != null && !(nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed))
+						if (!IsNodeInfoValid(nodeInfo))
 						{
-							if ((nodeInfo.node.ActiveVisual != null && nodeInfo.node.ActiveVisual.ReferenceID.User != nodeInfo.node.LocalUser.AllocationID))
-							{
-								NodeInfoRemove(nodeInfo);
-								continue;
-							}
-
-							if (nodeInfo.node.ActiveVisual == null)
-							{
-								NodeInfoRemove(nodeInfo);
-								continue;
-							}
-
-							if (nodeInfo.node.World != Engine.Current.WorldManager.FocusedWorld)
-							{
-								continue;
-							}
-
-							if (nodeInfo == null)
-							{
-								Debug("nodeInfo is null!");
-							}
-							else if (nodeInfo.node == null)
-							{
-								Debug("nodeInfo.node is null!");
-							}
-
-							color c = ComputeColorForLogixNode(nodeInfo.node);
-
-							if (nodeInfo.bgField != null)
-							{
-								nodeInfo.node.RunInUpdates(0, () =>
-								{
-									if (nodeInfo == null || nodeInfo.node == null || nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed || nodeInfo.bgField.IsRemoved)
-									{
-										NodeInfoRemove(nodeInfo);
-									}
-									else if (nodeInfoSet.Contains(nodeInfo))
-									{
-										if (nodeInfo.node.ActiveVisual != null && nodeInfo.node.ActiveVisual.Tag == "Disabled")
-										{
-											NodeInfoSetBgColor(nodeInfo, Config.GetValue(NODE_ERROR_COLOR));
-										}
-										else
-										{
-											NodeInfoSetBgColor(nodeInfo, c);
-										}
-									}
-								});
-							}
-
-							if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
-							{
-								nodeInfo.node.RunInUpdates(0, () =>
-								{
-									if (nodeInfo == null || nodeInfo.node == null || nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed)
-									{
-										NodeInfoRemove(nodeInfo);
-									}
-									else
-									{
-										// if it didn't already get removed in another thread before this coroutine
-										if (nodeInfoSet.Contains(nodeInfo))
-										{
-											NodeInfoSetTextColor(nodeInfo, GetTextColor(c));
-										}
-									}
-								});
-							}
+							RemoveNodeInfo(nodeInfo);
+							continue;
 						}
-						else
+
+						if (nodeInfo.node.World != Engine.Current.WorldManager.FocusedWorld)
 						{
-							NodeInfoRemove(nodeInfo);
+							continue;
 						}
+
+						color c = ComputeColorForLogixNode(nodeInfo.node);
+						UpdateNodeInfoBgField(nodeInfo, c);
+						UpdateNodeInfoTextFields(nodeInfo, c);
 					}
 				}
 			};
+
 		}
+		private void ClearSyncRefTargetMap()
+		{
+			Debug("syncRefTargetMap Size before clear: " + syncRefTargetMap.Count.ToString());
+			foreach (ISyncRef syncRef in syncRefTargetMap.Keys.ToList())
+			{
+				syncRefTargetMap[syncRef] = null;
+				syncRefTargetMap.Remove(syncRef);
+			}
+			syncRefTargetMap.Clear();
+			Debug("Cleared syncRefTargetMap. New size: " + syncRefTargetMap.Count.ToString());
+		}
+
+		private void ClearNodeInfoSet()
+		{
+			Debug("nodeInfoList Size before clear: " + nodeInfoSet.Count.ToString());
+			NodeInfoListClear();
+			Debug("Cleared nodeInfoList. New size: " + nodeInfoSet.Count.ToString());
+		}
+
+		private void ThrottleRealtimeColorChange()
+		{
+			if (ALWAYS_THROTTLE_REALTIME_COLOR_CHANGE ||
+				(Config.GetValue(USE_STATIC_COLOR) && Config.GetValue(USE_STATIC_RANGES) && Config.GetValue(STATIC_RANGE_MODE) == StaticRangeModeEnum.SystemTime))
+			{
+				if (DateTime.UtcNow.Ticks - lastColorChangeTime < 10000 * REALTIME_COLOR_CHANGE_INTERVAL_MILLISECONDS)
+				{
+					return;
+				}
+				else
+				{
+					lastColorChangeTime = DateTime.UtcNow.Ticks;
+				}
+			}
+			else
+			{
+				lastColorChangeTime = 10000 * REALTIME_COLOR_CHANGE_INTERVAL_MILLISECONDS;
+			}
+		}
+
+		private bool IsNodeInfoValid(NodeInfo nodeInfo)
+		{
+			return nodeInfo.node.ActiveVisual != null && nodeInfo.node.ActiveVisual.ReferenceID.User == nodeInfo.node.LocalUser.AllocationID;
+		}
+
+		private void UpdateNodeInfoBgField(NodeInfo nodeInfo, color c)
+		{
+			if (nodeInfo.bgField == null)
+			{
+				return;
+			}
+
+			nodeInfo.node.RunInUpdates(0, () =>
+			{
+				if (nodeInfo == null || nodeInfo.node == null || nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed || nodeInfo.bgField.IsRemoved)
+				{
+					RemoveNodeInfo(nodeInfo);
+				}
+				else if (nodeInfoSet.Contains(nodeInfo))
+				{
+					if (nodeInfo.node.ActiveVisual != null && nodeInfo.node.ActiveVisual.Tag == "Disabled")
+					{
+						NodeInfoSetBgColor(nodeInfo, Config.GetValue(NODE_ERROR_COLOR));
+					}
+					else
+					{
+						NodeInfoSetBgColor(nodeInfo, c);
+					}
+				}
+			});
+		}
+
+		private void UpdateNodeInfoTextFields(NodeInfo nodeInfo, color c)
+		{
+			if (!Config.GetValue(ENABLE_TEXT_CONTRAST) && !Config.GetValue(USE_STATIC_TEXT_COLOR))
+			{
+				return;
+			}
+
+			nodeInfo.node.RunInUpdates(0, () =>
+			{
+				if (nodeInfo == null || nodeInfo.node == null || nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed)
+				{
+					RemoveNodeInfo(nodeInfo);
+				}
+				else
+				{
+					if (nodeInfoSet.Contains(nodeInfo))
+					{
+						NodeInfoSetTextColor(nodeInfo, GetTextColor(c));
+					}
+				}
+			});
+		}
+
+
+		private void InitializeHarmony()
+		{
+			Harmony harmony = new Harmony($"owo.{Author}.{Name}");
+			Config = GetConfiguration()!;
+			Config.Unset(USE_AUTO_RANDOM_COLOR_CHANGE);
+			Config.Save(true);
+			harmony.PatchAll();
+		}
+
+		private void InitializeNullNodeInfo()
+		{
+			nullNodeInfo.node = null;
+			nullNodeInfo.bgField = null;
+			nullNodeInfo.textFields = null;
+		}
+
+		private void StartRefDriverNodeThread()
+		{
+			Thread thread1 = new(new ThreadStart(ProcessRefDriverNodes));
+			thread1.Start();
+		}
+
+		private void StartStandardNodeThread()
+		{
+			Thread thread2 = new(new ThreadStart(ProcessStandardNodes));
+			thread2.Start();
+		}
+
+
 
 		[HarmonyPatch(typeof(LogixNode))]
 		[HarmonyPatch("GenerateVisual")]
@@ -443,44 +474,53 @@ namespace ColorMyLogixNodes
 			[HarmonyAfter(new string[] { "Banane9.LogixVisualCustomizer", "Banane9, Fro Zen.LogixVisualCustomizer" })]
 			static void Postfix(LogixNode __instance)
 			{
-				if (Config.GetValue(MOD_ENABLED) == true && __instance.ActiveVisual != null && __instance.ActiveVisual.ReferenceID.User == __instance.LocalUser.AllocationID)
+				if (!Config.GetValue(MOD_ENABLED) && (__instance.ActiveVisual == null || __instance.ActiveVisual.ReferenceID.User != __instance.LocalUser.AllocationID))
 				{
-					string targetField = null;
-					if (Config.GetValue(COLOR_NULL_REFERENCE_NODES) == true && __instance.Name.StartsWith("ReferenceNode"))
+					return;
+				}
+
+				string targetField = GetTargetField(__instance);
+				if (targetField == null)
+				{
+					return;
+				}
+
+				ISyncRef syncRef = __instance.TryGetField(targetField) as ISyncRef;
+				if (Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES) && !syncRefTargetMap.ContainsKey(syncRef))
+				{
+					__instance.RunInUpdates(0, () =>
 					{
-						targetField = "RefTarget";
-					}
-					else if (Config.GetValue(COLOR_NULL_DRIVER_NODES) == true && __instance.Name.StartsWith("DriverNode"))
-					{
-						targetField = "DriveTarget";
-					}
-					if (targetField != null)
-					{
-						ISyncRef syncRef = __instance.TryGetField(targetField) as ISyncRef;
-						if (Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES) && !syncRefTargetMap.ContainsKey(syncRef))
-						{
-							__instance.RunInUpdates(0, () =>
-							{
-								if (syncRefTargetMap.ContainsKey(syncRef)) return;
+						if (syncRefTargetMap.ContainsKey(syncRef)) return;
 
-								Debug("=== Subscribing to a node ===");
+						Debug("=== Subscribing to a node ===");
 
-								syncRefTargetMap.Add(syncRef, syncRef.Target);
+						syncRefTargetMap.Add(syncRef, syncRef.Target);
 
-								UpdateRefOrDriverNodeColor(__instance, syncRef);
+						UpdateRefOrDriverNodeColor(__instance, syncRef);
 
-								Debug("New syncRefTargetMap size: " + syncRefTargetMap.Count.ToString());
-							});
-						}
-						else
-						{
-							Debug("Node already subscribed. Updating color...");
-							UpdateRefOrDriverNodeColor(__instance, syncRef);
-						}
-					}
+						Debug("New syncRefTargetMap size: " + syncRefTargetMap.Count.ToString());
+					});
+				}
+				else
+				{
+					Debug("Node already subscribed. Updating color...");
+					UpdateRefOrDriverNodeColor(__instance, syncRef);
 				}
 			}
+
+			private static string GetTargetField(LogixNode node)
+			{
+				if (node == null)
+				{
+					return null;
+				}
+
+				return Config.GetValue(COLOR_NULL_REFERENCE_NODES) && node.Name.StartsWith("ReferenceNode") ? "RefTarget"
+					 : Config.GetValue(COLOR_NULL_DRIVER_NODES) && node.Name.StartsWith("DriverNode") ? "DriveTarget"
+					 : null;
+			}
 		}
+
 
 		[HarmonyPatch(typeof(LogixNode))]
 		[HarmonyPatch("GenerateUI")]
@@ -489,123 +529,117 @@ namespace ColorMyLogixNodes
 			[HarmonyAfter(new string[] { "Banane9.LogixVisualCustomizer", "Banane9, Fro Zen.LogixVisualCustomizer" })]
 			static void Postfix(LogixNode __instance, Slot root)
 			{
-				// only run if the logix node visual slot is allocated to the local user
 				if (Config.GetValue(MOD_ENABLED) == true && root != null && root.ReferenceID.User == root.LocalUser.AllocationID)
 				{
-					// don't apply custom color to cast nodes, because it makes it confusing to read the data types
-					if (__instance.Name.StartsWith("CastClass")) return;
-					if (__instance.Name.StartsWith("Cast_")) return;
+					if (__instance.Name.StartsWith("CastClass") || __instance.Name.StartsWith("Cast_")) return;
 
 					if (root.Tag != COLOR_SET_TAG)
 					{
 						__instance.RunInUpdates(3, () =>
 						{
-
 							if (__instance == null) return;
 
-							NodeInfo nodeInfo = null;
-
-							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
-							{
-								nodeInfo = new();
-								nodeInfo.node = __instance;
-							}
-
+							NodeInfo nodeInfo = CreateNodeInfo(__instance);
 							var backgroundImage = GetBackgroundImageForNode(__instance);
+
 							if (backgroundImage != null)
 							{
-								if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
-								{
-									nodeInfo.bgField = backgroundImage.TryGetField<color>("Tint");
-								}
-
-								if (root.Tag == "Disabled")
-								{
-									TrySetImageTint(backgroundImage, Config.GetValue(NODE_ERROR_COLOR));
-								}
-								else
-								{
-									color colorToSet;
-
-									colorToSet = ComputeColorForLogixNode(__instance);
-
-									TrySetImageTint(backgroundImage, colorToSet);
-
-									if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA))
-									{
-										// Make the connect points on nodes have full alpha to make it easier to read type information
-										foreach (Image img in backgroundImage.Slot.GetComponentsInChildren<Image>())
-										{
-											if (img != backgroundImage)
-											{
-												// nullable types are supposed to have 50% alpha (usually 0.4)
-												if (img.Tint.Value.a == 0.8f)
-												{
-													TrySetImageTint(img, img.Tint.Value.SetA(1f));
-												}
-												else if (img.Tint.Value.a == 0.4f)
-												{
-													TrySetImageTint(img, img.Tint.Value.SetA(0.5f));
-												}
-											}
-										}
-									}
-
-									if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
-									{
-										// set node's text color, there could be multiple text components that need to be colored
-										nodeInfo.textFields = new();
-
-										if (lvcHasPatches == null)
-										{
-											if (Harmony.HasAnyPatches("Banane9.LogixVisualCustomizer") || Harmony.HasAnyPatches("Banane9, Fro Zen.LogixVisualCustomizer"))
-											{
-												lvcHasPatches = true;
-												Debug("logixvisualcustomizer found");
-											}
-											else
-											{
-												lvcHasPatches = false;
-												Debug("logixvisualcustomizer not found");
-											}
-										}
-
-										// previously this wouldn't work without 3 updates delay, but now it seems to work with 0
-										// but i'm scared to remove it xD
-										__instance.RunInUpdates(lvcHasPatches == true ? 3 : 0, () =>
-										{
-											foreach (Text text in GetTextListForNode(__instance))
-											{
-												TrySetTextColor(text, GetTextColor(colorToSet));
-
-												if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
-												{
-													if (nodeInfo != null && nodeInfo.textFields != null)
-													{
-														nodeInfo.textFields.Add(text.TryGetField<color>("Color"));
-													}
-													else
-													{
-														NodeInfoRemove(nodeInfo);
-													}
-												}
-											}
-										});
-									}
-
-									TrySetSlotTag(root, COLOR_SET_TAG);
-
-									if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
-									{
-										nodeInfoSet.Add(nodeInfo);
-										Debug("NodeInfo added. New size of nodeInfoSet: " + nodeInfoSet.Count.ToString());
-									}
-								}
+								SetupBackgroundImage(__instance, nodeInfo, backgroundImage, root);
 							}
 						});
 					}
 				}
 			}
-		}
-	}
+			private static NodeInfo CreateNodeInfo(LogixNode __instance)
+			{
+				if (!Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && !Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE)) return null;
+
+				NodeInfo nodeInfo = new();
+				nodeInfo.node = __instance;
+				return nodeInfo;
+			}
+			private static void SetupBackgroundImage(LogixNode __instance, NodeInfo nodeInfo, Image backgroundImage, Slot root)
+			{
+				if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+				{
+					nodeInfo.bgField = backgroundImage.TryGetField<color>("Tint");
+				}
+
+				color colorToSet = root.Tag == "Disabled" ? Config.GetValue(NODE_ERROR_COLOR) : ComputeColorForLogixNode(__instance);
+
+				TrySetImageTint(backgroundImage, colorToSet);
+
+				if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA))
+				{
+					AdjustConnectPointsAlpha(backgroundImage);
+				}
+
+				if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
+				{
+					SetupTextFields(__instance, nodeInfo, colorToSet);
+				}
+
+				TrySetSlotTag(root, COLOR_SET_TAG);
+
+				if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+				{
+					nodeInfoSet.Add(nodeInfo);
+					Debug("NodeInfo added. New size of nodeInfoSet: " + nodeInfoSet.Count.ToString());
+				}
+			}
+            private static void AdjustConnectPointsAlpha(Image backgroundImage)
+            {
+                foreach (Image img in backgroundImage.Slot.GetComponentsInChildren<Image>())
+                {
+                    if (img != backgroundImage)
+                    {
+                        if (img.Tint.Value.a == 0.8f)
+                        {
+                            TrySetImageTint(img, img.Tint.Value.SetA(1f));
+                        }
+                        else if (img.Tint.Value.a == 0.4f)
+                        {
+                            TrySetImageTint(img, img.Tint.Value.SetA(0.5f));
+                        }
+                    }
+                }
+            }
+            private static void SetupTextFields(LogixNode __instance, NodeInfo nodeInfo, color colorToSet)
+            {
+                nodeInfo.textFields = new();
+
+                if (lvcHasPatches == null)
+                {
+                    lvcHasPatches = Harmony.HasAnyPatches("Banane9.LogixVisualCustomizer") || Harmony.HasAnyPatches("Banane9, Fro Zen.LogixVisualCustomizer");
+                    Debug("logixvisualcustomizer " + (lvcHasPatches.Value ? "found" : "not found"));
+                }
+
+                int updatesDelay = lvcHasPatches.Value ? 3 : 0;
+
+                __instance.RunInUpdates(updatesDelay, () =>
+                {
+                    foreach (Text text in GetTextListForNode(__instance))
+                    {
+                        if (!TrySetTextColor(text, GetTextColor(colorToSet)))
+                            Error("Error occurred while trying to set Text Color Value.");
+
+                        if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+                        {
+                            if (nodeInfo != null && nodeInfo.textFields != null)
+                            {
+                                nodeInfo.textFields.Add(text.TryGetField<color>("Color"));
+                            }
+                            else
+                            {
+                                RemoveNodeInfo(nodeInfo);
+                            }
+                        }
+                    }
+                });
+            }
+
+
+
+        }
+    }
 }

@@ -23,7 +23,7 @@ namespace ColorMyLogixNodes
 			{
 				if (outNodeInfo.bgField.IsRemoved)
 				{
-					NodeInfoRemove(nodeInfo);
+                    RemoveNodeInfo(nodeInfo);
 				}
 				else
 				{
@@ -45,7 +45,7 @@ namespace ColorMyLogixNodes
 				{
 					if (field.IsRemoved)
 					{
-						NodeInfoRemove(nodeInfo);
+                        RemoveNodeInfo(nodeInfo);
 						return;
 					}
 					else
@@ -79,38 +79,46 @@ namespace ColorMyLogixNodes
 			return nullNodeInfo;
 		}
 
-		private static void NodeInfoRemove(NodeInfo nodeInfo)
-		{
-			if (nodeInfo == null)
-			{
-				Debug("Tried to remove null from nodeInfoSet");
-				TryTrimExcess();
-				return;
-			}
-			if (!nodeInfoSet.Contains(nodeInfo))
-			{
-				Debug("NodeInfo was not in nodeInfoSet.");
-				return;
-			}
-			NodeInfo outNodeInfo = null;
-			nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo);
-			outNodeInfo.node = null;
-			outNodeInfo.bgField = null;
-			outNodeInfo.textFields = null;
-			if (nodeInfoSet.Remove(nodeInfo))
-			{
-				Debug("NodeInfo removed. New size of nodeInfoSet: " + nodeInfoSet.Count.ToString());
-			}
-			else
-			{
-				Debug("NodeInfo was not in nodeInfoSet (this should never happen).");
-			}
+        private static void RemoveNodeInfo(NodeInfo nodeInfo)
+        {
+            if (nodeInfo == null)
+            {
+                Debug("Attempted to remove null from nodeInfoSet");
+                TryTrimExcess();
+                return;
+            }
 
-			TryTrimExcess();
+            if (!nodeInfoSet.Contains(nodeInfo))
+            {
+                Debug("NodeInfo not found in nodeInfoSet.");
+                return;
+            }
 
-		}
+            if (nodeInfoSet.TryGetValue(nodeInfo, out NodeInfo existingNodeInfo))
+            {
+                existingNodeInfo.node = null;
+                existingNodeInfo.bgField = null;
+                existingNodeInfo.textFields = null;
 
-		private static void TryTrimExcess()
+                if (nodeInfoSet.Remove(nodeInfo))
+                {
+                    Debug($"NodeInfo removed. New size of nodeInfoSet: {nodeInfoSet.Count}");
+                }
+                else
+                {
+                    Debug("NodeInfo not found in nodeInfoSet (unexpected error).");
+                }
+            }
+            else
+            {
+                Debug("Failed to retrieve NodeInfo from nodeInfoSet.");
+            }
+
+            TryTrimExcess();
+        }
+
+
+        private static void TryTrimExcess()
 		{
 			try
 			{

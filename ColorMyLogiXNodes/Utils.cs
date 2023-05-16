@@ -39,23 +39,23 @@ namespace ColorMyLogixNodes
 			}
 		}
 
-		private static void TrySetTextColor(Text text, BaseX.color color)
-		{
-			try
-			{
-				if (text.Color.IsDriven)
-				{
-					text.Color.ReleaseLink(text.Color.ActiveLink);
-				}
-				text.Color.Value = color;
-			}
-			catch (Exception e)
-			{
-				Error($"Error occurred while trying to set Text Color Value.\nError: {e.ToString()}");
-			}
-		}
+        private static bool TrySetTextColor(Text text, BaseX.color color)
+        {
+            if (text == null)
+            {
+                return false;
+            }
 
-		private static string GetNodeCategoryString(Type logixType, bool onlyTopmost = false)
+            if (text.Color.IsDriven)
+            {
+                text.Color.ReleaseLink(text.Color.ActiveLink);
+            }
+            text.Color.Value = color;
+            return true;
+        }
+
+
+        private static string GetNodeCategoryString(Type logixType, bool onlyTopmost = false)
 		{
 			Category customAttribute = logixType.GetCustomAttribute<Category>();
 			if (customAttribute == null)
