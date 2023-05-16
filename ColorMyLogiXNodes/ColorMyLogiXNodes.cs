@@ -298,13 +298,13 @@ namespace ColorMyLogixNodes
 				bool updateNodesOnConfigChanged = Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED);
 				bool useAutoRandomColorChange = Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE);
 
-				if (!modEnabled || !autoUpdateRefAndDriverNodes)
+				if ((configChangedEvent.Key == MOD_ENABLED && !modEnabled) || !autoUpdateRefAndDriverNodes)
 				{
 					ClearSyncRefTargetMap();
 					ClearNodeInfoSet();
 				}
 
-				if (useAutoRandomColorChange)
+				if (configChangedEvent.Key == USE_AUTO_RANDOM_COLOR_CHANGE && useAutoRandomColorChange)
 				{
 					manualResetEvent.Set();
 					Debug("Setting manualResetEvent");
