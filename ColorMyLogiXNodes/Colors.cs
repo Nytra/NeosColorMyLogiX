@@ -296,18 +296,12 @@ namespace ColorMyLogixNodes
 		private static void ClampColor(ref color c)
 		{
 			// clamp color to min 0 and max 1 (no negative or emissive colors allowed)
-			if (c.r > 1) c = c.SetR(1f);
-			if (c.r < 0) c = c.SetR(0f);
-
-			if (c.g > 1) c = c.SetG(1f);
-			if (c.g < 0) c = c.SetG(0f);
-
-			if (c.b > 1) c = c.SetB(1f);
-			if (c.b < 0) c = c.SetB(0f);
-
-			if (c.a > 1) c = c.SetA(1f);
-			if (c.a < 0) c = c.SetA(0f);
-		}
+            // Clamp without branching
+            c = c.SetR(Math.Min(Math.Max(c.r, 0f), 1f));
+            c = c.SetG(Math.Min(Math.Max(c.g, 0f), 1f));
+            c = c.SetB(Math.Min(Math.Max(c.b, 0f), 1f));
+            c = c.SetA(Math.Min(Math.Max(c.a, 0f), 1f));
+        }
 
 		private static color ComputeColorForLogixNode(LogixNode node)
 		{

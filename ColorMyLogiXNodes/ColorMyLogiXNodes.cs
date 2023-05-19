@@ -20,7 +20,7 @@ namespace ColorMyLogixNodes
 	public partial class ColorMyLogixNodes : NeosMod
 	{
 		public override string Name => "ColorMyLogiX";
-		public override string Author => "Nytra";
+		public override string Author => "Nytra / Sharkmare";
 		public override string Version => "1.2.0";
 		public override string Link => "https://github.com/Nytra/NeosColorMyLogiX";
 
@@ -257,13 +257,12 @@ namespace ColorMyLogixNodes
 		//}
 
 		private static NodeInfo nullNodeInfo = new();
+        private static HashSet<NodeInfo> nodeInfoSet = new();
 
-		private static System.Random rng;
+        private static System.Random rng;
 		private static System.Random rngTimeSeeded = new System.Random();
 
 		private const string COLOR_SET_TAG = "ColorMyLogiX.ColorSet";
-
-		private static HashSet<NodeInfo> nodeInfoSet = new();
 
 		private static Dictionary<ISyncRef, IWorldElement> syncRefTargetMap = new();
 
@@ -282,8 +281,11 @@ namespace ColorMyLogixNodes
 
 		public override void OnEngineInit()
 		{
-			Harmony harmony = new Harmony($"owo.{Author}.{Name}");
-			Config = GetConfiguration()!;
+            // Maybe hardcode this because Harmony ids with spaces are jank
+            //Harmony harmony = new Harmony($"owo.{Author}.{Name}");
+            Harmony harmony = new Harmony($"owo.Nytra.ColorMyLogiX");
+
+            Config = GetConfiguration()!;
 			Config.Unset(USE_AUTO_RANDOM_COLOR_CHANGE);
 			Config.Save(true);
 			harmony.PatchAll();
@@ -315,7 +317,7 @@ namespace ColorMyLogixNodes
 				if ((configChangedEvent.Key == MOD_ENABLED && !Config.GetValue(MOD_ENABLED)) || ((configChangedEvent.Key == UPDATE_NODES_ON_CONFIG_CHANGED || configChangedEvent.Key == USE_AUTO_RANDOM_COLOR_CHANGE && (!Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED)) && !Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))))
 				{
 					Debug("nodeInfoList Size before clear: " + nodeInfoSet.Count.ToString());
-					NodeInfoListClear();
+					NodeInfoSetClear();
 					Debug("Cleared nodeInfoList. New size: " + nodeInfoSet.Count.ToString());
 				}
 
@@ -466,6 +468,11 @@ namespace ColorMyLogixNodes
 								Debug("=== Subscribing to a node ===");
 
 								syncRefTargetMap.Add(syncRef, syncRef.Target);
+
+								var test = new RefDriverNodeInfo();
+								test.node = __instance;
+								test.syncRef = syncRef;
+								syncRef.Changed += test.UpdateColor;
 
 								UpdateRefOrDriverNodeColor(__instance, syncRef);
 

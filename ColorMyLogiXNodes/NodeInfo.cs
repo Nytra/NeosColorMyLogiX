@@ -4,6 +4,7 @@ using NeosModLoader;
 using System.Collections.Generic;
 using BaseX;
 using System;
+using System.Linq;
 
 namespace ColorMyLogixNodes
 {
@@ -14,6 +15,18 @@ namespace ColorMyLogixNodes
 			public LogixNode node;
 			public IField<color> bgField;
 			public HashSet<IField<color>> textFields;
+		}
+
+		public class RefDriverNodeInfo
+		{
+			public LogixNode node;
+			public ISyncRef syncRef;
+			//public Action<IChangeable> UpdateColor = (IChangeable iChangeable) => { UpdateRefOrDriverNodeColor(node, syncRef); };
+
+			public void UpdateColor(IChangeable iChangeable)
+			{
+				UpdateRefOrDriverNodeColor(node, syncRef);
+			}
 		}
 
 		private static void NodeInfoSetBgColor(NodeInfo nodeInfo, color c)
@@ -61,23 +74,15 @@ namespace ColorMyLogixNodes
 			}
 		}
 
-		private static bool NodeInfoListContainsNode(LogixNode node)
+		private static bool NodeInfoSetContainsNode(LogixNode node)
 		{
-			foreach (NodeInfo nodeInfo in nodeInfoSet)
-			{
-				if (nodeInfo.node == node) return true;
-			}
-			return false;
-		}
+            return nodeInfoSet.Any(nodeInfo => nodeInfo.node == node);
+        }
 
 		private static NodeInfo GetNodeInfoForNode(LogixNode node)
 		{
-			foreach (NodeInfo nodeInfo in nodeInfoSet)
-			{
-				if (nodeInfo.node == node) return nodeInfo;
-			}
-			return nullNodeInfo;
-		}
+            return nodeInfoSet.FirstOrDefault(nodeInfo => nodeInfo.node == node) ?? nullNodeInfo;
+        }
 
 		private static void NodeInfoRemove(NodeInfo nodeInfo)
 		{
@@ -122,7 +127,7 @@ namespace ColorMyLogixNodes
 			}
 		}
 	
-		private static void NodeInfoListClear()
+		private static void NodeInfoSetClear()
 		{
 			foreach (NodeInfo nodeInfo in nodeInfoSet)
 			{

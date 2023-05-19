@@ -5,14 +5,37 @@ using System.Linq;
 using System;
 using System.Threading;
 using BaseX;
+using Leap.Unity.Attributes;
+using Leap.Unity.Query;
 
 namespace ColorMyLogixNodes
 {
 	public partial class ColorMyLogixNodes : NeosMod
 	{
-		private static void RefDriverNodeThread()
+		private static bool IsNodeInvalid(NodeInfo nodeInfo)
 		{
-			while (true)
+            return nodeInfo == null ||
+                   nodeInfo.node == null ||
+                   nodeInfo.node.IsRemoved ||
+                   nodeInfo.node.IsDestroyed ||
+                   nodeInfo.node.IsDisposed ||
+                   nodeInfo.node.Slot == null ||
+                   nodeInfo.node.Slot.IsRemoved ||
+                   nodeInfo.node.Slot.IsDestroyed ||
+                   nodeInfo.node.Slot.IsDisposed ||
+                   nodeInfo.node.World == null ||
+                   nodeInfo.node.World.IsDestroyed ||
+                   nodeInfo.node.World.IsDisposed;
+        }
+
+        private static int Clamp(int value, int minValue, int maxValue)
+        {
+            return Math.Min(Math.Max(value, minValue), maxValue);
+        }
+
+        private static void RefDriverNodeThread()
+        {
+            while (true)
 			{
 				try
 				{
@@ -50,7 +73,7 @@ namespace ColorMyLogixNodes
 				}
 				catch (Exception e)
 				{
-					Warn("Ref driver node thread error! This is probably fine.\n" + e.ToString());
+					Warn($"Ref driver node thread error! This is probably fine.{Environment.NewLine}{e}");
 					Warn("Continuing thread...");
 					continue;
 				}
@@ -67,13 +90,7 @@ namespace ColorMyLogixNodes
 					{
 						foreach (NodeInfo nodeInfo in nodeInfoSet.ToList())
 						{
-							if ((nodeInfo == null) ||
-							(nodeInfo.node == null) ||
-							(nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed) ||
-							(nodeInfo.node.Slot == null) ||
-							(nodeInfo.node.Slot.IsDestroyed || nodeInfo.node.Slot.IsRemoved || nodeInfo.node.Slot.IsDisposed) ||
-							(nodeInfo.node.World == null) ||
-							(nodeInfo.node.World.IsDestroyed || nodeInfo.node.World.IsDisposed))
+							if (IsNodeInvalid(nodeInfo))
 							{
 								NodeInfoRemove(nodeInfo);
 								Thread.Sleep(THREAD_INNER_SLEEP_TIME_MILLISECONDS);
@@ -119,11 +136,12 @@ namespace ColorMyLogixNodes
 					{
 						manualResetEvent.Reset();
 						manualResetEvent.WaitOne(Math.Min(Math.Max(Config.GetValue(AUTO_RANDOM_COLOR_CHANGE_THREAD_SLEEP_TIME), 2500), 30000));
+						manualResetEvent.WaitOne(Clamp(Config.GetValue(AUTO_RANDOM_COLOR_CHANGE_THREAD_SLEEP_TIME), 2500, 30000));
 					}
 				}
 				catch (Exception e)
 				{
-					Warn("Standard node thread error! This is probably fine.\n" + e.ToString());
+					Warn($"Standard node thread error! This is probably fine.{Environment.NewLine}{e}");
 					Warn("Continuing thread...");
 					continue;
 				}
