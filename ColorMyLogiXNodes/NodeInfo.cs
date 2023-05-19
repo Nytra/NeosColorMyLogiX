@@ -21,7 +21,6 @@ namespace ColorMyLogixNodes
 		{
 			public LogixNode node;
 			public ISyncRef syncRef;
-			//public Action<IChangeable> UpdateColor = (IChangeable iChangeable) => { UpdateRefOrDriverNodeColor(node, syncRef); };
 
 			public void UpdateColor(IChangeable iChangeable)
 			{
@@ -76,20 +75,20 @@ namespace ColorMyLogixNodes
 
 		private static bool NodeInfoSetContainsNode(LogixNode node)
 		{
-            return nodeInfoSet.Any(nodeInfo => nodeInfo.node == node);
-        }
+			return nodeInfoSet.Any(nodeInfo => nodeInfo.node == node);
+		}
 
 		private static NodeInfo GetNodeInfoForNode(LogixNode node)
 		{
-            return nodeInfoSet.FirstOrDefault(nodeInfo => nodeInfo.node == node) ?? nullNodeInfo;
-        }
+			return nodeInfoSet.FirstOrDefault(nodeInfo => nodeInfo.node == node) ?? nullNodeInfo;
+		}
 
 		private static void NodeInfoRemove(NodeInfo nodeInfo)
 		{
 			if (nodeInfo == null)
 			{
 				Debug("Tried to remove null from nodeInfoSet");
-				TryTrimExcess();
+				TryTrimExcessNodeInfo();
 				return;
 			}
 			if (!nodeInfoSet.Contains(nodeInfo))
@@ -111,11 +110,11 @@ namespace ColorMyLogixNodes
 				Debug("NodeInfo was not in nodeInfoSet (this should never happen).");
 			}
 
-			TryTrimExcess();
+			TryTrimExcessNodeInfo();
 
 		}
 
-		private static void TryTrimExcess()
+		private static void TryTrimExcessNodeInfo()
 		{
 			try
 			{
@@ -126,7 +125,19 @@ namespace ColorMyLogixNodes
 				Error("Error while trying to trim excess NodeInfo's. " + e.ToString());
 			}
 		}
-	
+
+		private static void TryTrimExcessRefDriverNodeInfo()
+		{
+			try
+			{
+				refDriverNodeInfoSet.TrimExcess();
+			}
+			catch (Exception e)
+			{
+				Error("Error while trying to trim excess RefDriverNodeInfo's. " + e.ToString());
+			}
+		}
+
 		private static void NodeInfoSetClear()
 		{
 			foreach (NodeInfo nodeInfo in nodeInfoSet)
@@ -136,7 +147,18 @@ namespace ColorMyLogixNodes
 				nodeInfo.textFields = null;
 			}
 			nodeInfoSet.Clear();
-			TryTrimExcess();
+			TryTrimExcessNodeInfo();
+		}
+
+		private static void RefDriverNodeInfoSetClear()
+		{
+			foreach (RefDriverNodeInfo refDriverNodeInfo in refDriverNodeInfoSet)
+			{
+				refDriverNodeInfo.node = null;
+				refDriverNodeInfo.syncRef = null;
+			}
+			refDriverNodeInfoSet.Clear();
+			TryTrimExcessRefDriverNodeInfo();
 		}
 	}
 }

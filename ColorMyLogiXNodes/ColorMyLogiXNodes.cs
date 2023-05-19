@@ -257,14 +257,15 @@ namespace ColorMyLogixNodes
 		//}
 
 		private static NodeInfo nullNodeInfo = new();
-        private static HashSet<NodeInfo> nodeInfoSet = new();
+		private static HashSet<NodeInfo> nodeInfoSet = new();
+		private static HashSet<RefDriverNodeInfo> refDriverNodeInfoSet = new();
 
-        private static System.Random rng;
+		private static System.Random rng;
 		private static System.Random rngTimeSeeded = new System.Random();
 
 		private const string COLOR_SET_TAG = "ColorMyLogiX.ColorSet";
 
-		private static Dictionary<ISyncRef, IWorldElement> syncRefTargetMap = new();
+		//private static Dictionary<ISyncRef, IWorldElement> syncRefTargetMap = new();
 
 		private static ManualResetEvent manualResetEvent = new(false);
 
@@ -281,11 +282,11 @@ namespace ColorMyLogixNodes
 
 		public override void OnEngineInit()
 		{
-            // Maybe hardcode this because Harmony ids with spaces are jank
-            //Harmony harmony = new Harmony($"owo.{Author}.{Name}");
-            Harmony harmony = new Harmony($"owo.Nytra.ColorMyLogiX");
+			// Maybe hardcode this because Harmony ids with spaces are jank
+			//Harmony harmony = new Harmony($"owo.{Author}.{Name}");
+			Harmony harmony = new Harmony($"owo.Nytra.ColorMyLogiX");
 
-            Config = GetConfiguration()!;
+			Config = GetConfiguration()!;
 			Config.Unset(USE_AUTO_RANDOM_COLOR_CHANGE);
 			Config.Save(true);
 			harmony.PatchAll();
@@ -304,14 +305,9 @@ namespace ColorMyLogixNodes
 			{
 				if ((configChangedEvent.Key == MOD_ENABLED && !Config.GetValue(MOD_ENABLED)) || (configChangedEvent.Key == AUTO_UPDATE_REF_AND_DRIVER_NODES && !Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES)))
 				{
-					Debug("syncRefTargetMap Size before clear: " + syncRefTargetMap.Count.ToString());
-					foreach (ISyncRef syncRef in syncRefTargetMap.Keys.ToList())
-					{
-						syncRefTargetMap[syncRef] = null;
-						syncRefTargetMap.Remove(syncRef);
-					}
-					syncRefTargetMap.Clear();
-					Debug("Cleared syncRefTargetMap. New size: " + syncRefTargetMap.Count.ToString());
+					Debug("refDriverNodeInfoSet Size before clear: " + refDriverNodeInfoSet.Count.ToString());
+					RefDriverNodeInfoSetClear();
+					Debug("Cleared refDriverNodeInfoSet. New size: " + refDriverNodeInfoSet.Count.ToString());
 				}
 
 				if ((configChangedEvent.Key == MOD_ENABLED && !Config.GetValue(MOD_ENABLED)) || ((configChangedEvent.Key == UPDATE_NODES_ON_CONFIG_CHANGED || configChangedEvent.Key == USE_AUTO_RANDOM_COLOR_CHANGE && (!Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED)) && !Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))))
@@ -459,24 +455,26 @@ namespace ColorMyLogixNodes
 					if (targetField != null)
 					{
 						ISyncRef syncRef = __instance.TryGetField(targetField) as ISyncRef;
-						if (Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES) && !syncRefTargetMap.ContainsKey(syncRef))
+						if (Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES) && !refDriverNodeInfoSet.Any((RefDriverNodeInfo r) => r.syncRef == syncRef))
 						{
 							__instance.RunInUpdates(0, () =>
 							{
-								if (syncRefTargetMap.ContainsKey(syncRef)) return;
+								//if (syncRefTargetMap.ContainsKey(syncRef)) return;
+								if (refDriverNodeInfoSet.Any((RefDriverNodeInfo r) => r.syncRef == syncRef)) return;
 
 								Debug("=== Subscribing to a node ===");
 
-								syncRefTargetMap.Add(syncRef, syncRef.Target);
+								//syncRefTargetMap.Add(syncRef, syncRef.Target);
 
-								var test = new RefDriverNodeInfo();
-								test.node = __instance;
-								test.syncRef = syncRef;
-								syncRef.Changed += test.UpdateColor;
+								RefDriverNodeInfo refDriverNodeInfo = new();
+								refDriverNodeInfo.node = __instance;
+								refDriverNodeInfo.syncRef = syncRef;
+								syncRef.Changed += refDriverNodeInfo.UpdateColor;
+								refDriverNodeInfoSet.Add(refDriverNodeInfo);
 
 								UpdateRefOrDriverNodeColor(__instance, syncRef);
 
-								Debug("New syncRefTargetMap size: " + syncRefTargetMap.Count.ToString());
+								Debug("New refDriverNodeInfoSet size: " + refDriverNodeInfoSet.Count.ToString());
 							});
 						}
 						else

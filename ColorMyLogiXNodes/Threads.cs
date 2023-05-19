@@ -14,52 +14,52 @@ namespace ColorMyLogixNodes
 	{
 		private static bool IsNodeInvalid(NodeInfo nodeInfo)
 		{
-            return nodeInfo == null ||
-                   nodeInfo.node == null ||
-                   nodeInfo.node.IsRemoved ||
-                   nodeInfo.node.IsDestroyed ||
-                   nodeInfo.node.IsDisposed ||
-                   nodeInfo.node.Slot == null ||
-                   nodeInfo.node.Slot.IsRemoved ||
-                   nodeInfo.node.Slot.IsDestroyed ||
-                   nodeInfo.node.Slot.IsDisposed ||
-                   nodeInfo.node.World == null ||
-                   nodeInfo.node.World.IsDestroyed ||
-                   nodeInfo.node.World.IsDisposed;
-        }
+			return (nodeInfo == null ||
+				   nodeInfo.node == null ||
+				   nodeInfo.node.IsRemoved ||
+				   nodeInfo.node.IsDestroyed ||
+				   nodeInfo.node.IsDisposed ||
+				   nodeInfo.node.Slot == null ||
+				   nodeInfo.node.Slot.IsRemoved ||
+				   nodeInfo.node.Slot.IsDestroyed ||
+				   nodeInfo.node.Slot.IsDisposed ||
+				   nodeInfo.node.World == null ||
+				   nodeInfo.node.World.IsDestroyed ||
+				   nodeInfo.node.World.IsDisposed);
+		}
 
-        private static int Clamp(int value, int minValue, int maxValue)
-        {
-            return Math.Min(Math.Max(value, minValue), maxValue);
-        }
+		private static int Clamp(int value, int minValue, int maxValue)
+		{
+			return Math.Min(Math.Max(value, minValue), maxValue);
+		}
 
-        private static void RefDriverNodeThread()
-        {
-            while (true)
+		private static void RefDriverNodeThread()
+		{
+			while (true)
 			{
 				try
 				{
 					if (Config.GetValue(MOD_ENABLED) && Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES))
 					{
-						foreach (ISyncRef syncRef in syncRefTargetMap.Keys.ToList())
+						foreach (RefDriverNodeInfo refDriverNodeInfo in refDriverNodeInfoSet.ToList())
 						{
-							if (syncRef == null || syncRef.IsRemoved || syncRef.Parent == null || syncRef.Parent.IsRemoved)
+							if (refDriverNodeInfo.syncRef == null || refDriverNodeInfo.syncRef.IsRemoved || refDriverNodeInfo.syncRef.Parent == null || refDriverNodeInfo.syncRef.Parent.IsRemoved)
 							{
 								Debug("=== Unsubscribing from a node ===");
-								syncRefTargetMap[syncRef] = null;
-								syncRefTargetMap.Remove(syncRef);
-								Debug("New syncRefTargetMap size: " + syncRefTargetMap.Count.ToString());
+								refDriverNodeInfo.syncRef.Changed -= refDriverNodeInfo.UpdateColor;
+								refDriverNodeInfoSet.Remove(refDriverNodeInfo);
+								Debug("New refDriverNodeInfoSet size: " + refDriverNodeInfoSet.Count.ToString());
 							}
 							else
 							{
-								IWorldElement outSyncRefTarget;
-								syncRefTargetMap.TryGetValue(syncRef, out outSyncRefTarget);
-								if (syncRef.Target != outSyncRefTarget)
-								{
-									// node could be null?
-									syncRefTargetMap[syncRef] = syncRef.Target;
-									UpdateRefOrDriverNodeColor(syncRef.Parent as LogixNode, syncRef);
-								}
+								//IWorldElement outSyncRefTarget;
+								//syncRefTargetMap.TryGetValue(syncRef, out outSyncRefTarget);
+								//if (syncRef.Target != outSyncRefTarget)
+								//{
+								//	// node could be null?
+								//	syncRefTargetMap[syncRef] = syncRef.Target;
+								//	UpdateRefOrDriverNodeColor(syncRef.Parent as LogixNode, syncRef);
+								//}
 							}
 
 							if (THREAD_INNER_SLEEP_TIME_MILLISECONDS > 0)
@@ -69,7 +69,7 @@ namespace ColorMyLogixNodes
 						}
 					}
 
-					Thread.Sleep(250);
+					Thread.Sleep(10000);
 				}
 				catch (Exception e)
 				{
