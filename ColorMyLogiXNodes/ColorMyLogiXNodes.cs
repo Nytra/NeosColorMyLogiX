@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Linq;
 using System;
+using Viveport;
 
 #if DEBUG
 
@@ -21,7 +22,7 @@ namespace ColorMyLogixNodes
 	{
 		public override string Name => "ColorMyLogiX";
 		public override string Author => "Nytra / Sharkmare";
-		public override string Version => "1.2.0";
+		public override string Version => "1.2.1";
 		public override string Link => "https://github.com/Nytra/NeosColorMyLogiX";
 
 		const string SEP_STRING = "<size=0></size>";
@@ -303,28 +304,41 @@ namespace ColorMyLogixNodes
 
 			Config.OnThisConfigurationChanged += (configChangedEvent) =>
 			{
-				if ((configChangedEvent.Key == MOD_ENABLED && !Config.GetValue(MOD_ENABLED)) || (configChangedEvent.Key == AUTO_UPDATE_REF_AND_DRIVER_NODES && !Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES)))
+				bool modEnabled = Config.GetValue(MOD_ENABLED);
+				bool modEnabled_KeyChanged = configChangedEvent.Key == MOD_ENABLED;
+
+				bool autoUpdateRefDriverNodes = Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES);
+				bool autoUpdateRefDriverNodes_KeyChanged = configChangedEvent.Key == AUTO_UPDATE_REF_AND_DRIVER_NODES;
+
+				bool updateNodesOnConfigChanged = Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED);
+				bool updateNodesOnConfigChanged_KeyChanged = configChangedEvent.Key == UPDATE_NODES_ON_CONFIG_CHANGED;
+
+				bool useAutoRandomColorChange = Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE);
+				bool useAutoRandomColorChange_KeyChanged = configChangedEvent.Key == USE_AUTO_RANDOM_COLOR_CHANGE;
+
+				if ((modEnabled_KeyChanged && !modEnabled) || (autoUpdateRefDriverNodes_KeyChanged && !autoUpdateRefDriverNodes))
 				{
 					Debug("refDriverNodeInfoSet Size before clear: " + refDriverNodeInfoSet.Count.ToString());
 					RefDriverNodeInfoSetClear();
 					Debug("Cleared refDriverNodeInfoSet. New size: " + refDriverNodeInfoSet.Count.ToString());
 				}
 
-				if ((configChangedEvent.Key == MOD_ENABLED && !Config.GetValue(MOD_ENABLED)) || ((configChangedEvent.Key == UPDATE_NODES_ON_CONFIG_CHANGED || configChangedEvent.Key == USE_AUTO_RANDOM_COLOR_CHANGE && (!Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED)) && !Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))))
+				// if modEnabled was set to false, OR (updateNodesOnConfigChanged OR useAutoRandomColorChange was changed AND they are both false)
+				if ((modEnabled_KeyChanged && !modEnabled) || ((updateNodesOnConfigChanged_KeyChanged || useAutoRandomColorChange_KeyChanged) && ((!updateNodesOnConfigChanged && !useAutoRandomColorChange))))
 				{
 					Debug("nodeInfoList Size before clear: " + nodeInfoSet.Count.ToString());
 					NodeInfoSetClear();
 					Debug("Cleared nodeInfoList. New size: " + nodeInfoSet.Count.ToString());
 				}
 
-				if (configChangedEvent.Key == USE_AUTO_RANDOM_COLOR_CHANGE && Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+				if (useAutoRandomColorChange_KeyChanged && useAutoRandomColorChange)
 				{
 					manualResetEvent.Set();
 					Debug("Setting manualResetEvent");
 				}
 
 				// don't do anything in here if USE_AUTO_RANDOM_COLOR_CHANGE is enabled
-				if (Config.GetValue(MOD_ENABLED) && Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && !Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+				if (modEnabled && updateNodesOnConfigChanged && !useAutoRandomColorChange)
 				{
 
 					// anti-photosensitivity check
@@ -347,87 +361,82 @@ namespace ColorMyLogixNodes
 
 					foreach (NodeInfo nodeInfo in nodeInfoSet.ToList())
 					{
-						if (nodeInfo == null)
+
+						if (nodeInfo == null || nodeInfo.node == null || nodeInfo.node.IsRemoved || 
+						nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed)
 						{
-							Debug("NodeInfo was null");
 							NodeInfoRemove(nodeInfo);
 							continue;
 						}
 
-						if (nodeInfo.node != null && !(nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed))
+						if ((nodeInfo.node.ActiveVisual != null && nodeInfo.node.ActiveVisual.ReferenceID.User != nodeInfo.node.LocalUser.AllocationID))
 						{
-							if ((nodeInfo.node.ActiveVisual != null && nodeInfo.node.ActiveVisual.ReferenceID.User != nodeInfo.node.LocalUser.AllocationID))
-							{
-								NodeInfoRemove(nodeInfo);
-								continue;
-							}
+							NodeInfoRemove(nodeInfo);
+							continue;
+						}
 
-							if (nodeInfo.node.ActiveVisual == null)
-							{
-								NodeInfoRemove(nodeInfo);
-								continue;
-							}
+						if (nodeInfo.node.ActiveVisual == null)
+						{
+							NodeInfoRemove(nodeInfo);
+							continue;
+						}
 
-							if (nodeInfo.node.World != Engine.Current.WorldManager.FocusedWorld)
-							{
-								continue;
-							}
+						if (nodeInfo.node.World != Engine.Current.WorldManager.FocusedWorld)
+						{
+							continue;
+						}
 
-							if (nodeInfo == null)
-							{
-								Debug("nodeInfo is null!");
-							}
-							else if (nodeInfo.node == null)
-							{
-								Debug("nodeInfo.node is null!");
-							}
+						// just here for debugging stuffs
+						if (nodeInfo == null)
+						{
+							Debug("nodeInfo is null!");
+						}
+						else if (nodeInfo.node == null)
+						{
+							Debug("nodeInfo.node is null!");
+						}
 
-							color c = ComputeColorForLogixNode(nodeInfo.node);
+						color c = ComputeColorForLogixNode(nodeInfo.node);
 
-							if (nodeInfo.bgField != null)
+						if (nodeInfo.bgField != null)
+						{
+							nodeInfo.node.RunInUpdates(0, () =>
 							{
-								nodeInfo.node.RunInUpdates(0, () =>
+								if (nodeInfo == null || nodeInfo.node == null || nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed || nodeInfo.bgField.IsRemoved)
 								{
-									if (nodeInfo == null || nodeInfo.node == null || nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed || nodeInfo.bgField.IsRemoved)
-									{
-										NodeInfoRemove(nodeInfo);
-									}
-									else if (nodeInfoSet.Contains(nodeInfo))
-									{
-										if (nodeInfo.node.ActiveVisual != null && nodeInfo.node.ActiveVisual.Tag == "Disabled")
-										{
-											NodeInfoSetBgColor(nodeInfo, Config.GetValue(NODE_ERROR_COLOR));
-										}
-										else
-										{
-											NodeInfoSetBgColor(nodeInfo, c);
-										}
-									}
-								});
-							}
-
-							if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
-							{
-								nodeInfo.node.RunInUpdates(0, () =>
+									NodeInfoRemove(nodeInfo);
+								}
+								else if (nodeInfoSet.Contains(nodeInfo))
 								{
-									if (nodeInfo == null || nodeInfo.node == null || nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed)
+									if (nodeInfo.node.ActiveVisual != null && nodeInfo.node.ActiveVisual.Tag == "Disabled")
 									{
-										NodeInfoRemove(nodeInfo);
+										NodeInfoSetBgColor(nodeInfo, Config.GetValue(NODE_ERROR_COLOR));
 									}
 									else
 									{
-										// if it didn't already get removed in another thread before this coroutine
-										if (nodeInfoSet.Contains(nodeInfo))
-										{
-											NodeInfoSetTextColor(nodeInfo, GetTextColor(c));
-										}
+										NodeInfoSetBgColor(nodeInfo, c);
 									}
-								});
-							}
+								}
+							});
 						}
-						else
+
+						if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 						{
-							NodeInfoRemove(nodeInfo);
+							nodeInfo.node.RunInUpdates(0, () =>
+							{
+								if (nodeInfo == null || nodeInfo.node == null || nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed)
+								{
+									NodeInfoRemove(nodeInfo);
+								}
+								else
+								{
+									// if it didn't already get removed in another thread before this coroutine
+									if (nodeInfoSet.Contains(nodeInfo))
+									{
+										NodeInfoSetTextColor(nodeInfo, GetTextColor(c));
+									}
+								}
+							});
 						}
 					}
 				}
@@ -455,21 +464,18 @@ namespace ColorMyLogixNodes
 					if (targetField != null)
 					{
 						ISyncRef syncRef = __instance.TryGetField(targetField) as ISyncRef;
-						if (Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES) && !refDriverNodeInfoSet.Any((RefDriverNodeInfo r) => r.syncRef == syncRef))
+						if (Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES) && !refDriverNodeInfoSet.Any(refDriverNodeInfo => refDriverNodeInfo.syncRef == syncRef))
 						{
 							__instance.RunInUpdates(0, () =>
 							{
-								//if (syncRefTargetMap.ContainsKey(syncRef)) return;
-								if (refDriverNodeInfoSet.Any((RefDriverNodeInfo r) => r.syncRef == syncRef)) return;
+								if (refDriverNodeInfoSet.Any(refDriverNodeInfo => refDriverNodeInfo.syncRef == syncRef)) return;
 
 								Debug("=== Subscribing to a node ===");
-
-								//syncRefTargetMap.Add(syncRef, syncRef.Target);
 
 								RefDriverNodeInfo refDriverNodeInfo = new();
 								refDriverNodeInfo.node = __instance;
 								refDriverNodeInfo.syncRef = syncRef;
-								syncRef.Changed += refDriverNodeInfo.UpdateColor;
+								refDriverNodeInfo.syncRef.Changed += refDriverNodeInfo.UpdateColor;
 								refDriverNodeInfoSet.Add(refDriverNodeInfo);
 
 								UpdateRefOrDriverNodeColor(__instance, syncRef);

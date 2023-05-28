@@ -43,7 +43,14 @@ namespace ColorMyLogixNodes
 					{
 						foreach (RefDriverNodeInfo refDriverNodeInfo in refDriverNodeInfoSet.ToList())
 						{
-							if (refDriverNodeInfo.syncRef == null || refDriverNodeInfo.syncRef.IsRemoved || refDriverNodeInfo.syncRef.Parent == null || refDriverNodeInfo.syncRef.Parent.IsRemoved)
+							if (refDriverNodeInfo.syncRef == null ||
+								refDriverNodeInfo.syncRef.IsRemoved ||
+								refDriverNodeInfo.syncRef.Parent == null ||
+								refDriverNodeInfo.syncRef.Parent.IsRemoved ||
+								refDriverNodeInfo.node == null || 
+								refDriverNodeInfo.node.IsRemoved ||
+								refDriverNodeInfo.node.IsDestroyed ||
+								refDriverNodeInfo.node.IsDisposed)
 							{
 								Debug("=== Unsubscribing from a node ===");
 								refDriverNodeInfo.syncRef.Changed -= refDriverNodeInfo.UpdateColor;
@@ -135,7 +142,7 @@ namespace ColorMyLogixNodes
 					else
 					{
 						manualResetEvent.Reset();
-						manualResetEvent.WaitOne(Math.Min(Math.Max(Config.GetValue(AUTO_RANDOM_COLOR_CHANGE_THREAD_SLEEP_TIME), 2500), 30000));
+						//manualResetEvent.WaitOne(Math.Min(Math.Max(Config.GetValue(AUTO_RANDOM_COLOR_CHANGE_THREAD_SLEEP_TIME), 2500), 30000));
 						manualResetEvent.WaitOne(Clamp(Config.GetValue(AUTO_RANDOM_COLOR_CHANGE_THREAD_SLEEP_TIME), 2500, 30000));
 					}
 				}

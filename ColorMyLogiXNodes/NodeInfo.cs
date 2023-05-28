@@ -24,6 +24,12 @@ namespace ColorMyLogixNodes
 
 			public void UpdateColor(IChangeable iChangeable)
 			{
+				if (node == null || syncRef == null)
+				{
+					Warn("Tried to update color for null node or null syncref.");
+					return;
+				}
+				Debug($"UpdateColor called for node {node.Name} {node.ReferenceID}.");
 				UpdateRefOrDriverNodeColor(node, syncRef);
 			}
 		}
@@ -154,6 +160,7 @@ namespace ColorMyLogixNodes
 		{
 			foreach (RefDriverNodeInfo refDriverNodeInfo in refDriverNodeInfoSet)
 			{
+				refDriverNodeInfo.syncRef.Changed -= refDriverNodeInfo.UpdateColor;
 				refDriverNodeInfo.node = null;
 				refDriverNodeInfo.syncRef = null;
 			}
