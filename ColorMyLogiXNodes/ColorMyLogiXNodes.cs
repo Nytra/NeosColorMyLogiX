@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Linq;
 using System;
-using Viveport;
 
 #if DEBUG
 
@@ -221,6 +220,8 @@ namespace ColorMyLogixNodes
 		private static ModConfigurationKey<bool> MAKE_CONNECT_POINTS_FULL_ALPHA = new ModConfigurationKey<bool>("MAKE_CONNECT_POINTS_FULL_ALPHA", "Make connect points on nodes have full alpha:", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> COLOR_RELAY_NODES = new ModConfigurationKey<bool>("COLOR_RELAY_NODES", "Apply colors to Relay Nodes:", () => false, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> EXTRA_DEBUG_LOGGING = new ModConfigurationKey<bool>("EXTRA_DEBUG_LOGGING", "Enable extra debug logging (NML must be in debug mode, warning! may spam logs):", () => false, internalAccessOnly: true);
 
 		private enum ColorModelEnum
 		{
@@ -464,11 +465,12 @@ namespace ColorMyLogixNodes
 					if (targetField != null)
 					{
 						ISyncRef syncRef = __instance.TryGetField(targetField) as ISyncRef;
-						if (Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES) && !refDriverNodeInfoSet.Any(refDriverNodeInfo => refDriverNodeInfo.syncRef == syncRef))
+						if (Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES) && !RefDriverNodeInfoSetContainsSyncRef(syncRef) && !RefDriverNodeInfoSetContainsNode(__instance))
 						{
 							__instance.RunInUpdates(0, () =>
 							{
-								if (refDriverNodeInfoSet.Any(refDriverNodeInfo => refDriverNodeInfo.syncRef == syncRef)) return;
+								//if (refDriverNodeInfoSet.Any(refDriverNodeInfo => refDriverNodeInfo.syncRef == syncRef)) return;
+								if (RefDriverNodeInfoSetContainsSyncRef(syncRef) || RefDriverNodeInfoSetContainsNode(__instance)) return;
 
 								Debug("=== Subscribing to a node ===");
 
@@ -476,6 +478,7 @@ namespace ColorMyLogixNodes
 								refDriverNodeInfo.node = __instance;
 								refDriverNodeInfo.syncRef = syncRef;
 								refDriverNodeInfo.syncRef.Changed += refDriverNodeInfo.UpdateColor;
+								refDriverNodeInfo.prevSyncRefTarget = refDriverNodeInfo.syncRef.Target;
 								refDriverNodeInfoSet.Add(refDriverNodeInfo);
 
 								UpdateRefOrDriverNodeColor(__instance, syncRef);
@@ -565,7 +568,10 @@ namespace ColorMyLogixNodes
 									if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 									{
 										// set node's text color, there could be multiple text components that need to be colored
-										nodeInfo.textFields = new();
+										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+										{
+											nodeInfo.textFields = new();
+										}
 
 										if (lvcHasPatches == null)
 										{

@@ -215,5 +215,18 @@ namespace ColorMyLogixNodes
 				return LogixHelper.GetColor(nodeType);
 			}
 		}
+
+		private static int Clamp(int value, int minValue, int maxValue)
+		{
+			return Math.Min(Math.Max(value, minValue), maxValue);
+		}
+
+		private static void ExtraDebug(string msg)
+		{
+			if (Config.GetValue(EXTRA_DEBUG_LOGGING))
+			{
+				Debug(msg);
+			}
+		}
 	}
 }

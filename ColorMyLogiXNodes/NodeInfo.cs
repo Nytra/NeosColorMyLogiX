@@ -21,16 +21,25 @@ namespace ColorMyLogixNodes
 		{
 			public LogixNode node;
 			public ISyncRef syncRef;
+			public IWorldElement prevSyncRefTarget = null;
 
 			public void UpdateColor(IChangeable iChangeable)
 			{
 				if (node == null || syncRef == null)
 				{
-					Warn("Tried to update color for null node or null syncref.");
+					Warn("Tried to update reference node or driver node color but the node or syncref is null.");
 					return;
 				}
-				Debug($"UpdateColor called for node {node.Name} {node.ReferenceID}.");
-				UpdateRefOrDriverNodeColor(node, syncRef);
+				ExtraDebug($"UpdateColor called for {node.Name} {node.ReferenceID}.");
+				node.RunSynchronously(() =>
+				{
+					if (syncRef.Target != prevSyncRefTarget || syncRef.Target.IsRemoved)
+					{
+						Debug("SyncRef Target actually changed or was removed");
+						UpdateRefOrDriverNodeColor(node, syncRef);
+						prevSyncRefTarget = syncRef.Target;
+					}
+				});
 			}
 		}
 
@@ -83,6 +92,25 @@ namespace ColorMyLogixNodes
 		{
 			return nodeInfoSet.Any(nodeInfo => nodeInfo.node == node);
 		}
+
+		private static bool RefDriverNodeInfoSetContainsSyncRef(ISyncRef syncRef)
+		{
+			foreach (RefDriverNodeInfo refDriverNodeInfo in refDriverNodeInfoSet)
+			{
+				if (refDriverNodeInfo.syncRef == syncRef) return true;
+			}
+			return false;
+		}
+
+		private static bool RefDriverNodeInfoSetContainsNode(LogixNode node)
+		{
+			foreach (RefDriverNodeInfo refDriverNodeInfo in refDriverNodeInfoSet)
+			{
+				if (refDriverNodeInfo.node == node) return true;
+			}
+			return false;
+		}
+
 
 		private static NodeInfo GetNodeInfoForNode(LogixNode node)
 		{
@@ -166,6 +194,22 @@ namespace ColorMyLogixNodes
 			}
 			refDriverNodeInfoSet.Clear();
 			TryTrimExcessRefDriverNodeInfo();
+		}
+
+		private static bool IsNodeInvalid(NodeInfo nodeInfo)
+		{
+			return (nodeInfo == null ||
+				   nodeInfo.node == null ||
+				   nodeInfo.node.IsRemoved ||
+				   nodeInfo.node.IsDestroyed ||
+				   nodeInfo.node.IsDisposed ||
+				   nodeInfo.node.Slot == null ||
+				   nodeInfo.node.Slot.IsRemoved ||
+				   nodeInfo.node.Slot.IsDestroyed ||
+				   nodeInfo.node.Slot.IsDisposed ||
+				   nodeInfo.node.World == null ||
+				   nodeInfo.node.World.IsDestroyed ||
+				   nodeInfo.node.World.IsDisposed);
 		}
 	}
 }

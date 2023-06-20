@@ -1,38 +1,14 @@
-﻿using FrooxEngine.LogiX;
-using FrooxEngine;
+﻿using FrooxEngine;
 using NeosModLoader;
 using System.Linq;
 using System;
 using System.Threading;
 using BaseX;
-using Leap.Unity.Attributes;
-using Leap.Unity.Query;
 
 namespace ColorMyLogixNodes
 {
 	public partial class ColorMyLogixNodes : NeosMod
 	{
-		private static bool IsNodeInvalid(NodeInfo nodeInfo)
-		{
-			return (nodeInfo == null ||
-				   nodeInfo.node == null ||
-				   nodeInfo.node.IsRemoved ||
-				   nodeInfo.node.IsDestroyed ||
-				   nodeInfo.node.IsDisposed ||
-				   nodeInfo.node.Slot == null ||
-				   nodeInfo.node.Slot.IsRemoved ||
-				   nodeInfo.node.Slot.IsDestroyed ||
-				   nodeInfo.node.Slot.IsDisposed ||
-				   nodeInfo.node.World == null ||
-				   nodeInfo.node.World.IsDestroyed ||
-				   nodeInfo.node.World.IsDisposed);
-		}
-
-		private static int Clamp(int value, int minValue, int maxValue)
-		{
-			return Math.Min(Math.Max(value, minValue), maxValue);
-		}
-
 		private static void RefDriverNodeThread()
 		{
 			while (true)
@@ -55,6 +31,7 @@ namespace ColorMyLogixNodes
 								Debug("=== Unsubscribing from a node ===");
 								refDriverNodeInfo.syncRef.Changed -= refDriverNodeInfo.UpdateColor;
 								refDriverNodeInfoSet.Remove(refDriverNodeInfo);
+								TryTrimExcessRefDriverNodeInfo();
 								Debug("New refDriverNodeInfoSet size: " + refDriverNodeInfoSet.Count.ToString());
 							}
 							else
@@ -142,7 +119,6 @@ namespace ColorMyLogixNodes
 					else
 					{
 						manualResetEvent.Reset();
-						//manualResetEvent.WaitOne(Math.Min(Math.Max(Config.GetValue(AUTO_RANDOM_COLOR_CHANGE_THREAD_SLEEP_TIME), 2500), 30000));
 						manualResetEvent.WaitOne(Clamp(Config.GetValue(AUTO_RANDOM_COLOR_CHANGE_THREAD_SLEEP_TIME), 2500, 30000));
 					}
 				}
