@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("ColorMyLogiX")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Nytra")]
 [assembly: AssemblyProduct("ColorMyLogiX")]
 [assembly: AssemblyCopyright("Copyright © Nytra 2023")]
 [assembly: AssemblyTrademark("")]
